@@ -280,8 +280,8 @@ public class MaceKill extends Module {
                      }
 
                      this.phaseTicks++;
-                     Vec3 targetCenter = this.killTarget.getBoundingBox().getCenter();
-                     this.aboveTargetPos = this.clampedAboveTarget(targetCenter);
+                     Vec3 launchTargetCenter = this.killTarget.getBoundingBox().getCenter();
+                     this.aboveTargetPos = this.clampedAboveTarget(launchTargetCenter);
                      double distToAbove = this.mc.player.position().distanceTo(this.aboveTargetPos);
                      double verticalRemaining = this.aboveTargetPos.y - this.mc.player.getY();
                      if (verticalRemaining <= 0.75 || distToAbove <= (Double)this.nearTargetThreshold.get() || this.phaseTicks >= this.getMaxLaunchTicks()) {

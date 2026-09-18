@@ -41,7 +41,7 @@ public class GUICloser extends Module {
             this.info("Container: %s", new Object[]{var6});
          }
 
-         for (String filter : (List)this.filters.get()) {
+         for (String filter : this.filters.get()) {
             if (var6.contains(filter)) {
                this.info("Closed container: %s", new Object[]{var6});
                event.cancel();

@@ -101,8 +101,8 @@ public class SoundESP extends Module {
    private void onPlaySound(PlaySoundEvent event) {
       SoundInstance si = event.sound;
       if (!(Boolean)this.useFilter.get()
-         || ((List)this.filter.get()).isEmpty()
-         || ((List)this.filter.get()).stream().anyMatch(se -> se.location().equals(si.getIdentifier()))) {
+         || this.filter.get().isEmpty()
+         || this.filter.get().stream().anyMatch(se -> se.location().equals(si.getIdentifier()))) {
          Vec3 pos = new Vec3(si.getX() - 0.5, si.getY() - 0.5, si.getZ() - 0.5);
          if (!this.positions.contains(pos)) {
             if (this.positions.size() >= (Integer)this.maxSounds.get()) {

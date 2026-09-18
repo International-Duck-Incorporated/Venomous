@@ -190,7 +190,7 @@ public class VChoir extends Module {
    private boolean load() {
       File var1 = (File)this.file.get();
       if (var1 != null && var1.exists() && var1.isFile()) {
-         List var2;
+         List<String> var2;
          try {
             var2 = Files.readAllLines(var1.toPath(), StandardCharsets.UTF_8);
          } catch (IOException var10) {

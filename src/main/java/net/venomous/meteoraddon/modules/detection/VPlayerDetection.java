@@ -154,7 +154,7 @@ public class VPlayerDetection extends Module {
 
       ChatUtils.sendPlayerMsg("#stop");
 
-      for (Module m : (List)this.modulesToToggle.get()) {
+      for (Module m : this.modulesToToggle.get()) {
          m.toggle();
          if ((Boolean)this.notifications.get()) {
             this.info("Toggled module: (highlight)%s", new Object[]{m.title});

@@ -128,7 +128,7 @@ public class AutoChatGame extends Module {
                   }
                }
 
-               for (String var20 : (List)this.customPatterns.get()) {
+               for (String var20 : this.customPatterns.get()) {
                   try {
                      Matcher var21 = Pattern.compile(var20).matcher(var2);
                      if (var21.find() && var21.groupCount() >= 1) {

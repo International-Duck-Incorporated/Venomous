@@ -54,7 +54,7 @@ public class AntiStaff extends Module {
    }
 
    private boolean isStaff(String name) {
-      for (String staff : (List)this.staffNames.get()) {
+      for (String staff : this.staffNames.get()) {
          if (staff.equalsIgnoreCase(name)) {
             return true;
          }
