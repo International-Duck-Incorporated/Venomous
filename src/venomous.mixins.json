@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.venomous.meteoraddon.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "ClientIntentionPacketAccessor",
+    "ServerboundMovePlayerPacketAccessor",
+    "NoPitchLimitMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
