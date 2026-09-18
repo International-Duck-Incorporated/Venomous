@@ -9,26 +9,34 @@ import net.venomous.meteoraddon.modules.ModuleRegistry;
 import org.slf4j.Logger;
 
 public class VenomousAddon extends MeteorAddon {
-   public static final String VERSION = "6.2.6";
-   public static final Logger LOG = LogUtils.getLogger();
-   public static final Category CATEGORY = new Category("Venomous");
-   public static final Category CATEGORY_OP = new Category("Venomous OP");
+    public static final String VERSION = "6.2.6";
+    public static final Logger LOG = LogUtils.getLogger();
 
-   public void onInitialize() {
-      LOG.info("Initializing Venomous V6.2.6 - Optimized & Refined.");
-      ModuleRegistry.register();
-   }
+    public static final Category CATEGORY = new Category("Venomous");
+    public static final Category CATEGORY_OP = new Category("Venomous OP");
 
-   public void onRegisterCategories() {
-      Modules.registerCategory(CATEGORY);
-      Modules.registerCategory(CATEGORY_OP);
-   }
+    @Override
+    public void onInitialize() {
+        LOG.info("Initializing Venomous V6.2.6 - Optimized & Refined.");
+        ModuleRegistry.register();
+    }
 
-   public String getPackage() {
-      return "net.venomous.meteoraddon";
-   }
+    @Override
+    public void onRegisterCategories() {
+        Modules.registerCategory(CATEGORY);
+        Modules.registerCategory(CATEGORY_OP);
+    }
 
-   public GithubRepo getRepo() {
-      return new GithubRepo("International-Duck-Incorporated", "Venomous");
-   }
+    @Override
+    public String getPackage() {
+        return "net.venomous.meteoraddon";
+    }
+
+    @Override
+    public GithubRepo getRepo() {
+        return new GithubRepo(
+            "International-Duck-Incorporated",
+            "Venomous"
+        );
+    }
 }

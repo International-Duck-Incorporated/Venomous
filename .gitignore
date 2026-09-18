@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Java/build artifacts
+*.class
+out/
+bin/
+
+# Decompiler/local tools
+vineflower.jar
+
+# Packaged releases
+*.jar
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keep Gradle wrapper JAR
+!gradle/wrapper/gradle-wrapper.jar
