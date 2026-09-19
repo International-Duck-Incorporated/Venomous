@@ -338,7 +338,7 @@ public class ItemOrganizer extends Module {
 
    private boolean sort() {
       if (this.sorter == null && !this.automator.isRunning() && !this.categoryAutomator.isRunning()) {
-         if (this.mc.screen instanceof AbstractContainerScreen var1) {
+         if (this.mc.gui.screen() instanceof AbstractContainerScreen var1) {
             if (this.mc.player.isCreative() && (Boolean)this.disableInCreative.get()) {
                return false;
             }

@@ -136,7 +136,7 @@ public class ContainerAutomator {
 
    private void tickOpening() {
       this.timer++;
-      if (MeteorClient.mc.screen instanceof AbstractContainerScreen) {
+      if (MeteorClient.mc.gui.screen() instanceof AbstractContainerScreen) {
          this.state = ContainerAutomator.State.WORKING;
          this.timer = 0;
       } else {
@@ -147,7 +147,7 @@ public class ContainerAutomator {
    }
 
    private void tickWorking() {
-      if (MeteorClient.mc.screen instanceof AbstractContainerScreen var1) {
+      if (MeteorClient.mc.gui.screen() instanceof AbstractContainerScreen var1) {
          this.timer++;
          if (this.callback.onOpen(var1, this.current, this.timer)) {
             this.closeScreen();
@@ -159,8 +159,8 @@ public class ContainerAutomator {
    }
 
    private void closeScreen() {
-      if (MeteorClient.mc.screen != null) {
-         MeteorClient.mc.setScreen(null);
+      if (MeteorClient.mc.gui.screen() != null) {
+         MeteorClient.mc.gui.setScreen(null);
       }
    }
 

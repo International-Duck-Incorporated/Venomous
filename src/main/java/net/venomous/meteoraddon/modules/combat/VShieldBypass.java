@@ -46,7 +46,7 @@ public class VShieldBypass extends Module {
          && this.mc.gameMode != null
          && this.mc.level != null
          && this.mc.getConnection() != null
-         && this.mc.screen == null
+         && this.mc.gui.screen() == null
          && event.action == KeyAction.Press
          && event.button() == 0
          && this.mc.hitResult instanceof EntityHitResult hit) {

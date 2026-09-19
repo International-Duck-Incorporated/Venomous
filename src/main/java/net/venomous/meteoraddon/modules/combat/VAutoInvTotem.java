@@ -154,7 +154,7 @@ public class VAutoInvTotem extends Module {
          && this.mc.player != null
          && packet.getEntity(this.mc.level) == this.mc.player
          && (Boolean)this.openInv.get()
-         && this.mc.screen == null) {
+         && this.mc.gui.screen() == null) {
          this.shouldOpenInv = true;
          this.invOpenTicks = (Integer)this.invOpenDelay.get();
          if (!(Boolean)this.disableLogs.get()) {
@@ -178,7 +178,7 @@ public class VAutoInvTotem extends Module {
                this.info("Totem popped! Open inventory to auto-equip a new one.", new Object[0]);
             }
 
-            if (this.mc.screen instanceof InventoryScreen) {
+            if (this.mc.gui.screen() instanceof InventoryScreen) {
                if (!(Boolean)this.disableLogs.get()) {
                   this.info("Inventory already open - moving totem immediately!", new Object[0]);
                }
@@ -198,8 +198,8 @@ public class VAutoInvTotem extends Module {
    private void handleAutoInventory() {
       if (this.shouldOpenInv && this.invOpenTicks > 0) {
          this.invOpenTicks--;
-         if (this.invOpenTicks == 0 && this.mc.screen == null) {
-            this.mc.setScreen(new InventoryScreen(this.mc.player));
+         if (this.invOpenTicks == 0 && this.mc.gui.screen() == null) {
+            this.mc.gui.setScreen(new InventoryScreen(this.mc.player));
             this.invAutoOpened = true;
             this.invCloseTicks = (Integer)this.invCloseDelay.get();
             this.shouldOpenInv = false;
@@ -211,8 +211,8 @@ public class VAutoInvTotem extends Module {
 
       if (this.invAutoOpened && this.invCloseTicks > 0) {
          this.invCloseTicks--;
-         if (this.invCloseTicks == 0 && this.mc.screen instanceof InventoryScreen) {
-            this.mc.setScreen(null);
+         if (this.invCloseTicks == 0 && this.mc.gui.screen() instanceof InventoryScreen) {
+            this.mc.gui.setScreen(null);
             this.invAutoOpened = false;
             if (!(Boolean)this.disableLogs.get()) {
                this.info("Auto-closed inventory.", new Object[0]);
@@ -220,7 +220,7 @@ public class VAutoInvTotem extends Module {
          }
       }
 
-      if (this.invAutoOpened && !(this.mc.screen instanceof InventoryScreen)) {
+      if (this.invAutoOpened && !(this.mc.gui.screen() instanceof InventoryScreen)) {
          this.invAutoOpened = false;
          this.invCloseTicks = 0;
       }

@@ -16,6 +16,7 @@ import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -27,7 +28,7 @@ public class Aimbot extends Module {
    private final SettingGroup sgProjectile = this.settings.createGroup("Projectile");
    private final SettingGroup sgHumanlike = this.settings.createGroup("Humanlike");
    private final Setting<Set<EntityType<?>>> entities = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("entities")).description("Entities to aim at.")).defaultValue(Set.of(EntityType.PLAYER))).build());
+      .add(((Builder)((Builder)((Builder)new Builder().name("entities")).description("Entities to aim at.")).defaultValue(Set.of(EntityTypes.PLAYER))).build());
    private final Setting<Double> range = this.sgGeneral
       .add(
          ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()

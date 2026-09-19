@@ -129,7 +129,7 @@ public class CrystalPvP extends Module {
    private void onTick(Pre event) {
       if (this.mc.player != null && this.mc.level != null) {
          if (!(Boolean)this.antiSuicide.get() || !(this.mc.player.getHealth() <= (Double)this.minHealth.get())) {
-            if (this.mc.screen == null) {
+            if (this.mc.gui.screen() == null) {
                this.updateCounters();
                if (this.paused && System.currentTimeMillis() >= this.resumeTime) {
                   this.paused = false;

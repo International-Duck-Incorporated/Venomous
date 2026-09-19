@@ -15,6 +15,7 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
@@ -74,7 +75,7 @@ public class PearlTools extends Module {
          HashSet<Integer> present = new HashSet<>();
 
          for (Entity e : this.mc.level.entitiesForRendering()) {
-            if (e.getType() == EntityType.ENDER_PEARL) {
+            if (e.getType() == EntityTypes.ENDER_PEARL) {
                present.add(e.getId());
             }
          }
@@ -84,7 +85,7 @@ public class PearlTools extends Module {
          for (Entity e : this.mc.level.entitiesForRendering()) {
             Vec3 landing;
             Projectile p;
-            if (e.getType() == EntityType.ENDER_PEARL
+            if (e.getType() == EntityTypes.ENDER_PEARL
                && e instanceof Projectile
                && (p = (Projectile)e).getOwner() != this.mc.player
                && (landing = this.simulate(e, null)) != null
@@ -100,7 +101,7 @@ public class PearlTools extends Module {
    private void onRender(Render3DEvent event) {
       if ((Boolean)this.render.get() && this.mc.player != null && this.mc.level != null) {
          for (Entity e : this.mc.level.entitiesForRendering()) {
-            if (e.getType() == EntityType.ENDER_PEARL) {
+            if (e.getType() == EntityTypes.ENDER_PEARL) {
                Vec3 landing = this.simulate(e, event);
                if (landing != null) {
                   event.renderer

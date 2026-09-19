@@ -15,6 +15,7 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
@@ -85,7 +86,7 @@ public class AssertDominance extends Module {
          ((meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder)((meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder)new meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder()
                   .name("entities"))
                .description("Entity types to assert dominance over."))
-            .defaultValue(new EntityType[]{EntityType.PLAYER})
+            .defaultValue(new EntityType[]{EntityTypes.PLAYER})
             .build()
       );
    private final Setting<Double> range = this.sgTargeting
