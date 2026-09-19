@@ -95,9 +95,9 @@ jobs:
             --target "$GITHUB_SHA" \
             --notes "Automated nightly build from main.
 
-Commit: ${GITHUB_SHA}
-Build date: ${DATE} UTC
-Nightly tag: ${NIGHTLY_TAG}"
+          Commit: ${GITHUB_SHA}
+          Build date: ${DATE} UTC
+          Nightly tag: ${NIGHTLY_TAG}"
 
   publish-stable:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')

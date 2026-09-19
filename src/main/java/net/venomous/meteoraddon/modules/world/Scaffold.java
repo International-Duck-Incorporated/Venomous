@@ -245,7 +245,10 @@ public class Scaffold extends Module {
    private final Random random = new Random();
 
    public Scaffold() {
-      super(VenomousAddon.CATEGORY, "scaffold", "Scaffold & Bridge bypasses for Grim, Vulcan, NCP, and fast bridging.");
+      // Meteor has its own movement module named "scaffold". Modules.add replaces
+      // modules by name, so reusing that name removes Meteor's Scaffold class and
+      // makes Meteor's LocalPlayer mixin fail with a NullPointerException.
+      super(VenomousAddon.CATEGORY, "v-scaffold", "Scaffold & Bridge bypasses for Grim, Vulcan, NCP, and fast bridging.");
    }
 
    public void onActivate() {

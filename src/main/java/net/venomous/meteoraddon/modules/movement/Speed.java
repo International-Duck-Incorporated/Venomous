@@ -64,7 +64,8 @@ public class Speed extends Module {
    private int ticksSinceBoat = 999;
 
    public Speed() {
-      super(VenomousAddon.CATEGORY, "speed", "Adaptive speed engine with bypasses for Grim, Vulcan, Polar, Matrix, NCP, and Strafe.");
+      // Keep Meteor's built-in speed module available; its mixins look it up by class.
+      super(VenomousAddon.CATEGORY, "v-speed", "Adaptive speed engine with bypasses for Grim, Vulcan, Polar, Matrix, NCP, and Strafe.");
    }
 
    public void onActivate() {

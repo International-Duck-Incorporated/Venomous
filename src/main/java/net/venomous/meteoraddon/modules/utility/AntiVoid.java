@@ -42,7 +42,8 @@ public class AntiVoid extends Module {
    private double safeZ;
 
    public AntiVoid() {
-      super(VenomousAddon.CATEGORY, "anti-void", "Prevents falling into the void.");
+      // Keep Meteor's built-in anti-void module available; module names are global.
+      super(VenomousAddon.CATEGORY, "v-anti-void", "Prevents falling into the void.");
    }
 
    public void onActivate() {
