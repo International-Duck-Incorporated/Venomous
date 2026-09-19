@@ -82,20 +82,22 @@ jobs:
           NIGHTLY_JAR="release/Venomous-${VERSION}-nightly-${DATE}+${SHORT_SHA}.jar"
           mv "$JAR" "$NIGHTLY_JAR"
 
+          NIGHTLY_TAG="nightly-${DATE}-${SHORT_SHA}"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f nightly "$GITHUB_SHA"
-          git push origin refs/tags/nightly --force
+          git tag "$NIGHTLY_TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/${NIGHTLY_TAG}"
 
-          if gh release view nightly >/dev/null 2>&1; then
-            gh release delete nightly --yes
-          fi
-
-          gh release create nightly "$NIGHTLY_JAR" \
-            --title "Venomous Nightly (${VERSION})" \
+          gh release create "$NIGHTLY_TAG" "$NIGHTLY_JAR" \
+            --title "Venomous Nightly (${VERSION} - ${DATE} ${SHORT_SHA})" \
             --prerelease \
             --target "$GITHUB_SHA" \
-            --notes "Automated nightly build from main. Commit: ${GITHUB_SHA}. Build date: ${DATE} UTC."
+            --notes "Automated nightly build from main.
+
+Commit: ${GITHUB_SHA}
+Build date: ${DATE} UTC
+Nightly tag: ${NIGHTLY_TAG}"
 
   publish-stable:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
