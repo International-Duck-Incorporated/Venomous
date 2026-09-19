@@ -22,7 +22,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
-import net.venomous.meteoraddon.utils.McCompat;
 
 public class Aimbot extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -94,7 +93,7 @@ public class Aimbot extends Module {
    private Entity target;
 
    public Aimbot() {
-      super(VenomousAddon.CATEGORY, "v-aimbot", "Smooth, human-like aimbot with projectile prediction.");
+      super(VenomousAddon.CATEGORY, "aimbot", "Smooth, human-like aimbot with projectile prediction.");
    }
 
    @EventHandler
@@ -107,7 +106,7 @@ public class Aimbot extends Module {
          } else if (!(Boolean)this.ignoreWalls.get() && !PlayerUtils.canSeeEntity(entity)) {
             return false;
          } else {
-            return !((Set)this.entities.get()).contains(entity.getType()) ? false : !(entity instanceof Player) || (Friends.get().shouldAttack((Player)entity) && !McCompat.isTeammate(entity));
+            return !((Set)this.entities.get()).contains(entity.getType()) ? false : !(entity instanceof Player) || Friends.get().shouldAttack((Player)entity);
          }
       }, SortPriority.LowestDistance);
       if (this.target != null) {
@@ -180,13 +179,11 @@ public class Aimbot extends Module {
    }
 
    private boolean isHoldingProjectile() {
-      if (this.mc.player == null) return false;
       Item item = this.mc.player.getMainHandItem().getItem();
       return item == Items.BOW || item == Items.CROSSBOW || item == Items.TRIDENT;
    }
 
    private void handleAutoShoot() {
-      if (this.mc.player == null) return;
       Item item = this.mc.player.getMainHandItem().getItem();
       if (item == Items.BOW) {
          float charge = (this.mc.player.getUseItem().getUseDuration(this.mc.player) - this.mc.player.getUseItemRemainingTicks()) / 20.0F;

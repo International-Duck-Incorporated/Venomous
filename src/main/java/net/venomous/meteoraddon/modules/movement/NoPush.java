@@ -25,7 +25,7 @@ public class NoPush extends Module {
       );
 
    public NoPush() {
-      super(VenomousAddon.CATEGORY, "v-no-push", "Disables being pushed by entities, liquids, etc.");
+      super(VenomousAddon.CATEGORY, "no-push", "Disables being pushed by entities, liquids, etc.");
    }
 
    @EventHandler

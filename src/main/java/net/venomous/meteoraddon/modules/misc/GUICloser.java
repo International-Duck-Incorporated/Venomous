@@ -30,7 +30,7 @@ public class GUICloser extends Module {
       );
 
    public GUICloser() {
-      super(VenomousAddon.CATEGORY, "v-guicloser", "Automatically closes container screens matching filter titles.");
+      super(VenomousAddon.CATEGORY, "guicloser", "Automatically closes container screens matching filter titles.");
    }
 
    @EventHandler

@@ -75,7 +75,7 @@ public class ProjectilePuncher extends Module {
    private final Random random = new Random();
 
    public ProjectilePuncher() {
-      super(VenomousAddon.CATEGORY, "v-projectile-puncher", "Automatically punches incoming projectiles with humanlike timing.");
+      super(VenomousAddon.CATEGORY, "projectile-puncher", "Automatically punches incoming projectiles with humanlike timing.");
    }
 
    public void onActivate() {

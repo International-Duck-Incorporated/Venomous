@@ -59,7 +59,7 @@ public class AutoBreakSelected extends Module {
    private int bypassDelay = 0;
 
    public AutoBreakSelected() {
-      super(VenomousAddon.CATEGORY, "v-auto-break-selected", "Automatically mines nearby blocks of the selected types.");
+      super(VenomousAddon.CATEGORY, "auto-break-selected", "Automatically mines nearby blocks of the selected types.");
    }
 
    public void onActivate() {

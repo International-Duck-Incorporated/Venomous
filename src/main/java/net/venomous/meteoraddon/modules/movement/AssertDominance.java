@@ -125,7 +125,7 @@ public class AssertDominance extends Module {
    private int ticks;
 
    public AssertDominance() {
-      super(VenomousAddon.CATEGORY, "v-assert-dominance", "Moves around the nearest player or mob using orbit or random teleport mode.");
+      super(VenomousAddon.CATEGORY, "assert-dominance", "Moves around the nearest player or mob using orbit or random teleport mode.");
    }
 
    public void onActivate() {

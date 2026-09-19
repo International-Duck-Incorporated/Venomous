@@ -16,7 +16,7 @@ public class Hunt extends Module {
       .add(((Builder)((Builder)((Builder)new Builder().name("player-name")).description("The exact name of the player to hunt.")).defaultValue("")).build());
 
    public Hunt() {
-      super(VenomousAddon.CATEGORY, "v-hunt", "Walks toward a specific player by name.");
+      super(VenomousAddon.CATEGORY, "hunt", "Walks toward a specific player by name.");
    }
 
    public void onDeactivate() {

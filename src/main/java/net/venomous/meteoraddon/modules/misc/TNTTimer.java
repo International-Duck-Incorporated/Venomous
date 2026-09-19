@@ -69,7 +69,7 @@ public class TNTTimer extends Module {
    private final Set<Integer> warned = new HashSet<>();
 
    public TNTTimer() {
-      super(VenomousAddon.CATEGORY, "v-tnt-timer", "Highlights primed TNT and shows a timer above it.");
+      super(VenomousAddon.CATEGORY, "tnt-timer", "Highlights primed TNT and shows a timer above it.");
    }
 
    public void onDeactivate() {

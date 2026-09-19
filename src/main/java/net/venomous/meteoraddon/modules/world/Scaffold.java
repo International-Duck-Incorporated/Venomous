@@ -2,9 +2,12 @@ package net.venomous.meteoraddon.modules.world;
 
 import java.util.Random;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
+import meteordevelopment.meteorclient.settings.BoolSetting;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
+import meteordevelopment.meteorclient.settings.EnumSetting;
+import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
@@ -28,190 +31,209 @@ public class Scaffold extends Module {
    private final SettingGroup sgBridge = this.settings.createGroup("Bridge Assist");
    private final SettingGroup sgExpand = this.settings.createGroup("Expand");
    private final SettingGroup sgTower = this.settings.createGroup("Tower");
-   private final Setting<Scaffold.Technique> technique = this.sgGeneral
-      .add(
-         ((Builder)((Builder)((Builder)new Builder().name("technique")).description("Scaffold technique — select your anticheat."))
-               .defaultValue(Scaffold.Technique.GrimScaffold))
-            .build()
-      );
-   private final Setting<Boolean> autoSneak = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("auto-sneak"))
-                  .description("Sneak at block edges (Eagle/BridgeAssist)."))
-               .defaultValue(true))
-            .build()
-      );
-   private final Setting<Boolean> sameY = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("same-y"))
-                  .description("Keep placing at the same Y level."))
-               .defaultValue(true))
-            .build()
-      );
-   private final Setting<Boolean> swing = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("swing"))
-                  .description("Swing hand when placing."))
-               .defaultValue(true))
-            .build()
-      );
-   private final Setting<Boolean> autoBlockSwitch = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("auto-block-switch"))
-                  .description("Auto-switch to blocks."))
-               .defaultValue(true))
-            .build()
-      );
-   private final Setting<Boolean> serverSideRotations = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("server-side-rotations"))
-                  .description("Spoof rotations to the server so you don't notice camera shifts."))
-               .defaultValue(true))
-            .build()
-      );
-   private final Setting<Integer> placeDelay = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("place-delay"))
-                  .description("Ticks between placement attempts. Higher values reduce packet spam and repeated failed placement attempts."))
-               .defaultValue(3))
-            .range(1, 10)
-            .sliderMax(10)
-            .build()
-      );
-   private final Setting<Double> bridgeEdgeThreshold = this.sgBridge
-      .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("edge-threshold"))
-                  .description("Distance from a block edge before AutoSneak / BridgeMacro assists."))
-               .defaultValue(0.24)
-               .range(0.05, 0.49)
-               .sliderMax(0.4)
-               .visible(() -> this.technique.get() == Scaffold.Technique.AutoSneak || this.technique.get() == Scaffold.Technique.BridgeMacro))
-            .build()
-      );
-   private final Setting<Boolean> bridgePlaceAssist = this.sgBridge
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("place-assist"))
-                     .description("In AutoSneak mode, also place one block below/ahead when possible."))
-                  .defaultValue(true))
-               .visible(() -> this.technique.get() == Scaffold.Technique.AutoSneak))
-            .build()
-      );
-   private final Setting<Boolean> bridgeCameraStabilisation = this.sgBridge
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("camera-stabilisation"))
-                     .description("Restore the visual camera after BridgeMacro placement rotations."))
-                  .defaultValue(true))
-               .visible(() -> this.technique.get() == Scaffold.Technique.BridgeMacro))
-            .build()
-      );
-   private final Setting<Boolean> grimUseScaffolding = this.sgGrim
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("grim-use-scaffolding"))
-                     .description("Use scaffolding blocks — Grim EXEMPTS them from RotationPlace!"))
-                  .defaultValue(true))
-               .visible(() -> this.technique.get() == Scaffold.Technique.GrimScaffold))
-            .build()
-      );
-   private final Setting<Boolean> grimSmoothRotation = this.sgGrim
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("grim-smooth-rotation"))
-                  .description("Smooth rotation with jitter to avoid DuplicateRotPlace."))
-               .defaultValue(true))
-            .build()
-      );
-   private final Setting<Double> grimRotationJitter = this.sgGrim
-      .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("grim-rotation-jitter"))
-                  .description("Rotation jitter to avoid DuplicateRotPlace (xDiff < 0.0001 flags)."))
-               .defaultValue(0.5)
-               .range(0.0, 5.0)
-               .sliderMax(3.0)
-               .visible(this.grimSmoothRotation::get))
-            .build()
-      );
-   private final Setting<Double> rotationSpeed = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("rotation-speed"))
-               .description("Rotation speed (degrees/tick)."))
-            .defaultValue(120.0)
-            .range(10.0, 360.0)
-            .sliderMax(360.0)
-            .build()
-      );
-   private final Setting<Integer> vulcanExpand = this.sgVulcan
-      .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("vulcan-expand"))
-                     .description("Expand for Vulcan — high value bypasses because isBridging becomes false!"))
-                  .defaultValue(2))
-               .range(0, 5)
-               .sliderMax(5)
-               .visible(() -> this.technique.get() == Scaffold.Technique.VulcanExpand))
-            .build()
-      );
-   private final Setting<Boolean> vulcanSprintDisabler = this.sgVulcan
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("vulcan-sprint-disabler"))
-                     .description("Send sprint/unsneak packets to bypass Vulcan scaffold checks (LB style)."))
-                  .defaultValue(true))
-               .visible(() -> this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint))
-            .build()
-      );
-   private final Setting<Integer> vulcanSprintInterval = this.sgVulcan
-      .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("vulcan-sprint-interval"))
-                     .description("Ticks between sprint packet sends."))
-                  .defaultValue(3))
-               .range(1, 10)
-               .visible(
-                  () -> (this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
-                     && (Boolean)this.vulcanSprintDisabler.get()
-               ))
-            .build()
-      );
-   private final Setting<Integer> expand = this.sgExpand
-      .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("expand"))
-                  .description("Blocks to expand forward. NOTE: Expand > 0 flags FarPlace on Grim!"))
-               .defaultValue(0))
-            .range(0, 5)
-            .sliderMax(5)
-            .build()
-      );
-   private final Setting<Boolean> tower = this.sgTower
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("tower"))
-                  .description("Tower up when looking up."))
-               .defaultValue(true))
-            .build()
-      );
-   private final Setting<Integer> towerDelay = this.sgTower
-      .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("tower-delay"))
-                     .description("Delay between tower jumps."))
-                  .defaultValue(3))
-               .range(1, 10)
-               .visible(this.tower::get))
-            .build()
-      );
+
+   private final Setting<Scaffold.Technique> technique = this.sgGeneral.add(
+      new EnumSetting.Builder<Scaffold.Technique>()
+         .name("technique")
+         .description("Scaffold technique — select your anticheat or bridging style.")
+         .defaultValue(Scaffold.Technique.GrimScaffold)
+         .build()
+   );
+
+   private final Setting<Boolean> autoSneak = this.sgGeneral.add(
+      new BoolSetting.Builder()
+         .name("auto-sneak")
+         .description("Sneak at block edges (Eagle/BridgeAssist).")
+         .defaultValue(true)
+         .build()
+   );
+
+   private final Setting<Boolean> sameY = this.sgGeneral.add(
+      new BoolSetting.Builder()
+         .name("same-y")
+         .description("Keep placing at the same Y level.")
+         .defaultValue(true)
+         .build()
+   );
+
+   private final Setting<Boolean> swing = this.sgGeneral.add(
+      new BoolSetting.Builder()
+         .name("swing")
+         .description("Swing hand when placing.")
+         .defaultValue(true)
+         .build()
+   );
+
+   private final Setting<Boolean> autoBlockSwitch = this.sgGeneral.add(
+      new BoolSetting.Builder()
+         .name("auto-block-switch")
+         .description("Auto-switch to blocks.")
+         .defaultValue(true)
+         .build()
+   );
+
+   private final Setting<Boolean> serverSideRotations = this.sgGeneral.add(
+      new BoolSetting.Builder()
+         .name("server-side-rotations")
+         .description("Spoof rotations to the server so you don't notice camera shifts.")
+         .defaultValue(true)
+         .build()
+   );
+
+   private final Setting<Integer> placeDelay = this.sgGeneral.add(
+      new IntSetting.Builder()
+         .name("place-delay")
+         .description("Ticks between placement attempts. Higher values reduce packet spam.")
+         .defaultValue(3)
+         .range(1, 10)
+         .sliderMax(10)
+         .build()
+   );
+
+   private final Setting<Double> bridgeEdgeThreshold = this.sgBridge.add(
+      new DoubleSetting.Builder()
+         .name("edge-threshold")
+         .description("Distance from a block edge before Bridge Assist sneaks.")
+         .defaultValue(0.24)
+         .range(0.05, 0.49)
+         .sliderMax(0.4)
+         .visible(this::isBridgeMode)
+         .build()
+   );
+
+   private final Setting<Boolean> bridgePlaceAssist = this.sgBridge.add(
+      new BoolSetting.Builder()
+         .name("place-assist")
+         .description("Automatically place blocks below or ahead while bridging.")
+         .defaultValue(true)
+         .visible(this::isBridgeMode)
+         .build()
+   );
+
+   private final Setting<Boolean> bridgeCameraStabilisation = this.sgBridge.add(
+      new BoolSetting.Builder()
+         .name("camera-stabilisation")
+         .description("Restore visual camera rotation immediately after bridge placement.")
+         .defaultValue(true)
+         .visible(() -> this.technique.get() == Scaffold.Technique.BridgeMacro || this.technique.get() == Scaffold.Technique.VapeBridge)
+         .build()
+   );
+
+   private final Setting<Boolean> bridgePitchAssist = this.sgBridge.add(
+      new BoolSetting.Builder()
+         .name("pitch-assist")
+         .description("Automatically pitch down towards placement face when nearing block edges.")
+         .defaultValue(true)
+         .visible(() -> this.technique.get() == Scaffold.Technique.VapeBridge || this.technique.get() == Scaffold.Technique.GodBridge)
+         .build()
+   );
+
+   private final Setting<Boolean> bridgeStrafeAssist = this.sgBridge.add(
+      new BoolSetting.Builder()
+         .name("strafe-assist")
+         .description("Smooth strafe lock along bridge vector (keeps movement aligned).")
+         .defaultValue(false)
+         .visible(() -> this.technique.get() == Scaffold.Technique.VapeBridge || this.technique.get() == Scaffold.Technique.Breezily)
+         .build()
+   );
+
+   private final Setting<Boolean> grimUseScaffolding = this.sgGrim.add(
+      new BoolSetting.Builder()
+         .name("grim-use-scaffolding")
+         .description("Use scaffolding blocks — Grim EXEMPTS them from RotationPlace!")
+         .defaultValue(true)
+         .visible(() -> this.technique.get() == Scaffold.Technique.GrimScaffold)
+         .build()
+   );
+
+   private final Setting<Boolean> grimSmoothRotation = this.sgGrim.add(
+      new BoolSetting.Builder()
+         .name("grim-smooth-rotation")
+         .description("Smooth rotation with jitter to avoid DuplicateRotPlace.")
+         .defaultValue(true)
+         .build()
+   );
+
+   private final Setting<Double> grimRotationJitter = this.sgGrim.add(
+      new DoubleSetting.Builder()
+         .name("grim-rotation-jitter")
+         .description("Rotation jitter to avoid DuplicateRotPlace (xDiff < 0.0001 flags).")
+         .defaultValue(0.5)
+         .range(0.0, 5.0)
+         .sliderMax(3.0)
+         .visible(this.grimSmoothRotation::get)
+         .build()
+   );
+
+   private final Setting<Double> rotationSpeed = this.sgGeneral.add(
+      new DoubleSetting.Builder()
+         .name("rotation-speed")
+         .description("Rotation speed (degrees/tick).")
+         .defaultValue(120.0)
+         .range(10.0, 360.0)
+         .sliderMax(360.0)
+         .build()
+   );
+
+   private final Setting<Integer> vulcanExpand = this.sgVulcan.add(
+      new IntSetting.Builder()
+         .name("vulcan-expand")
+         .description("Expand for Vulcan — high value bypasses because isBridging becomes false!")
+         .defaultValue(2)
+         .range(0, 5)
+         .sliderMax(5)
+         .visible(() -> this.technique.get() == Scaffold.Technique.VulcanExpand)
+         .build()
+   );
+
+   private final Setting<Boolean> vulcanSprintDisabler = this.sgVulcan.add(
+      new BoolSetting.Builder()
+         .name("vulcan-sprint-disabler")
+         .description("Send sprint/unsneak packets to bypass Vulcan scaffold checks (LB style).")
+         .defaultValue(true)
+         .visible(() -> this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
+         .build()
+   );
+
+   private final Setting<Integer> vulcanSprintInterval = this.sgVulcan.add(
+      new IntSetting.Builder()
+         .name("vulcan-sprint-interval")
+         .description("Ticks between sprint packet sends.")
+         .defaultValue(3)
+         .range(1, 10)
+         .visible(() -> (this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
+                     && this.vulcanSprintDisabler.get())
+         .build()
+   );
+
+   private final Setting<Integer> expand = this.sgExpand.add(
+      new IntSetting.Builder()
+         .name("expand")
+         .description("Blocks to expand forward. NOTE: Expand > 0 flags FarPlace on Grim!")
+         .defaultValue(0)
+         .range(0, 5)
+         .sliderMax(5)
+         .build()
+   );
+
+   private final Setting<Boolean> tower = this.sgTower.add(
+      new BoolSetting.Builder()
+         .name("tower")
+         .description("Tower up when looking up.")
+         .defaultValue(true)
+         .build()
+   );
+
+   private final Setting<Integer> towerDelay = this.sgTower.add(
+      new IntSetting.Builder()
+         .name("tower-delay")
+         .description("Delay between tower jumps.")
+         .defaultValue(3)
+         .range(1, 10)
+         .visible(this.tower::get)
+         .build()
+   );
+
    private int prevSlot = -1;
    private int towerTicks = 0;
    private int scaffoldCount = 0;
@@ -223,7 +245,7 @@ public class Scaffold extends Module {
    private final Random random = new Random();
 
    public Scaffold() {
-      super(VenomousAddon.CATEGORY, "v-scaffold", "Scaffold bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC.");
+      super(VenomousAddon.CATEGORY, "scaffold", "Scaffold & Bridge bypasses for Grim, Vulcan, NCP, and fast bridging.");
    }
 
    public void onActivate() {
@@ -248,106 +270,141 @@ public class Scaffold extends Module {
       this.repeatedAttempts = 0;
    }
 
+   private boolean isBridgeMode() {
+      return this.technique.get() == Scaffold.Technique.AutoSneak
+         || this.technique.get() == Scaffold.Technique.BridgeMacro
+         || this.technique.get() == Scaffold.Technique.VapeBridge
+         || this.technique.get() == Scaffold.Technique.GodBridge
+         || this.technique.get() == Scaffold.Technique.Breezily;
+   }
+
    @EventHandler
    private void onTick(Pre event) {
-      if (this.mc.player != null && this.mc.level != null) {
-         this.scaffoldCount++;
-         if (this.placeCooldown > 0) {
-            this.placeCooldown--;
-         }
+      if (this.mc.player == null || this.mc.level == null) {
+         return;
+      }
 
-         if ((this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
-            && (Boolean)this.vulcanSprintDisabler.get()
-            && this.scaffoldCount % (Integer)this.vulcanSprintInterval.get() == 0) {
-            this.mc.player.connection.send(new ServerboundPlayerCommandPacket(this.mc.player, Action.START_SPRINTING));
-            this.mc.player.connection.send(new ServerboundPlayerCommandPacket(this.mc.player, Action.STOP_SPRINTING));
-         }
+      this.scaffoldCount++;
+      if (this.placeCooldown > 0) {
+         this.placeCooldown--;
+      }
 
-         if (this.technique.get() != Scaffold.Technique.AutoSneak && this.technique.get() != Scaffold.Technique.BridgeMacro) {
-            int blockSlot = this.findBlockSlot();
-            if (blockSlot != -1) {
-               if ((Boolean)this.autoBlockSwitch.get()) {
-                  if (this.prevSlot == -1) {
-                     this.prevSlot = this.mc.player.getInventory().getSelectedSlot();
-                  }
+      if ((this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
+         && this.vulcanSprintDisabler.get()
+         && this.scaffoldCount % this.vulcanSprintInterval.get() == 0
+         && this.mc.getConnection() != null) {
+         this.mc.getConnection().send(new ServerboundPlayerCommandPacket(this.mc.player, Action.START_SPRINTING));
+         this.mc.getConnection().send(new ServerboundPlayerCommandPacket(this.mc.player, Action.STOP_SPRINTING));
+      }
 
-                  if (this.technique.get() == Scaffold.Technique.GrimScaffold && (Boolean)this.grimUseScaffolding.get()) {
-                     int scaffoldSlot = this.findScaffoldSlot();
-                     if (scaffoldSlot != -1) {
-                        blockSlot = scaffoldSlot;
-                     }
-                  }
-
-                  this.mc.player.getInventory().setSelectedSlot(blockSlot);
+      if (!isBridgeMode()) {
+         int blockSlot = this.findBlockSlot();
+         if (blockSlot != -1) {
+            if (this.autoBlockSwitch.get()) {
+               if (this.prevSlot == -1) {
+                  this.prevSlot = this.mc.player.getInventory().getSelectedSlot();
                }
 
-               if ((Boolean)this.tower.get() && this.mc.player.getXRot() < -75.0F) {
-                  this.doTower();
-               } else {
-                  BlockPos placePos = this.getPlacePos();
-                  if (placePos != null) {
-                     if ((Boolean)this.autoSneak.get()) {
-                        if (this.isOverEdge()) {
-                           this.pressManagedSneak();
-                        } else {
-                           this.releaseManagedSneak();
-                        }
-                     }
-
-                     if (this.technique.get() == Scaffold.Technique.VulcanExpand && (Integer)this.vulcanExpand.get() > 0) {
-                        for (int i = 0; i <= this.vulcanExpand.get(); i++) {
-                           BlockPos ep = this.getExpandPos(i);
-                           if (ep != null && this.place(ep)) {
-                              break;
-                           }
-                        }
-                     } else if (this.technique.get() == Scaffold.Technique.Expand && (Integer)this.expand.get() > 0) {
-                        for (int i = 0; i <= this.expand.get(); i++) {
-                           BlockPos ep = this.getExpandPos(i);
-                           if (ep != null && this.place(ep)) {
-                              break;
-                           }
-                        }
-                     } else {
-                        this.place(placePos);
-                     }
-                  } else if ((Boolean)this.autoSneak.get()) {
-                     this.releaseManagedSneak();
+               if (this.technique.get() == Scaffold.Technique.GrimScaffold && this.grimUseScaffolding.get()) {
+                  int scaffoldSlot = this.findScaffoldSlot();
+                  if (scaffoldSlot != -1) {
+                     blockSlot = scaffoldSlot;
                   }
+               }
+
+               this.mc.player.getInventory().setSelectedSlot(blockSlot);
+            }
+
+            if (this.tower.get() && this.mc.player.getXRot() < -75.0F) {
+               this.doTower();
+            } else {
+               BlockPos placePos = this.getPlacePos();
+               if (placePos != null) {
+                  if (this.autoSneak.get()) {
+                     if (this.isOverEdge()) {
+                        this.pressManagedSneak();
+                     } else {
+                        this.releaseManagedSneak();
+                     }
+                  }
+
+                  if (this.technique.get() == Scaffold.Technique.VulcanExpand && this.vulcanExpand.get() > 0) {
+                     for (int i = 0; i <= this.vulcanExpand.get(); i++) {
+                        BlockPos ep = this.getExpandPos(i);
+                        if (ep != null && this.place(ep)) {
+                           break;
+                        }
+                     }
+                  } else if (this.technique.get() == Scaffold.Technique.Expand && this.expand.get() > 0) {
+                     for (int i = 0; i <= this.expand.get(); i++) {
+                        BlockPos ep = this.getExpandPos(i);
+                        if (ep != null && this.place(ep)) {
+                           break;
+                        }
+                     }
+                  } else {
+                     this.place(placePos);
+                  }
+               } else if (this.autoSneak.get()) {
+                  this.releaseManagedSneak();
                }
             }
-         } else {
-            this.tickBridgeMode(this.technique.get() == Scaffold.Technique.BridgeMacro);
          }
+      } else {
+         this.tickBridgeMode();
       }
    }
 
-   private void tickBridgeMode(boolean macro) {
+   private void tickBridgeMode() {
       Vec3 dir = this.movementDirection();
       if (dir.lengthSqr() < 1.0E-4) {
          this.releaseManagedSneak();
-      } else {
-         boolean edge = this.edgeDistance(dir) <= (Double)this.bridgeEdgeThreshold.get();
-         if (!edge) {
-            this.releaseManagedSneak();
-         } else {
-            this.pressManagedSneak();
-            boolean shouldPlace = macro || (Boolean)this.bridgePlaceAssist.get();
-            if (shouldPlace) {
-               BlockPos target = BlockPos.containing(this.mc.player.getX() + dir.x * 0.65, this.blockY(), this.mc.player.getZ() + dir.z * 0.65);
-               float oldYaw = this.mc.player.getYRot();
-               float oldPitch = this.mc.player.getXRot();
-               boolean placed = this.place(target);
-               if (macro && (Boolean)this.bridgeCameraStabilisation.get()) {
-                  this.mc.player.setYRot(oldYaw);
-                  this.mc.player.setXRot(oldPitch);
-                  this.mc.player.yRotO = oldYaw;
-                  this.mc.player.xRotO = oldPitch;
-               }
+         return;
+      }
 
-               if (macro && placed) {
-                  this.releaseManagedSneak();
+      int blockSlot = this.findBlockSlot();
+      if (blockSlot != -1 && this.autoBlockSwitch.get()) {
+         if (this.prevSlot == -1) {
+            this.prevSlot = this.mc.player.getInventory().getSelectedSlot();
+         }
+         this.mc.player.getInventory().setSelectedSlot(blockSlot);
+      }
+
+      boolean edge = this.edgeDistance(dir) <= this.bridgeEdgeThreshold.get();
+      Scaffold.Technique tech = this.technique.get();
+
+      // GodBridge / Breezily: fast timing, no sneak on ground if aligned
+      boolean isFastBridge = (tech == Scaffold.Technique.GodBridge || tech == Scaffold.Technique.Breezily);
+
+      if (!edge) {
+         this.releaseManagedSneak();
+      } else {
+         if (!isFastBridge || !this.mc.player.onGround()) {
+            this.pressManagedSneak();
+         }
+
+         boolean shouldPlace = this.bridgePlaceAssist.get();
+         if (shouldPlace) {
+            BlockPos target = BlockPos.containing(this.mc.player.getX() + dir.x * 0.65, this.blockY(), this.mc.player.getZ() + dir.z * 0.65);
+            float oldYaw = this.mc.player.getYRot();
+            float oldPitch = this.mc.player.getXRot();
+
+            if (this.bridgePitchAssist.get() && (tech == Scaffold.Technique.VapeBridge || tech == Scaffold.Technique.GodBridge)) {
+               if (this.mc.player.getXRot() < 65.0F && !this.serverSideRotations.get()) {
+                  this.mc.player.setXRot(75.5F);
                }
+            }
+
+            boolean placed = this.place(target);
+            if (this.bridgeCameraStabilisation.get() && (tech == Scaffold.Technique.BridgeMacro || tech == Scaffold.Technique.VapeBridge)) {
+               this.mc.player.setYRot(oldYaw);
+               this.mc.player.setXRot(oldPitch);
+               this.mc.player.yRotO = oldYaw;
+               this.mc.player.xRotO = oldPitch;
+            }
+
+            if (placed && (tech == Scaffold.Technique.BridgeMacro || tech == Scaffold.Technique.VapeBridge)) {
+               this.releaseManagedSneak();
             }
          }
       }
@@ -420,7 +477,7 @@ public class Scaffold extends Module {
       }
 
       this.towerTicks++;
-      if (this.mc.player.onGround() && this.towerTicks % (Integer)this.towerDelay.get() == 0) {
+      if (this.mc.player.onGround() && this.towerTicks % this.towerDelay.get() == 0) {
          this.mc.player.jumpFromGround();
       }
    }
@@ -434,7 +491,7 @@ public class Scaffold extends Module {
             this.repeatedAttempts = 0;
          }
 
-         int delay = Math.max(1, (Integer)this.placeDelay.get());
+         int delay = Math.max(1, this.placeDelay.get());
          if (this.repeatedAttempts > 0 && this.repeatedAttempts % delay != 0) {
             return false;
          }
@@ -448,11 +505,11 @@ public class Scaffold extends Module {
                   BlockHitResult hitResult = new BlockHitResult(hitVec, placeFace, neighbor, false);
                   Runnable placeAction = () -> {
                      InteractionResult result = this.mc.gameMode.useItemOn(this.mc.player, InteractionHand.MAIN_HAND, hitResult);
-                     if (result.consumesAction() && (Boolean)this.swing.get()) {
+                     if (result.consumesAction() && this.swing.get()) {
                         this.mc.player.swing(InteractionHand.MAIN_HAND);
                      }
                   };
-                  if ((Boolean)this.serverSideRotations.get()) {
+                  if (this.serverSideRotations.get()) {
                      float yaw = this.wrapDegrees((float)Rotations.getYaw(hitVec));
                      float pitch = this.clampPitch((float)Rotations.getPitch(hitVec));
                      Rotations.rotate(yaw, pitch, 20, placeAction);
@@ -481,12 +538,12 @@ public class Scaffold extends Module {
       double dist = Math.sqrt(dx * dx + dz * dz);
       float targetYaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
       float targetPitch = (float)(-Math.toDegrees(Math.atan2(dy, dist)));
-      if ((Boolean)this.serverSideRotations.get()) {
+      if (this.serverSideRotations.get()) {
          Rotations.rotate(targetYaw, targetPitch, 10, null);
       } else {
          float yawDiff = this.wrapDegrees(targetYaw - this.mc.player.getYRot());
          float pitchDiff = this.wrapDegrees(targetPitch - this.mc.player.getXRot());
-         float maxTurn = ((Double)this.rotationSpeed.get()).floatValue();
+         float maxTurn = this.rotationSpeed.get().floatValue();
          if (Math.abs(yawDiff) > maxTurn) {
             yawDiff = Math.signum(yawDiff) * maxTurn;
          }
@@ -509,7 +566,7 @@ public class Scaffold extends Module {
       float targetPitch = this.clampPitch((float)(-Math.toDegrees(Math.atan2(dy, dist))));
       float yawDiff = this.wrapDegrees(targetYaw - this.mc.player.getYRot());
       float pitchDiff = this.wrapDegrees(targetPitch - this.mc.player.getXRot());
-      float maxTurn = ((Double)this.rotationSpeed.get()).floatValue();
+      float maxTurn = this.rotationSpeed.get().floatValue();
       if (Math.abs(yawDiff) > maxTurn) {
          yawDiff = Math.signum(yawDiff) * maxTurn;
       }
@@ -583,13 +640,14 @@ public class Scaffold extends Module {
    }
 
    public String getInfoString() {
-      return ((Scaffold.Technique)this.technique.get()).name();
+      return this.technique.get().name();
    }
 
    public enum Technique {
       GrimScaffold,
       AutoSneak,
       BridgeMacro,
+      VapeBridge,
       VulcanExpand,
       VulcanSprint,
       NCPNormal,

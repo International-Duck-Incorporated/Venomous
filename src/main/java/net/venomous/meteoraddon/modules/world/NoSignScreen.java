@@ -55,7 +55,7 @@ public class NoSignScreen extends Module {
    private static final int PLACE_MEMORY_TICKS = 40;
 
    public NoSignScreen() {
-      super(VenomousAddon.CATEGORY, "v-no-sign-screen", "Skips the sign edit screen when placing signs, leaving them blank.");
+      super(VenomousAddon.CATEGORY, "no-sign-screen", "Skips the sign edit screen when placing signs, leaving them blank.");
    }
 
    public void onActivate() {

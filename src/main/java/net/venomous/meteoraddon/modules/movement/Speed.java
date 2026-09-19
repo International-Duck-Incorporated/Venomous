@@ -37,7 +37,7 @@ public class Speed extends Module {
    private int ticksSinceBoat = 999;
 
    public Speed() {
-      super(VenomousAddon.CATEGORY, "v-speed", "Speed with bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC/Themis.");
+      super(VenomousAddon.CATEGORY, "speed", "Speed with bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC/Themis.");
    }
 
    public void onActivate() {

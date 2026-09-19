@@ -34,7 +34,7 @@ public class Teams extends Module {
       );
 
    public Teams() {
-      super(VenomousAddon.CATEGORY, "v-teams", "Prevents attacking teammates by checking teams, name color, or prefix.");
+      super(VenomousAddon.CATEGORY, "teams", "Prevents attacking teammates by checking teams, name color, or prefix.");
    }
 
    public boolean isTeammate(Player player) {

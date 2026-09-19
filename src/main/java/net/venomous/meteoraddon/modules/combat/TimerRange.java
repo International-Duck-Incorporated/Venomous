@@ -111,7 +111,7 @@ public class TimerRange extends Module {
    private double lastSetTimer = 1.0;
 
    public TimerRange() {
-      super(VenomousAddon.CATEGORY, "v-timer-range", "Adjusts timer speed based on distance to enemies.");
+      super(VenomousAddon.CATEGORY, "timer-range", "Adjusts timer speed based on distance to enemies.");
    }
 
    public void onActivate() {

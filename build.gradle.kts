@@ -12,6 +12,7 @@ base {
 }
 
 repositories {
+    mavenCentral()
     maven {
         name = "meteor-maven"
         url = uri("https://maven.meteordev.org/releases")
@@ -24,11 +25,11 @@ repositories {
 }
 
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     minecraft(libs.minecraft)
     implementation(libs.fabric.loader)
     implementation(libs.meteor.client)
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 java {
@@ -45,6 +46,7 @@ tasks {
     test {
         useJUnitPlatform()
     }
+
     processResources {
         val propertyMap = mapOf(
             "version" to project.version,

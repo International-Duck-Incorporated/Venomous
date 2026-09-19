@@ -59,7 +59,7 @@ public class TrueSight extends Module {
       );
 
    public TrueSight() {
-      super(VenomousAddon.CATEGORY, "v-true-sight", "Highlights invisible entities visible to the client.");
+      super(VenomousAddon.CATEGORY, "true-sight", "Highlights invisible entities visible to the client.");
    }
 
    @EventHandler

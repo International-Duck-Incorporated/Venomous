@@ -41,9 +41,7 @@ public class GlobalNetworkInterceptor extends Module {
    private boolean bypassing;
 
    public GlobalNetworkInterceptor() {
-      super(
-         VenomousAddon.CATEGORY,
-         "v-network-optimizer",
+      super(VenomousAddon.CATEGORY, "network-optimizer",
          "Ensures outgoing packets are compliant with server-side checks by smoothing movements and snapping rotations."
       );
       this.sgKinematics = this.settings.createGroup("Movement Smoothing");

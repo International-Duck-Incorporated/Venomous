@@ -24,4 +24,3 @@ Thumbs.db
 
 # Keep Gradle wrapper JAR
 !gradle/wrapper/gradle-wrapper.jar
-logs/

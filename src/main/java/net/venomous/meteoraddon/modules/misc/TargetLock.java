@@ -37,7 +37,7 @@ public class TargetLock extends Module {
    private long lockTime = 0L;
 
    public TargetLock() {
-      super(VenomousAddon.CATEGORY, "v-targetlock", "Locks onto a target player when attacking.");
+      super(VenomousAddon.CATEGORY, "targetlock", "Locks onto a target player when attacking.");
    }
 
    public void onActivate() {

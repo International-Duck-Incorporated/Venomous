@@ -21,7 +21,7 @@ public class SnapTap extends Module {
    private long lastBackPressTime = 0L;
 
    public SnapTap() {
-      super(VenomousAddon.CATEGORY, "v-snap-tap", "Prioritize the last pressed movement key (SOCD).");
+      super(VenomousAddon.CATEGORY, "snap-tap", "Prioritize the last pressed movement key (SOCD).");
    }
 
    @EventHandler

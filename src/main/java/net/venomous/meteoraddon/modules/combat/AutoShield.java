@@ -79,7 +79,7 @@ public class AutoShield extends Module {
    private boolean previousUseDown;
 
    public AutoShield() {
-      super(VenomousAddon.CATEGORY, "v-auto-shield", "Raises a shield when threats are detected or predicted.");
+      super(VenomousAddon.CATEGORY, "auto-shield", "Raises a shield when threats are detected or predicted.");
    }
 
    public void onDeactivate() {

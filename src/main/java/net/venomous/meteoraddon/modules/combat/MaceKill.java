@@ -39,7 +39,6 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
-import net.venomous.meteoraddon.utils.McCompat;
 
 public class MaceKill extends Module {
    private final SettingGroup sgGeneral = this.settings.createGroup("General");
@@ -199,7 +198,7 @@ public class MaceKill extends Module {
    };
 
    public MaceKill() {
-      super(VenomousAddon.CATEGORY, "v-mace-kill", "Velocity-launches you above a target, then slams down with the mace.");
+      super(VenomousAddon.CATEGORY, "mace-kill", "Velocity-launches you above a target, then slams down with the mace.");
    }
 
    public void onActivate() {
@@ -489,7 +488,7 @@ public class MaceKill extends Module {
          return false;
       } else if (entity == this.mc.player) {
          return false;
-      } else if (entity instanceof Player player && (((Boolean)this.ignoreFriends.get() && Friends.get().isFriend(player)) || McCompat.isTeammate(player))) {
+      } else if (entity instanceof Player player && (Boolean)this.ignoreFriends.get() && Friends.get().isFriend(player)) {
          return false;
       } else {
          EntityType<?> type = entity.getType();
@@ -526,7 +525,7 @@ public class MaceKill extends Module {
    }
 
    private boolean isAbovePathValid(Vec3 abovePos, Entity target) {
-      if (this.mc.level != null && abovePos != null && target != null && this.mc.player != null) {
+      if (this.mc.level != null && abovePos != null) {
          Vec3 targetCenter = target.getBoundingBox().getCenter();
          if (this.isUnsafe(abovePos)) {
             return false;

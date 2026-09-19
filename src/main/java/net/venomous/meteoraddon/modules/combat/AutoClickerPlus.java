@@ -121,7 +121,7 @@ public class AutoClickerPlus extends Module {
    private int timingIndex = 0;
 
    public AutoClickerPlus() {
-      super(VenomousAddon.CATEGORY, "v-auto-clicker-plus", "Auto-clicker with Vulcan-aware randomization and humanlike patterns.");
+      super(VenomousAddon.CATEGORY, "auto-clicker-plus", "Auto-clicker with Vulcan-aware randomization and humanlike patterns.");
    }
 
    public void onActivate() {

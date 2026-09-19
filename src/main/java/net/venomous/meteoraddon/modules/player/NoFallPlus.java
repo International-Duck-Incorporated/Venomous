@@ -77,7 +77,7 @@ public class NoFallPlus extends Module {
    private int ticksFalling = 0;
 
    public NoFallPlus() {
-      super(VenomousAddon.CATEGORY, "v-no-fall-plus", "NoFall bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC.");
+      super(VenomousAddon.CATEGORY, "no-fall-plus", "NoFall bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC.");
    }
 
    public void onDeactivate() {
@@ -131,7 +131,6 @@ public class NoFallPlus extends Module {
                      }
                   }
                }
-               break;
             case SpoofGround:
             default:
                break;

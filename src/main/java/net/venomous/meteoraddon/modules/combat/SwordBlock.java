@@ -21,7 +21,7 @@ public class SwordBlock extends Module {
       );
 
    public SwordBlock() {
-      super(VenomousAddon.CATEGORY, "v-sword-block", "Block with swords using an offhand shield (1.8-style blocking).");
+      super(VenomousAddon.CATEGORY, "sword-block", "Block with swords using an offhand shield (1.8-style blocking).");
    }
 
    private boolean isHoldingSword() {

@@ -22,7 +22,7 @@ public class ProphuntESP extends Module {
       .add(((Builder)((Builder)new Builder().name("line-color")).description("Box line color.")).defaultValue(new SettingColor(255, 0, 0, 220)).build());
 
    public ProphuntESP() {
-      super(VenomousAddon.CATEGORY, "v-prophunt-esp", "Highlights invisible mobs commonly used as prophunt fake blocks.");
+      super(VenomousAddon.CATEGORY, "prophunt-esp", "Highlights invisible mobs commonly used as prophunt fake blocks.");
    }
 
    @EventHandler

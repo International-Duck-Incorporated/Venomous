@@ -34,7 +34,7 @@ public class AntiStaff extends Module {
    private final Set<String> alerted = new HashSet<>();
 
    public AntiStaff() {
-      super(VenomousAddon.CATEGORY, "v-anti-staff", "Warns when configured staff names appear in player info packets.");
+      super(VenomousAddon.CATEGORY, "anti-staff", "Warns when configured staff names appear in player info packets.");
    }
 
    public void onActivate() {

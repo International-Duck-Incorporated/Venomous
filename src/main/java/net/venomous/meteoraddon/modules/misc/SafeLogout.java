@@ -63,7 +63,7 @@ public class SafeLogout extends Module {
    private boolean disconnecting;
 
    public SafeLogout() {
-      super(VenomousAddon.CATEGORY, "v-safe-logout", "Disconnects when health, nearby players, armor, totems or void danger become unsafe.");
+      super(VenomousAddon.CATEGORY, "safe-logout", "Disconnects when health, nearby players, armor, totems or void danger become unsafe.");
    }
 
    public void onActivate() {

@@ -37,7 +37,7 @@ public class TickBase extends Module {
    private boolean shouldBurst = false;
 
    public TickBase() {
-      super(VenomousAddon.CATEGORY, "v-tickbase", "Delays movement ticks to burst them during attacks for a timing advantage.");
+      super(VenomousAddon.CATEGORY, "tickbase", "Delays movement ticks to burst them during attacks for a timing advantage.");
    }
 
    public void onActivate() {

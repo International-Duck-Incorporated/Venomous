@@ -51,7 +51,7 @@ public class Derp extends Module {
    private float spinYaw = 0.0F;
 
    public Derp() {
-      super(VenomousAddon.CATEGORY, "v-derp", "Makes it look like you're derping around.");
+      super(VenomousAddon.CATEGORY, "derp", "Makes it look like you're derping around.");
    }
 
    @EventHandler

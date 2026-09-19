@@ -40,7 +40,7 @@ public class LagNotifier extends Module {
    private boolean lagging = false;
 
    public LagNotifier() {
-      super(VenomousAddon.CATEGORY, "v-lag-notifier", "Estimates server TPS from time-packet intervals and alerts when the server lags.");
+      super(VenomousAddon.CATEGORY, "lag-notifier", "Estimates server TPS from time-packet intervals and alerts when the server lags.");
    }
 
    public void onDeactivate() {

@@ -42,7 +42,7 @@ public class AntiVoid extends Module {
    private double safeZ;
 
    public AntiVoid() {
-      super(VenomousAddon.CATEGORY, "v-anti-void", "Prevents falling into the void.");
+      super(VenomousAddon.CATEGORY, "anti-void", "Prevents falling into the void.");
    }
 
    public void onActivate() {

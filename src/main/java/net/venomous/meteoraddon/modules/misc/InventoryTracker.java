@@ -25,7 +25,7 @@ public class InventoryTracker extends Module {
    private final Map<UUID, Map<Integer, ItemStack>> trackedInventories = new HashMap<>();
 
    public InventoryTracker() {
-      super(VenomousAddon.CATEGORY, "v-inventorytracker", "Tracks items in nearby players' inventories via container packets.");
+      super(VenomousAddon.CATEGORY, "inventorytracker", "Tracks items in nearby players' inventories via container packets.");
    }
 
    public void onActivate() {

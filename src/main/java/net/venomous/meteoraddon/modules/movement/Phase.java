@@ -48,7 +48,7 @@ public class Phase extends Module {
    private boolean flushing;
 
    public Phase() {
-      super(VenomousAddon.CATEGORY, "v-phase", "Phases through blocks using Normal, Blink, or Clip modes.");
+      super(VenomousAddon.CATEGORY, "phase", "Phases through blocks using Normal, Blink, or Clip modes.");
    }
 
    public void onDeactivate() {

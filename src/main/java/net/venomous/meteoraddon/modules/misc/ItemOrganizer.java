@@ -206,9 +206,7 @@ public class ItemOrganizer extends Module {
    });
 
    public ItemOrganizer() {
-      super(
-         VenomousAddon.CATEGORY,
-         "v-item-organizer",
+      super(VenomousAddon.CATEGORY, "item-organizer",
          "Sorts inventories/containers, and can deposit your inventory into category chests - both can use Baritone."
       );
       String[] var1 = new String[]{"Iron Tools", "Building Blocks", "Wood", "Category 4", "Category 5", "Category 6", "Category 7", "Category 8"};

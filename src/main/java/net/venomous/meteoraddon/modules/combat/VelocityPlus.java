@@ -177,7 +177,7 @@ public class VelocityPlus extends Module {
    private boolean receivedVulcanVelocity = false;
 
    public VelocityPlus() {
-      super(VenomousAddon.CATEGORY, "v-impact", "Velocity bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC.");
+      super(VenomousAddon.CATEGORY, "impact", "Velocity bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC.");
    }
 
    private boolean isGrimMode() {

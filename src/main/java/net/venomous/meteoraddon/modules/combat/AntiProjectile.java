@@ -42,7 +42,7 @@ public class AntiProjectile extends Module {
    private int walkTimer;
 
    public AntiProjectile() {
-      super(VenomousAddon.CATEGORY, "v-anti-projectile", "Detects incoming projectiles and dodges them.");
+      super(VenomousAddon.CATEGORY, "anti-projectile", "Detects incoming projectiles and dodges them.");
    }
 
    public void onDeactivate() {

@@ -50,7 +50,7 @@ public class Fly extends Module {
    private double startY = 0.0;
 
    public Fly() {
-      super(VenomousAddon.CATEGORY, "v-fly", "Flight with bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC.");
+      super(VenomousAddon.CATEGORY, "fly", "Flight with bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC.");
    }
 
    public void onActivate() {

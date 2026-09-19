@@ -19,7 +19,7 @@ public class AntiBlind extends Module {
       .add(((Builder)((Builder)((Builder)new Builder().name("block-darkness")).description("Block darkness effect.")).defaultValue(true)).build());
 
    public AntiBlind() {
-      super(VenomousAddon.CATEGORY, "v-anti-blind", "Blocks annoying screen effects like blindness, nausea, etc.");
+      super(VenomousAddon.CATEGORY, "anti-blind", "Blocks annoying screen effects like blindness, nausea, etc.");
    }
 
    @EventHandler

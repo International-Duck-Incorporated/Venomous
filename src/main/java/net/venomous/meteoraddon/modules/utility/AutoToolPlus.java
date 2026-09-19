@@ -59,7 +59,7 @@ public class AutoToolPlus extends Module {
    private int previousSlot = -1;
 
    public AutoToolPlus() {
-      super(VenomousAddon.CATEGORY, "v-auto-tool-plus", "Fast auto-tool with durability safety, enchant preference and weapon fallback.");
+      super(VenomousAddon.CATEGORY, "auto-tool-plus", "Fast auto-tool with durability safety, enchant preference and weapon fallback.");
    }
 
    public void onDeactivate() {

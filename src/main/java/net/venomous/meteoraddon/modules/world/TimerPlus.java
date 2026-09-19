@@ -76,7 +76,7 @@ public class TimerPlus extends Module {
    private boolean boosting;
 
    public TimerPlus() {
-      super(VenomousAddon.CATEGORY, "v-timer-plus", "Pulse/custom timer override using Meteor's built-in Timer module safely.");
+      super(VenomousAddon.CATEGORY, "timer-plus", "Pulse/custom timer override using Meteor's built-in Timer module safely.");
    }
 
    public void onActivate() {

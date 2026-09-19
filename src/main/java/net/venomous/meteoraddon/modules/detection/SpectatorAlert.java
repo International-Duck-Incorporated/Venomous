@@ -36,7 +36,7 @@ public class SpectatorAlert extends Module {
    private int timer;
 
    public SpectatorAlert() {
-      super(VenomousAddon.CATEGORY, "v-spectator-alert", "Alerts when spectator players are nearby.");
+      super(VenomousAddon.CATEGORY, "spectator-alert", "Alerts when spectator players are nearby.");
    }
 
    public void onActivate() {

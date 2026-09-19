@@ -50,7 +50,7 @@ public class SuperKnockback extends Module {
    private int ticksSinceLastHit = 0;
 
    public SuperKnockback() {
-      super(VenomousAddon.CATEGORY, "v-super-kb", "Increases the knockback dealt to other entities.");
+      super(VenomousAddon.CATEGORY, "super-kb", "Increases the knockback dealt to other entities.");
    }
 
    @EventHandler

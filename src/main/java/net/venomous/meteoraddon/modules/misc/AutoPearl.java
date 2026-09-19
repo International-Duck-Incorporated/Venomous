@@ -27,7 +27,7 @@ public class AutoPearl extends Module {
       );
 
    public AutoPearl() {
-      super(VenomousAddon.CATEGORY, "v-autopearl", "Auto-throw ender pearls when health is low.");
+      super(VenomousAddon.CATEGORY, "autopearl", "Auto-throw ender pearls when health is low.");
    }
 
    @EventHandler

@@ -78,7 +78,7 @@ public class TpAura extends Module {
    private int tickCounter = 0;
 
    public TpAura() {
-      super(VenomousAddon.CATEGORY, "v-phantom", "TP-aura for weak ACs (Oxa/Negativity/LAC). Does NOT work on Grim/Vulcan!");
+      super(VenomousAddon.CATEGORY, "phantom", "TP-aura for weak ACs (Oxa/Negativity/LAC). Does NOT work on Grim/Vulcan!");
    }
 
    public void onActivate() {
@@ -87,7 +87,7 @@ public class TpAura extends Module {
 
    @EventHandler
    private void onTick(Pre event) {
-      if (this.mc.player != null && this.mc.level != null && this.mc.player.connection != null) {
+      if (this.mc.player != null && this.mc.level != null) {
          this.tickCounter++;
          int effectiveDelay = this.mode.get() == TpAura.Mode.WeakAC ? (Integer)this.weakACInterval.get() : (Integer)this.delay.get();
          if (this.tickCounter >= effectiveDelay) {

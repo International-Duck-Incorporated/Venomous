@@ -106,7 +106,7 @@ public class CriticalsPlus extends Module {
    private boolean hasAttackedThisJump = false;
 
    public CriticalsPlus() {
-      super(VenomousAddon.CATEGORY, "v-lethality", "Criticals bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC.");
+      super(VenomousAddon.CATEGORY, "lethality", "Criticals bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC.");
    }
 
    public void onActivate() {
@@ -118,7 +118,7 @@ public class CriticalsPlus extends Module {
 
    @EventHandler
    private void onPacketSend(Send event) {
-      if (this.mc.player != null && this.mc.player.connection != null) {
+      if (this.mc.player != null) {
          Packet<?> packet = event.packet;
          if (packet instanceof ServerboundInteractPacket) {
             long now = System.currentTimeMillis();

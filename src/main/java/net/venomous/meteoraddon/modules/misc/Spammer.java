@@ -42,6 +42,6 @@ public class Spammer extends Module {
    }
 
    public Spammer() {
-      super(VenomousAddon.CATEGORY, "v-spammer", "Spam chat with messages.");
+      super(VenomousAddon.CATEGORY, "spammer", "Spam chat with messages.");
    }
 }

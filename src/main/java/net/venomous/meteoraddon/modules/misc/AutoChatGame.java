@@ -73,7 +73,7 @@ public class AutoChatGame extends Module {
    private int varWindowTicks = 0;
 
    public AutoChatGame() {
-      super(VenomousAddon.CATEGORY, "v-autochatgame", "Auto-solve ChatGames 1.2.1 (math, unreverse, random, variable).");
+      super(VenomousAddon.CATEGORY, "autochatgame", "Auto-solve ChatGames 1.2.1 (math, unreverse, random, variable).");
    }
 
    public void onActivate() {

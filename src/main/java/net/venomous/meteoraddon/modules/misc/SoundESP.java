@@ -78,7 +78,7 @@ public class SoundESP extends Module {
    private final List<Integer> timers = new ArrayList<>();
 
    public SoundESP() {
-      super(VenomousAddon.CATEGORY, "v-sound-esp", "Renders ESP boxes at the origin of nearby sound events.");
+      super(VenomousAddon.CATEGORY, "sound-esp", "Renders ESP boxes at the origin of nearby sound events.");
    }
 
    public void onDeactivate() {

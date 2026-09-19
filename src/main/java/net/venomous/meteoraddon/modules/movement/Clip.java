@@ -112,7 +112,7 @@ public class Clip extends Module {
    private Timer timer;
 
    public Clip() {
-      super(VenomousAddon.CATEGORY, "v-clip", "Combined HClip, VClip, NoClip and VulcanClip movement module.");
+      super(VenomousAddon.CATEGORY, "clip", "Combined HClip, VClip, NoClip and VulcanClip movement module.");
    }
 
    public void onActivate() {

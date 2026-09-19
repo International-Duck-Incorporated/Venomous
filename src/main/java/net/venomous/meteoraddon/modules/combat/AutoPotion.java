@@ -109,7 +109,7 @@ public class AutoPotion extends Module {
    private int cooldown;
 
    public AutoPotion() {
-      super(VenomousAddon.CATEGORY, "v-auto-potion", "Smart splash potion helper for healing and prebuffs.");
+      super(VenomousAddon.CATEGORY, "auto-potion", "Smart splash potion helper for healing and prebuffs.");
    }
 
    public void onDeactivate() {

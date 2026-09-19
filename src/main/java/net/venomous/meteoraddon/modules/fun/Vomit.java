@@ -17,7 +17,7 @@ public class Vomit extends Module {
    private int tickCounter = 0;
 
    public Vomit() {
-      super(VenomousAddon.CATEGORY, "v-vomit", "Drops everything from your inventory, hotbar, armor, and offhand.");
+      super(VenomousAddon.CATEGORY, "vomit", "Drops everything from your inventory, hotbar, armor, and offhand.");
    }
 
    @EventHandler

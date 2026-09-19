@@ -62,7 +62,7 @@ public class PearlTools extends Module {
    private final Set<Integer> warned = new HashSet<>();
 
    public PearlTools() {
-      super(VenomousAddon.CATEGORY, "v-pearl-tools", "Tracks ender pearls, predicts landing spots and warns about dangerous pearls.");
+      super(VenomousAddon.CATEGORY, "pearl-tools", "Tracks ender pearls, predicts landing spots and warns about dangerous pearls.");
    }
 
    public void onDeactivate() {

@@ -56,7 +56,7 @@ public class ArmorWarning extends Module {
    private int timer;
 
    public ArmorWarning() {
-      super(VenomousAddon.CATEGORY, "v-armor-warning", "Warns about low armor, elytra durability and low totem count.");
+      super(VenomousAddon.CATEGORY, "armor-warning", "Warns about low armor, elytra durability and low totem count.");
    }
 
    @EventHandler

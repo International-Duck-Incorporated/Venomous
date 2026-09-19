@@ -39,7 +39,7 @@ public class CrystalPvP extends Module {
    private long resumeTime = 0L;
 
    public CrystalPvP() {
-      super(VenomousAddon.CATEGORY, "v-crystal-pvp", "Automatically places and breaks end crystals quickly.");
+      super(VenomousAddon.CATEGORY, "crystal-pvp", "Automatically places and breaks end crystals quickly.");
       this.activateKey = this.sgGeneral
          .add(
             ((Builder)((Builder)((Builder)new Builder().name("activate-key")).description("Mouse button that triggers the macro (-1 = always active)."))

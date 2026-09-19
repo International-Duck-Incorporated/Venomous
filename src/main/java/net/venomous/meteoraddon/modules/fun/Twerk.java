@@ -14,7 +14,7 @@ public class Twerk extends Module {
       .add(((Builder)((Builder)((Builder)new Builder().name("delay")).description("Sneak toggle speed.")).defaultValue(2)).min(1).max(20).build());
 
    public Twerk() {
-      super(VenomousAddon.CATEGORY, "v-twerk", "Automatically sneaks and unsneaks.");
+      super(VenomousAddon.CATEGORY, "twerk", "Automatically sneaks and unsneaks.");
    }
 
    @EventHandler
