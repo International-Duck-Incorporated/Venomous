@@ -220,8 +220,13 @@ public class ServerAnalyzer {
    }
 
    private String getServerIp() {
-      ServerData entry = MeteorClient.mc.getCurrentServer();
-      return entry == null ? null : entry.ip;
+      try {
+         if (MeteorClient.mc != null && MeteorClient.mc.getCurrentServer() != null) {
+            return MeteorClient.mc.getCurrentServer().ip;
+         }
+      } catch (Throwable ignored) {
+      }
+      return null;
    }
 
    private boolean inRange(int v, int min, int max) {

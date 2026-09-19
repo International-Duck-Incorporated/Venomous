@@ -39,6 +39,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.McCompat;
 
 public class MaceKill extends Module {
    private final SettingGroup sgGeneral = this.settings.createGroup("General");
@@ -488,7 +489,7 @@ public class MaceKill extends Module {
          return false;
       } else if (entity == this.mc.player) {
          return false;
-      } else if (entity instanceof Player player && (Boolean)this.ignoreFriends.get() && Friends.get().isFriend(player)) {
+      } else if (entity instanceof Player player && (((Boolean)this.ignoreFriends.get() && Friends.get().isFriend(player)) || McCompat.isTeammate(player))) {
          return false;
       } else {
          EntityType<?> type = entity.getType();

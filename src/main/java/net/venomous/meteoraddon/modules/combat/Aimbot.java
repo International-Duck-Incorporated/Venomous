@@ -22,6 +22,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.McCompat;
 
 public class Aimbot extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -106,7 +107,7 @@ public class Aimbot extends Module {
          } else if (!(Boolean)this.ignoreWalls.get() && !PlayerUtils.canSeeEntity(entity)) {
             return false;
          } else {
-            return !((Set)this.entities.get()).contains(entity.getType()) ? false : !(entity instanceof Player) || Friends.get().shouldAttack((Player)entity);
+            return !((Set)this.entities.get()).contains(entity.getType()) ? false : !(entity instanceof Player) || (Friends.get().shouldAttack((Player)entity) && !McCompat.isTeammate(entity));
          }
       }, SortPriority.LowestDistance);
       if (this.target != null) {

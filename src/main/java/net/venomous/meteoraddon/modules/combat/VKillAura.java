@@ -16,6 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
 import net.minecraft.world.item.ItemStack;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.McCompat;
 
 public class VKillAura extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -261,7 +262,7 @@ public class VKillAura extends Module {
             && entity.isAlive()
             && !(
                entity instanceof Player p
-                  ? p.isSpectator() || !Friends.get().shouldAttack(p) || !(Boolean)this.players.get()
+                  ? p.isSpectator() || !Friends.get().shouldAttack(p) || McCompat.isTeammate(p) || !(Boolean)this.players.get()
                   : !(entity instanceof LivingEntity) || (entity instanceof Animal ? !(Boolean)this.animals.get() : !(Boolean)this.mobs.get())
             )) {
             double dist = this.mc.player.distanceToSqr(entity);

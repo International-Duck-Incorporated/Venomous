@@ -6,7 +6,12 @@
   "client": [
     "ClientIntentionPacketAccessor",
     "ServerboundMovePlayerPacketAccessor",
-    "NoPitchLimitMixin"
+    "NoPitchLimitMixin",
+    "MinecraftMixin",
+    "ScreenMixin",
+    "GameRendererMixin",
+    "HudMixin",
+    "NetherPortalBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1

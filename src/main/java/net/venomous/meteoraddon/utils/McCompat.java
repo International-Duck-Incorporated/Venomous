@@ -2,8 +2,12 @@ package net.venomous.meteoraddon.utils;
 
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import meteordevelopment.meteorclient.systems.modules.Modules;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.venomous.meteoraddon.modules.misc.Teams;
 
 public final class McCompat {
    private McCompat() {
@@ -31,6 +35,14 @@ public final class McCompat {
 
    public static boolean isWeapon(Item item) {
       return isSword(item) || isAxe(item) || item == Items.MACE;
+   }
+
+   public static boolean isTeammate(Entity entity) {
+      if (!(entity instanceof Player player)) {
+         return false;
+      }
+      Teams teams = (Teams)Modules.get().get(Teams.class);
+      return teams != null && teams.isTeammate(player);
    }
 
    public static <T> Stream<T> stream(Iterable<T> iterable) {
