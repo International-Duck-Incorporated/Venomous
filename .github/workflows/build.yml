@@ -33,7 +33,7 @@ jobs:
         run: gradle build --no-daemon
 
       - name: Upload JAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Venomous-${{ github.sha }}
           path: build/libs/*.jar
