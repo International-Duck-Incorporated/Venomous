@@ -41,8 +41,13 @@ public final class McCompat {
       if (!(entity instanceof Player player)) {
          return false;
       }
-      Teams teams = (Teams)Modules.get().get(Teams.class);
-      return teams != null && teams.isTeammate(player);
+      Modules modules = Modules.get();
+      if (modules == null) {
+         return false;
+      }
+
+      Teams teams = modules.get(Teams.class);
+      return teams != null && teams.isActive() && teams.isTeammate(player);
    }
 
    public static <T> Stream<T> stream(Iterable<T> iterable) {

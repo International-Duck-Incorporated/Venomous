@@ -111,11 +111,13 @@ public class GlobalNetworkInterceptor extends Module {
 
    public void onActivate() {
       super.onActivate();
+      this.resetState();
       this.info("Network Optimizer active. Preventing movement and rotation flags.", new Object[0]);
    }
 
    public void onDeactivate() {
       this.flushQueue();
+      this.resetState();
    }
 
    @EventHandler
@@ -124,10 +126,12 @@ public class GlobalNetworkInterceptor extends Module {
          this.movementSentThisTick = false;
          if (!this.tickQueue.isEmpty() && (Boolean)this.enforceTickOrder.get()) {
             Packet<?> packet = this.tickQueue.poll();
+            this.movementSentThisTick = true;
             this.sendBypassed(packet);
          }
       } else {
-         this.tickQueue.clear();
+         // Do not smooth a new connection against coordinates from the old one.
+         this.resetState();
       }
    }
 
@@ -177,11 +181,14 @@ public class GlobalNetworkInterceptor extends Module {
                double d11 = d4 / n3;
                double d12 = d5 / n3;
                double d13 = d6 / n3;
+               double startX = this.lastSentX;
+               double startY = this.lastSentY;
+               double startZ = this.lastSentZ;
 
                for (int i = 1; i < n3; i++) {
-                  double d14 = this.lastSentX + d11 * i;
-                  double d15 = this.lastSentY + d12 * i;
-                  double d16 = this.lastSentZ + d13 * i;
+                  double d14 = startX + d11 * i;
+                  double d15 = startY + d12 * i;
+                  double d16 = startZ + d13 * i;
                   Object object = bl4 && i == n3 - 1 ? new PosRot(d14, d15, d16, f, f2, bl, bl2) : new Pos(d14, d15, d16, bl, bl2);
                   this.enqueueOrSend((Packet<?>)object);
                   this.lastSentX = d14;
@@ -244,25 +251,44 @@ public class GlobalNetworkInterceptor extends Module {
    }
 
    private void flushQueue() {
-      if (this.mc.getConnection() == null) {
+      var connection = this.mc.getConnection();
+      if (connection == null) {
          this.tickQueue.clear();
-      } else {
-         this.bypassing = true;
+         return;
+      }
 
+      this.bypassing = true;
+      try {
          while (!this.tickQueue.isEmpty()) {
-            this.mc.getConnection().send(this.tickQueue.poll());
+            connection.send(this.tickQueue.poll());
          }
-
+      } finally {
          this.bypassing = false;
       }
    }
 
    private void sendBypassed(Packet<?> packet) {
-      if (this.mc.getConnection() != null) {
-         this.bypassing = true;
-         this.mc.getConnection().send(packet);
+      var connection = this.mc.getConnection();
+      if (connection == null) return;
+
+      this.bypassing = true;
+      try {
+         connection.send(packet);
+      } finally {
          this.bypassing = false;
       }
+   }
+
+   private void resetState() {
+      this.tickQueue.clear();
+      this.hasLastPosition = false;
+      this.movementSentThisTick = false;
+      this.bypassing = false;
+      this.lastSentX = 0.0;
+      this.lastSentY = 0.0;
+      this.lastSentZ = 0.0;
+      this.lastSentYaw = 0.0F;
+      this.lastSentPitch = 0.0F;
    }
 
    private float computeSensitivityFactor() {
@@ -296,7 +322,10 @@ public class GlobalNetworkInterceptor extends Module {
    }
 
    private boolean isAssertDominanceActive() {
-      Module module = Modules.get().get(AssertDominance.class);
+      Modules modules = Modules.get();
+      if (modules == null) return false;
+
+      Module module = modules.get(AssertDominance.class);
       return module != null && module.isActive();
    }
 

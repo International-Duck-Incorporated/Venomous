@@ -1,5 +1,7 @@
 package net.venomous.meteoraddon.modules.detection;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -7,17 +9,19 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import meteordevelopment.meteorclient.events.render.Render3DEvent;
+import java.util.concurrent.TimeUnit;
+import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
+import meteordevelopment.meteorclient.utils.render.MeteorToast;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -27,7 +31,7 @@ public class VPlayerDetection extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final SettingGroup sgWhitelist = this.settings.createGroup("Whitelist");
    private final SettingGroup sgWebhook = this.settings.createGroup("Webhook");
-   private static final Set<String> PERMANENT_WHITELIST = Set.of("FreeCamera");
+   private static final Set<String> PERMANENT_WHITELIST = Set.of("freecamera");
    private final Setting<Boolean> notifications;
    private final Setting<List<String>> userWhitelist;
    private final Setting<List<Module>> modulesToToggle;
@@ -44,7 +48,7 @@ public class VPlayerDetection extends Module {
    public VPlayerDetection() {
       super(VenomousAddon.CATEGORY, "v-player-detection", "Detects when players are in the world and reacts.");
       this.notifications = this.sgGeneral
-         .add(((Builder)((Builder)((Builder)new Builder().name("notifications")).description("Show chat feedback.")).defaultValue(true)).build());
+         .add(((Builder)((Builder)((Builder)new Builder().name("notifications")).description("Show player detection notifications.")).defaultValue(true)).build());
       this.userWhitelist = this.sgWhitelist
          .add(
             ((meteordevelopment.meteorclient.settings.StringListSetting.Builder)((meteordevelopment.meteorclient.settings.StringListSetting.Builder)((meteordevelopment.meteorclient.settings.StringListSetting.Builder)new meteordevelopment.meteorclient.settings.StringListSetting.Builder()
@@ -122,34 +126,48 @@ public class VPlayerDetection extends Module {
    }
 
    @EventHandler
-   private void onRender3D(Render3DEvent event) {
-      if (this.mc.player != null && this.mc.level != null) {
-         HashSet<String> currentPlayers = new HashSet<>();
-         String currentPlayerName = this.mc.player.getGameProfile().name();
-         HashSet<String> fullWhitelist = new HashSet<>(PERMANENT_WHITELIST);
-         fullWhitelist.addAll((Collection<? extends String>)this.userWhitelist.get());
+   private void onTick(Post event) {
+      if (this.mc.player == null || this.mc.level == null) {
+         this.detectedPlayers.clear();
+         return;
+      }
 
-         for (Player player : this.mc.level.players()) {
-            String playerName = player.getGameProfile().name();
-            if (player != this.mc.player && !playerName.equals(currentPlayerName) && !fullWhitelist.contains(playerName)) {
-               currentPlayers.add(playerName);
-            }
-         }
+      Set<String> currentPlayers = new HashSet<>();
+      String currentPlayerName = this.mc.player.getGameProfile().name();
+      Set<String> fullWhitelist = new HashSet<>(PERMANENT_WHITELIST);
+      for (String name : this.userWhitelist.get()) {
+         fullWhitelist.add(name.toLowerCase(Locale.ROOT));
+      }
 
-         if (!currentPlayers.isEmpty() && !currentPlayers.equals(this.detectedPlayers)) {
-            this.detectedPlayers.clear();
-            this.detectedPlayers.addAll(currentPlayers);
-            this.handlePlayerDetection(currentPlayers);
-         } else if (currentPlayers.isEmpty()) {
-            this.detectedPlayers.clear();
+      for (Player player : this.mc.level.players()) {
+         String playerName = player.getGameProfile().name();
+         if (player != this.mc.player
+            && !playerName.equalsIgnoreCase(currentPlayerName)
+            && !fullWhitelist.contains(playerName.toLowerCase(Locale.ROOT))) {
+            currentPlayers.add(playerName);
          }
+      }
+
+      if (!currentPlayers.isEmpty() && !currentPlayers.equals(this.detectedPlayers)) {
+         this.detectedPlayers.clear();
+         this.detectedPlayers.addAll(currentPlayers);
+         this.handlePlayerDetection(Set.copyOf(currentPlayers));
+      } else if (currentPlayers.isEmpty()) {
+         this.detectedPlayers.clear();
       }
    }
 
    private void handlePlayerDetection(Set<String> players) {
       String playerList = String.join(", ", players);
       if ((Boolean)this.notifications.get()) {
-         this.info("Player(s) detected: (highlight)%s", new Object[]{playerList});
+         switch (this.notificationMode.get()) {
+            case Chat -> this.info("Player(s) detected: (highlight)%s", new Object[]{playerList});
+            case Toast -> this.showDetectionToast(playerList);
+            case Both -> {
+               this.info("Player(s) detected: (highlight)%s", new Object[]{playerList});
+               this.showDetectionToast(playerList);
+            }
+         }
       }
 
       ChatUtils.sendPlayerMsg("#stop");
@@ -170,51 +188,79 @@ public class VPlayerDetection extends Module {
       }
 
       if ((Boolean)this.enableDisconnect.get()) {
-         CompletableFuture.runAsync(() -> {
-            try {
-               Thread.sleep(500L);
-               this.disconnectFromServer(playerList);
-            } catch (InterruptedException e) {
-               Thread.currentThread().interrupt();
-            }
-         });
+         CompletableFuture.delayedExecutor(500L, TimeUnit.MILLISECONDS).execute(
+            () -> this.mc.execute(() -> this.disconnectFromServer(playerList))
+         );
       }
    }
 
-   private void sendWebhookNotification(Set<String> players) {
-      String url = ((String)this.webhookUrl.get()).trim();
-      if (!url.isEmpty()) {
-         CompletableFuture.runAsync(
-            () -> {
-               try {
-                  String playerList = String.join(", ", players);
-                  String serverInfo = this.mc.getConnection() != null ? this.mc.getConnection().serverBrand() : "Unknown Server";
-                  String messageContent = "";
-                  if ((Boolean)this.selfPing.get() && !((String)this.discordId.get()).trim().isEmpty()) {
-                     messageContent = String.format("<@%s>", ((String)this.discordId.get()).trim());
-                  }
+   private void showDetectionToast(String playerList) {
+      MeteorToast toast = new MeteorToast.Builder("Player Detection")
+         .text(playerList)
+         .build();
+      this.mc.gui.toastManager().addToast(toast);
+   }
 
-                  String jsonPayload = String.format(
-                     "{\"content\":\"%s\",\"embeds\":[{\"title\":\"Player Detection Alert\",\"description\":\"Player(s) detected on server!\",\"color\":15158332,\"fields\":[{\"name\":\"Players\",\"value\":\"%s\",\"inline\":false},{\"name\":\"Server\",\"value\":\"%s\",\"inline\":true},{\"name\":\"Time\",\"value\":\"<t:%d:R>\",\"inline\":true}],\"footer\":{\"text\":\"Sent by Venomous\"}}]}",
-                     messageContent.replace("\"", "\\\""),
-                     playerList.replace("\"", "\\\""),
-                     serverInfo.replace("\"", "\\\""),
-                     System.currentTimeMillis() / 1000L
-                  );
-                  HttpRequest request = HttpRequest.newBuilder()
-                     .uri(URI.create(url))
-                     .header("Content-Type", "application/json")
-                     .POST(BodyPublishers.ofString(jsonPayload))
-                     .timeout(Duration.ofSeconds(30L))
-                     .build();
-                  this.httpClient.send(request, BodyHandlers.ofString());
-               } catch (Exception e) {
-                  if ((Boolean)this.notifications.get()) {
-                     this.error("Failed to send webhook: " + e.getMessage(), new Object[0]);
-                  }
-               }
+   private void sendWebhookNotification(Set<String> players) {
+      String url = this.webhookUrl.get().trim();
+      if (url.isEmpty()) return;
+
+      String playerList = String.join(", ", players);
+      String serverInfo = this.mc.getConnection() != null ? this.mc.getConnection().serverBrand() : "Unknown Server";
+      String discordUserId = this.discordId.get().trim();
+
+      JsonObject payload = new JsonObject();
+      payload.addProperty("content", (Boolean)this.selfPing.get() && !discordUserId.isEmpty() ? "<@" + discordUserId + ">" : "");
+
+      JsonObject embed = new JsonObject();
+      embed.addProperty("title", "Player Detection Alert");
+      embed.addProperty("description", "Player(s) detected on server!");
+      embed.addProperty("color", 15158332);
+
+      JsonArray fields = new JsonArray();
+      fields.add(webhookField("Players", playerList, false));
+      fields.add(webhookField("Server", serverInfo, true));
+      fields.add(webhookField("Time", "<t:" + System.currentTimeMillis() / 1000L + ":R>", true));
+      embed.add("fields", fields);
+
+      JsonObject footer = new JsonObject();
+      footer.addProperty("text", "Sent by Venomous");
+      embed.add("footer", footer);
+
+      JsonArray embeds = new JsonArray();
+      embeds.add(embed);
+      payload.add("embeds", embeds);
+
+      try {
+         HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", "application/json")
+            .POST(BodyPublishers.ofString(payload.toString()))
+            .timeout(Duration.ofSeconds(30L))
+            .build();
+         this.httpClient.sendAsync(request, BodyHandlers.ofString()).whenComplete((response, error) -> {
+            if (error != null) {
+               this.reportWebhookError(error.getMessage());
+            } else if (response.statusCode() < 200 || response.statusCode() >= 300) {
+               this.reportWebhookError("HTTP " + response.statusCode());
             }
-         );
+         });
+      } catch (IllegalArgumentException e) {
+         this.reportWebhookError("invalid webhook URL");
+      }
+   }
+
+   private static JsonObject webhookField(String name, String value, boolean inline) {
+      JsonObject field = new JsonObject();
+      field.addProperty("name", name);
+      field.addProperty("value", value);
+      field.addProperty("inline", inline);
+      return field;
+   }
+
+   private void reportWebhookError(String message) {
+      if ((Boolean)this.notifications.get()) {
+         this.mc.execute(() -> this.error("Failed to send webhook: " + message, new Object[0]));
       }
    }
 

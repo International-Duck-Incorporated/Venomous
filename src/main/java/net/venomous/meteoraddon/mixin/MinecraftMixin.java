@@ -12,7 +12,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MinecraftMixin {
     @Inject(method = "showOnlyReducedInfo", at = @At("HEAD"), cancellable = true)
     private void venomous$showOnlyReducedInfo(CallbackInfoReturnable<Boolean> cir) {
-        if (Modules.get().isActive(AntiReducedDebugInfo.class)) {
+        // Minecraft calls this while its constructor is still running, before Meteor
+        // has created the module system. Preserve vanilla behavior until it exists.
+        Modules modules = Modules.get();
+        if (modules != null && modules.isActive(AntiReducedDebugInfo.class)) {
             cir.setReturnValue(false);
         }
     }

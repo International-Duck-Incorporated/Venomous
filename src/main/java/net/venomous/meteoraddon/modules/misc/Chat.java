@@ -9,7 +9,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.orbit.EventHandler;
@@ -203,18 +202,6 @@ public class Chat extends Module {
             ChatUtils.sendPlayerMsg(var4);
          }
       }
-   }
-
-   @EventHandler
-   private void onTick(Post var1) {
-   }
-
-   public void onActivate() {
-      System.out.println("Chat bypass module activated.");
-   }
-
-   public void onDeactivate() {
-      System.out.println("Chat bypass module deactivated.");
    }
 
    enum Mode {

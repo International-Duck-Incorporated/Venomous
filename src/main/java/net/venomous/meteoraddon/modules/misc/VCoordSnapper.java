@@ -4,7 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -51,8 +52,7 @@ public class VCoordSnapper extends Module {
    public void onActivate() {
       try {
          if (this.mc.player == null) {
-            this.error("Player is null!", new Object[0]);
-            this.toggle();
+            this.error("Cannot copy coordinates before joining a world.", new Object[0]);
             return;
          }
 
@@ -66,7 +66,7 @@ public class VCoordSnapper extends Module {
             this.info("Copied coordinates: " + coords, new Object[0]);
          }
 
-         if ((Boolean)this.webhook.get() && !((String)this.webhookUrl.get()).isEmpty()) {
+         if ((Boolean)this.webhook.get() && !this.webhookUrl.get().trim().isEmpty()) {
             this.sendWebhook(x, y, z);
          }
       } catch (Exception e) {
@@ -78,21 +78,23 @@ public class VCoordSnapper extends Module {
    }
 
    private void sendWebhook(int x, int y, int z) {
-      new Thread(() -> {
+      String url = this.webhookUrl.get().trim();
+      String discordUserId = this.discordId.get().trim();
+      boolean pingUser = (Boolean)this.selfPing.get() && !discordUserId.isEmpty();
+
+      Thread thread = new Thread(() -> {
+         HttpURLConnection connection = null;
          try {
-            URL url = new URL((String)this.webhookUrl.get());
-            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+            connection = (HttpURLConnection)URI.create(url).toURL().openConnection();
+            connection.setConnectTimeout(10_000);
+            connection.setReadTimeout(30_000);
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setDoOutput(true);
             JsonObject json = new JsonObject();
             json.addProperty("username", "Venomous Webhook");
-            String messageContent = "";
-            if ((Boolean)this.selfPing.get() && !((String)this.discordId.get()).trim().isEmpty()) {
-               messageContent = String.format("<@%s>", ((String)this.discordId.get()).trim());
-            }
+            json.addProperty("content", pingUser ? "<@" + discordUserId + ">" : "");
 
-            json.addProperty("content", messageContent);
             JsonObject embed = new JsonObject();
             embed.addProperty("title", "Coordsnapper Coords");
             embed.addProperty("description", String.format("Coords: X: %d, Y: %d, Z: %d", x, y, z));
@@ -106,14 +108,20 @@ public class VCoordSnapper extends Module {
             json.add("embeds", embeds);
 
             try (OutputStream os = connection.getOutputStream()) {
-               byte[] input = json.toString().getBytes("utf-8");
-               os.write(input, 0, input.length);
+               os.write(json.toString().getBytes(StandardCharsets.UTF_8));
             }
 
-            connection.getInputStream().close();
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+               throw new IllegalStateException("HTTP " + status);
+            }
          } catch (Exception e) {
-            this.error("Webhook failed: " + e.getMessage(), new Object[0]);
+            this.mc.execute(() -> this.error("Webhook failed: " + e.getMessage(), new Object[0]));
+         } finally {
+            if (connection != null) connection.disconnect();
          }
-      }).start();
+      }, "Venomous CoordSnapper Webhook");
+      thread.setDaemon(true);
+      thread.start();
    }
 }

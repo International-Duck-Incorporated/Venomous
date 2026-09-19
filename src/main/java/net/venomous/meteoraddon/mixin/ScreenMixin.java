@@ -12,7 +12,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class ScreenMixin {
     @Inject(method = "isAllowedInPortal", at = @At("HEAD"), cancellable = true)
     private void venomous$isAllowedInPortal(CallbackInfoReturnable<Boolean> cir) {
-        if (Modules.get().isActive(PortalMenu.class)) {
+        Modules modules = Modules.get();
+        if (modules != null && modules.isActive(PortalMenu.class)) {
             cir.setReturnValue(true);
         }
     }

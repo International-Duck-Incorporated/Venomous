@@ -18,7 +18,8 @@ public abstract class NoPitchLimitMixin {
    @Inject(method = "setXRot", at = @At("HEAD"), cancellable = true)
    private void venomous$setXRotWithoutLimit(float xRot, CallbackInfo ci) {
       Minecraft mc = Minecraft.getInstance();
-      if (mc != null && mc.player != null && ((Entity)(Object)this) == mc.player && Modules.get().isActive(NoPitchLimit.class)) {
+      Modules modules = Modules.get();
+      if (mc != null && mc.player != null && ((Entity)(Object)this) == mc.player && modules != null && modules.isActive(NoPitchLimit.class)) {
          this.xRot = xRot;
          ci.cancel();
       }

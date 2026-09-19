@@ -14,7 +14,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class HudMixin {
     @Inject(method = "extractScoreboardSidebar", at = @At("HEAD"), cancellable = true)
     private void venomous$extractScoreboardSidebar(GuiGraphicsExtractor extractor, DeltaTracker tracker, CallbackInfo ci) {
-        if (Modules.get().isActive(VHideScoreboard.class)) {
+        Modules modules = Modules.get();
+        if (modules != null && modules.isActive(VHideScoreboard.class)) {
             ci.cancel();
         }
     }

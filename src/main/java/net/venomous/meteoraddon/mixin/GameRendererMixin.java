@@ -14,7 +14,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class GameRendererMixin {
     @Inject(method = "bobView", at = @At("TAIL"))
     private void venomous$onBobView(CameraRenderState cameraRenderState, PoseStack poseStack, CallbackInfo ci) {
-        DankBobbing dank = Modules.get().get(DankBobbing.class);
+        Modules modules = Modules.get();
+        if (modules == null) return;
+
+        DankBobbing dank = modules.get(DankBobbing.class);
         if (dank != null && dank.isActive()) {
             float factor = (float) dank.getMotion();
             poseStack.scale(factor, factor, factor);
