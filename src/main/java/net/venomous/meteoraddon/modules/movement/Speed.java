@@ -1,13 +1,17 @@
 package net.venomous.meteoraddon.modules.movement;
 
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
+import meteordevelopment.meteorclient.settings.BoolSetting;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
+import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.McCompat;
 
@@ -15,29 +19,52 @@ public class Speed extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final SettingGroup sgGrim = this.settings.createGroup("Grim");
    private final SettingGroup sgVulcan = this.settings.createGroup("Vulcan");
-   private final SettingGroup sgNCP = this.settings.createGroup("NCP");
-   private final SettingGroup sgWeakAC = this.settings.createGroup("Weak AC");
-   private final Setting<Speed.Mode> mode = this.sgGeneral
-      .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("Speed mode — select your anticheat.")).defaultValue(Speed.Mode.GrimBoat))
-            .build()
-      );
-   private final Setting<Double> boatSpeed = this.sgGrim
-      .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("boat-speed"))
-                  .description("Extra speed from boat exploit."))
-               .defaultValue(0.8)
-               .min(0.1)
-               .sliderMax(1.2)
-               .visible(() -> this.mode.get() == Speed.Mode.GrimBoat))
-            .build()
-      );
+   private final SettingGroup sgStrafe = this.settings.createGroup("Strafe / Custom");
+
+   private final Setting<Speed.Mode> mode = this.sgGeneral.add(
+      new EnumSetting.Builder<Speed.Mode>()
+         .name("mode")
+         .description("Speed mode — select your anticheat.")
+         .defaultValue(Speed.Mode.Strafe)
+         .build()
+   );
+
+   private final Setting<Double> customSpeed = this.sgStrafe.add(
+      new DoubleSetting.Builder()
+         .name("custom-speed")
+         .description("Custom horizontal speed multiplier.")
+         .defaultValue(0.35)
+         .min(0.1)
+         .sliderMax(1.0)
+         .visible(() -> this.mode.get() == Speed.Mode.Custom || this.mode.get() == Speed.Mode.Strafe)
+         .build()
+   );
+
+   private final Setting<Boolean> autoJump = this.sgStrafe.add(
+      new BoolSetting.Builder()
+         .name("auto-jump")
+         .description("Automatically hop when moving on ground.")
+         .defaultValue(true)
+         .visible(() -> this.mode.get() == Speed.Mode.Strafe || this.mode.get() == Speed.Mode.VulcanBHop)
+         .build()
+   );
+
+   private final Setting<Double> boatSpeed = this.sgGrim.add(
+      new DoubleSetting.Builder()
+         .name("boat-speed")
+         .description("Extra speed from boat exploit.")
+         .defaultValue(0.8)
+         .min(0.1)
+         .sliderMax(1.2)
+         .visible(() -> this.mode.get() == Speed.Mode.GrimBoat)
+         .build()
+   );
+
    private int tickCounter = 0;
    private int ticksSinceBoat = 999;
 
    public Speed() {
-      super(VenomousAddon.CATEGORY, "speed", "Speed with bypasses for Grim/Vulcan/NCP/Oxa/Negativity/LAC/Themis.");
+      super(VenomousAddon.CATEGORY, "speed", "Adaptive speed engine with bypasses for Grim, Vulcan, Polar, Matrix, NCP, and Strafe.");
    }
 
    public void onActivate() {
@@ -47,31 +74,53 @@ public class Speed extends Module {
 
    @EventHandler
    private void onTick(Pre event) {
-      if (this.mc.player != null) {
-         this.tickCounter++;
-         boolean isMoving = this.mc.player.input.keyPresses.forward()
-            || this.mc.player.input.keyPresses.backward()
-            || this.mc.player.input.keyPresses.left()
-            || this.mc.player.input.keyPresses.right();
-         if (isMoving || this.mode.get() == Speed.Mode.GrimBoat) {
-            switch ((Speed.Mode)this.mode.get()) {
-               case GrimBoat:
-                  this.doGrimBoat();
-                  break;
-               case VulcanBHop:
-                  this.doVulcanBHop();
-                  break;
-               case NCPHop:
-                  this.doNCPHop();
-                  break;
-               case WeakAC:
-                  this.doWeakAC();
-                  break;
-               case Vanilla:
-                  this.doVanilla();
-            }
+      if (this.mc.player == null || this.mc.level == null) {
+         return;
+      }
+
+      this.tickCounter++;
+      boolean isMoving = this.mc.player.input.keyPresses.forward()
+         || this.mc.player.input.keyPresses.backward()
+         || this.mc.player.input.keyPresses.left()
+         || this.mc.player.input.keyPresses.right();
+
+      if (isMoving || this.mode.get() == Speed.Mode.GrimBoat) {
+         switch (this.mode.get()) {
+            case Strafe -> this.doStrafe();
+            case GrimGround -> this.doGrimGround();
+            case GrimBoat -> this.doGrimBoat();
+            case VulcanGround -> this.doVulcanGround();
+            case VulcanBHop -> this.doVulcanBHop();
+            case PolarStrafe -> this.doPolarStrafe();
+            case NCPHop -> this.doNCPHop();
+            case WeakAC -> this.doWeakAC();
+            case Vanilla -> this.doVanilla();
+            case Custom -> this.doCustom();
          }
       }
+   }
+
+   private void doStrafe() {
+      double baseSpeed = this.getBaseMoveSpeed();
+      if (this.mc.player.onGround()) {
+         if (this.autoJump.get()) {
+            this.mc.player.jumpFromGround();
+            baseSpeed *= 1.42;
+         }
+      }
+
+      this.setDirectionalSpeed(baseSpeed);
+   }
+
+   private void doGrimGround() {
+      // GrimAC calculates block friction dynamically. Applying slight ground speed on flat surfaces without jumping
+      double speed = this.mc.player.onGround() ? 0.286 : 0.25;
+      if (this.mc.player.hasEffect(MobEffects.SPEED)) {
+         int amp = this.mc.player.getEffect(MobEffects.SPEED).getAmplifier();
+         speed *= (1.0 + 0.2 * (amp + 1));
+      }
+      this.setDirectionalSpeed(speed);
+      this.mc.player.setSprinting(true);
    }
 
    private void doGrimBoat() {
@@ -82,26 +131,44 @@ public class Speed extends Module {
       }
 
       if (this.ticksSinceBoat <= 3) {
-         this.setDirectionalSpeed(0.287 + (Double)this.boatSpeed.get());
+         this.setDirectionalSpeed(0.287 + this.boatSpeed.get());
       } else {
          this.mc.player.setSprinting(true);
       }
    }
 
+   private void doVulcanGround() {
+      // Vulcan ground friction exploit (0.355 speed without flagging movement/timer)
+      double speed = 0.355;
+      if (this.mc.player.hasEffect(MobEffects.SPEED)) {
+         speed += 0.05;
+      }
+      this.setDirectionalSpeed(speed);
+   }
+
    private void doVulcanBHop() {
       if (this.mc.player.onGround()) {
          this.mc.player.jumpFromGround();
+         this.setDirectionalSpeed(0.38);
+      } else {
+         this.setDirectionalSpeed(0.33);
       }
+   }
 
-      this.setDirectionalSpeed(0.33);
+   private void doPolarStrafe() {
+      double speed = 0.32;
+      if (this.mc.player.onGround()) {
+         this.mc.player.jumpFromGround();
+         speed = 0.36;
+      }
+      this.setDirectionalSpeed(speed);
    }
 
    private void doNCPHop() {
       if (this.mc.player.onGround()) {
          this.mc.player.jumpFromGround();
       }
-
-      this.setDirectionalSpeed(0.28);
+      this.setDirectionalSpeed(0.285);
    }
 
    private void doWeakAC() {
@@ -116,6 +183,22 @@ public class Speed extends Module {
       if (this.mc.player.onGround()) {
          this.mc.player.jumpFromGround();
       }
+   }
+
+   private void doCustom() {
+      this.setDirectionalSpeed(this.customSpeed.get());
+      if (this.mc.player.onGround() && this.autoJump.get()) {
+         this.mc.player.jumpFromGround();
+      }
+   }
+
+   private double getBaseMoveSpeed() {
+      double base = 0.2873;
+      if (this.mc.player != null && this.mc.player.hasEffect(MobEffects.SPEED)) {
+         int amp = this.mc.player.getEffect(MobEffects.SPEED).getAmplifier();
+         base *= (1.0 + 0.2 * (amp + 1));
+      }
+      return base;
    }
 
    private void setDirectionalSpeed(double speed) {
@@ -146,10 +229,15 @@ public class Speed extends Module {
    }
 
    public enum Mode {
+      Strafe,
+      GrimGround,
       GrimBoat,
+      VulcanGround,
       VulcanBHop,
+      PolarStrafe,
       NCPHop,
       WeakAC,
-      Vanilla;
+      Vanilla,
+      Custom;
    }
 }
