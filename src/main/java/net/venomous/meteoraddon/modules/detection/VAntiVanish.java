@@ -3,121 +3,165 @@ package net.venomous.meteoraddon.modules.detection;
 import com.mojang.brigadier.suggestion.Suggestion;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
-import java.util.Map.Entry;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
 import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.settings.BoolSetting;
+import meteordevelopment.meteorclient.settings.EnumSetting;
+import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
+import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
-import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 import net.minecraft.world.level.GameType;
 import net.venomous.meteoraddon.VenomousAddon;
 
 public class VAntiVanish extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final Setting<Integer> interval = this.sgGeneral
-      .add(
-         ((Builder)((Builder)((Builder)new Builder().name("interval")).description("Vanish check interval in ticks.")).defaultValue(100))
-            .min(20)
-            .sliderMax(300)
-            .build()
-      );
-   private final Setting<VAntiVanish.Mode> mode = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                     .name("mode"))
-                  .description("Detection method."))
-               .defaultValue(VAntiVanish.Mode.LeaveMessage))
-            .build()
-      );
-   private final Setting<String> command = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)new meteordevelopment.meteorclient.settings.StringSetting.Builder()
-                        .name("command"))
-                     .description("Command completion prefix used to detect names."))
-                  .defaultValue("minecraft:msg"))
-               .visible(() -> this.mode.get() == VAntiVanish.Mode.RealJoinMessage))
-            .build()
-      );
-   private final Setting<Boolean> detectSpectators = this.sgGeneral
-      .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("detect-spectators"))
-                  .description("Try to detect spectators using tab list and packet analysis."))
-               .defaultValue(true))
-            .build()
-      );
+
+   private final Setting<VAntiVanish.Mode> mode = this.sgGeneral.add(
+      new EnumSetting.Builder<VAntiVanish.Mode>()
+         .name("mode")
+         .description("Vanish detection method.")
+         .defaultValue(VAntiVanish.Mode.MsgAutocomplete)
+         .build()
+   );
+
+   private final Setting<Integer> interval = this.sgGeneral.add(
+      new IntSetting.Builder()
+         .name("interval")
+         .description("Vanish check interval in ticks.")
+         .defaultValue(60)
+         .min(10)
+         .sliderMax(200)
+         .build()
+   );
+
+   private final Setting<String> command = this.sgGeneral.add(
+      new StringSetting.Builder()
+         .name("command")
+         .description("Command prefix for autocomplete scanning.")
+         .defaultValue("/msg")
+         .visible(() -> this.mode.get() == VAntiVanish.Mode.MsgAutocomplete || this.mode.get() == VAntiVanish.Mode.RealJoinMessage)
+         .build()
+   );
+
+   private final Setting<Boolean> detectSpectators = this.sgGeneral.add(
+      new BoolSetting.Builder()
+         .name("detect-spectators")
+         .description("Detect spectators updating in the player info packet.")
+         .defaultValue(true)
+         .build()
+   );
+
    private Map<UUID, String> playerCache = new HashMap<>();
    private final List<String> messageCache = new ArrayList<>();
    private final Random random = new Random();
-   private final List<Integer> completionIds = new ArrayList<>();
+   private final Set<Integer> pendingCompletionIds = new HashSet<>();
    private List<String> completionPlayerCache = new ArrayList<>();
+   private final Set<String> knownVanished = new HashSet<>();
    private int timer;
 
    public VAntiVanish() {
-      super(VenomousAddon.CATEGORY, "v-anti-vanish", "Notifies when players disappear without a normal leave message or are in spectator.");
+      super(VenomousAddon.CATEGORY, "v-anti-vanish", "Detects vanished staff via /msg autocomplete and tablist cross-referencing.");
    }
 
+   @Override
    public void onActivate() {
       this.timer = 0;
-      this.completionIds.clear();
+      this.pendingCompletionIds.clear();
       this.messageCache.clear();
       this.completionPlayerCache = new ArrayList<>();
+      this.knownVanished.clear();
       if (this.mc.getConnection() != null) {
-         this.playerCache = this.mc.getConnection().getOnlinePlayers().stream().collect(Collectors.toMap(e -> e.getProfile().id(), e -> e.getProfile().name()));
+         this.playerCache = this.mc.getConnection().getOnlinePlayers().stream()
+            .collect(Collectors.toMap(e -> e.getProfile().id(), e -> e.getProfile().name(), (a, b) -> a));
       }
    }
 
+   @Override
    public void onDeactivate() {
-      this.completionIds.clear();
+      this.pendingCompletionIds.clear();
       this.messageCache.clear();
       this.completionPlayerCache.clear();
       this.playerCache.clear();
+      this.knownVanished.clear();
    }
 
    @EventHandler
    private void onPacket(Receive event) {
-      if (this.mode.get() == VAntiVanish.Mode.RealJoinMessage
-         && event.packet instanceof ClientboundCommandSuggestionsPacket packet2
-         && this.completionIds.contains(packet2.id())) {
-         List<String> lastUsernames = this.completionPlayerCache.stream().toList();
-         this.completionPlayerCache = packet2.toSuggestions().getList().stream().<String>map(Suggestion::getText).toList();
-         this.completionIds.remove(packet2.id());
+      if (event.packet instanceof ClientboundCommandSuggestionsPacket packet && this.pendingCompletionIds.remove(packet.id())) {
+         List<String> suggestions = packet.toSuggestions().getList().stream()
+            .map(Suggestion::getText)
+            .filter(this::validName)
+            .toList();
+
+         if (this.mode.get() == VAntiVanish.Mode.MsgAutocomplete) {
+            this.handleMsgAutocompleteVanish(suggestions);
+         } else if (this.mode.get() == VAntiVanish.Mode.RealJoinMessage) {
+            this.handleJoinVanish(suggestions);
+         }
          event.cancel();
-         if (!lastUsernames.isEmpty()) {
-            Predicate<String> changed = name -> lastUsernames.contains(name) != this.completionPlayerCache.contains(name);
+      }
 
-            for (String name2 : this.completionPlayerCache) {
-               if (this.validName(name2) && changed.test(name2)) {
-                  this.info("Player joined: %s", new Object[]{name2});
-               }
-            }
-
-            for (String name2 : lastUsernames) {
-               if (this.validName(name2) && changed.test(name2)) {
-                  this.info("Player left: %s", new Object[]{name2});
-               }
+      if (this.detectSpectators.get() && event.packet instanceof ClientboundPlayerInfoUpdatePacket packet) {
+         for (net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry entry : packet.entries()) {
+            if (packet.actions().contains(Action.UPDATE_GAME_MODE) && entry.gameMode() == GameType.SPECTATOR) {
+               String name = entry.profile() != null ? entry.profile().name() : "Unknown";
+               this.warning("Spectator detected in tab list: %s", name);
             }
          }
       }
+   }
 
-      if ((Boolean)this.detectSpectators.get() && event.packet instanceof ClientboundPlayerInfoUpdatePacket packet) {
-         for (net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry entry : packet.entries()) {
-            if (packet.actions().contains(Action.UPDATE_GAME_MODE) && entry.gameMode() == GameType.SPECTATOR) {
-               this.warning("Spectator detected in tab list: " + (entry.profile() != null ? entry.profile().name() : "Unknown"), new Object[0]);
+   private void handleMsgAutocompleteVanish(List<String> suggestions) {
+      if (this.mc.getConnection() == null) {
+         return;
+      }
+
+      Set<String> tablistNames = this.mc.getConnection().getOnlinePlayers().stream()
+         .map(p -> p.getProfile().name().toLowerCase(Locale.ROOT))
+         .collect(Collectors.toSet());
+
+      for (String suggestedName : suggestions) {
+         String lower = suggestedName.toLowerCase(Locale.ROOT);
+         if (!tablistNames.contains(lower)) {
+            if (this.knownVanished.add(lower)) {
+               this.warning("Vanished player detected via /msg autocomplete: %s", suggestedName);
+            }
+         } else {
+            this.knownVanished.remove(lower);
+         }
+      }
+   }
+
+   private void handleJoinVanish(List<String> suggestions) {
+      List<String> lastUsernames = List.copyOf(this.completionPlayerCache);
+      this.completionPlayerCache = suggestions;
+
+      if (!lastUsernames.isEmpty()) {
+         for (String name : this.completionPlayerCache) {
+            if (!lastUsernames.contains(name)) {
+               this.info("Player appeared in autocomplete: %s", name);
+            }
+         }
+         for (String name : lastUsernames) {
+            if (!this.completionPlayerCache.contains(name)) {
+               this.info("Player disappeared from autocomplete: %s", name);
             }
          }
       }
@@ -133,41 +177,59 @@ public class VAntiVanish extends Module {
 
    @EventHandler
    private void onTick(Post event) {
-      if (this.mc.player != null && this.mc.getConnection() != null && ++this.timer >= (Integer)this.interval.get()) {
+      if (this.mc.player == null || this.mc.getConnection() == null) {
+         return;
+      }
+
+      if (++this.timer >= this.interval.get()) {
          this.timer = 0;
+
          if (this.mode.get() == VAntiVanish.Mode.LeaveMessage) {
             Map<UUID, String> oldPlayers = Map.copyOf(this.playerCache);
-            this.playerCache = this.mc
-               .getConnection()
-               .getOnlinePlayers()
-               .stream()
-               .collect(Collectors.toMap(e -> e.getProfile().id(), e -> e.getProfile().name()));
+            this.playerCache = this.mc.getConnection().getOnlinePlayers().stream()
+               .collect(Collectors.toMap(e -> e.getProfile().id(), e -> e.getProfile().name(), (a, b) -> a));
 
-            for (Entry<UUID, String> entry : oldPlayers.entrySet()) {
-               String name;
+            for (Map.Entry<UUID, String> entry : oldPlayers.entrySet()) {
+               String name = entry.getValue();
                if (!this.playerCache.containsKey(entry.getKey())
-                  && this.validName(name = entry.getValue())
+                  && this.validName(name)
                   && this.messageCache.stream().noneMatch(s -> s.contains(name))) {
-                  this.warning("%s may have vanished.", new Object[]{name});
+                  this.warning("%s may have vanished (no leave message).", name);
                }
             }
+            this.messageCache.clear();
          } else {
-            int id = this.random.nextInt(10000);
-            this.completionIds.add(id);
-            this.mc.getConnection().send(new ServerboundCommandSuggestionPacket(id, (String)this.command.get() + " "));
+            int id = this.random.nextInt(10000) + 1;
+            this.pendingCompletionIds.add(id);
+            String cmd = this.command.get().trim();
+            if (!cmd.endsWith(" ")) {
+               cmd += " ";
+            }
+            this.mc.getConnection().send(new ServerboundCommandSuggestionPacket(id, cmd));
          }
-
-         this.messageCache.clear();
       }
    }
 
    private boolean validName(String name) {
-      return this.mc.player != null && Objects.equals(name, this.mc.player.getName().getString())
-         ? false
-         : !name.contains(" ") && name.length() >= 3 && name.length() <= 16;
+      if (name == null || name.isEmpty() || name.contains(" ") || name.length() < 3 || name.length() > 16) {
+         return false;
+      }
+      if (this.mc.player != null && Objects.equals(name, this.mc.player.getName().getString())) {
+         return false;
+      }
+      return true;
+   }
+
+   @Override
+   public String getInfoString() {
+      if (this.mode.get() == VAntiVanish.Mode.MsgAutocomplete && !this.knownVanished.isEmpty()) {
+         return this.knownVanished.size() + " Vanished";
+      }
+      return this.mode.get().name();
    }
 
    public enum Mode {
+      MsgAutocomplete,
       LeaveMessage,
       RealJoinMessage;
    }
