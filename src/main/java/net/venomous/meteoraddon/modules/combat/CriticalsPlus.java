@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ServerboundInteractPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.venomous.meteoraddon.VenomousAddon;
 
@@ -247,8 +248,15 @@ public class CriticalsPlus extends Module {
    }
 
    private void checkSlimeProximity() {
-      if (this.mc.level != null) {
-         BlockState var1 = this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ()));
+      if (this.mc.level != null && this.mc.player != null) {
+         BlockPos pos = BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ());
+         BlockState state = this.mc.level.getBlockState(pos);
+
+         if (state.is(Blocks.SLIME_BLOCK)) {
+            this.waitingForCrit = false;
+            this.hasAttackedThisJump = false;
+            this.fallTicks = 0;
+         }
       }
    }
 

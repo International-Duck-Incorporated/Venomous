@@ -130,7 +130,11 @@ public class AutoClickerPlus extends Module {
    }
 
    private void generateClickTimings() {
-      int avgCps = ((Integer)this.minCps.get() + (Integer)this.maxCps.get()) / 2;
+      int configuredMin = (Integer)this.minCps.get();
+      int configuredMax = (Integer)this.maxCps.get();
+      int minCps = Math.min(configuredMin, configuredMax);
+      int maxCps = Math.max(configuredMin, configuredMax);
+      int avgCps = (minCps + maxCps) / 2;
       if ((Boolean)this.vulcanSpeedRandomization.get()) {
          avgCps = Math.max(9, Math.min(12, avgCps));
       }
@@ -142,7 +146,7 @@ public class AutoClickerPlus extends Module {
             double baseInterval = 20.0 / avgCps;
 
             for (int i = 0; i < samples; i++) {
-               double variation = (this.random.nextDouble() - 0.5) * 2.0 * ((Integer)this.maxCps.get() - (Integer)this.minCps.get()) / avgCps;
+               double variation = (this.random.nextDouble() - 0.5) * 2.0 * (maxCps - minCps) / avgCps;
                this.clickTimings[i] = Math.max(1.0, baseInterval + variation);
             }
             break;
@@ -200,8 +204,7 @@ public class AutoClickerPlus extends Module {
             break;
          case Spamming:
             for (int i = 0; i < samples; i++) {
-               double cps = ((Integer)this.minCps.get()).intValue()
-                  + this.random.nextDouble() * ((Integer)this.maxCps.get() - (Integer)this.minCps.get()) * 2.0;
+               double cps = minCps + this.random.nextDouble() * (maxCps - minCps) * 2.0;
                this.clickTimings[i] = Math.max(1.0, 20.0 / Math.max(1.0, cps) + this.random.nextGaussian() * 0.3);
             }
       }

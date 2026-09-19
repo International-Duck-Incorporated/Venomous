@@ -118,7 +118,7 @@ public class AutoPotion extends Module {
 
    @EventHandler
    private void onTick(Pre event) {
-      if (this.mc.player != null && this.mc.gameMode != null && this.cooldown-- <= 0) {
+      if (this.mc.player != null && this.mc.level != null && this.mc.gameMode != null && this.cooldown-- <= 0) {
          Holder<MobEffect> desired = this.desiredEffect();
          if (desired != null) {
             this.throwPotion(desired);

@@ -230,7 +230,7 @@ public class VKillAura extends Module {
 
       double interval = switch ((VKillAura.Technique)this.technique.get()) {
          case Stabilized -> base + var;
-         case Butterfly -> this.random.nextBoolean() ? 20.0 / (avg + 2) : 20.0 / (avg - 2);
+         case Butterfly -> this.random.nextBoolean() ? 20.0 / Math.max(1, avg + 2) : 20.0 / Math.max(1, avg - 2);
          case NormalDistribution -> base + this.random.nextGaussian() * base * 0.25;
          case Efficient -> base;
          case Switch -> base + (this.random.nextDouble() - 0.5) * 2.0;

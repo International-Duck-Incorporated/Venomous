@@ -1,4 +1,4 @@
-﻿name: Build Venomous
+name: Build Venomous
 
 on:
   push:
@@ -37,29 +37,11 @@ jobs:
       - name: Build JAR
         run: gradle build --no-daemon
 
-      - name: Prepare release JAR
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          VERSION="$(grep '^mod-version' gradle/libs.versions.toml | sed -E 's/.*"([^"]+)".*/\1/')"
-          JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-dev.jar' | head -n 1)"
-
-          if [[ -z "$JAR" ]]; then
-            echo "No release JAR found in build/libs"
-            exit 1
-          fi
-
-          mkdir -p release
-          cp "$JAR" "release/Venomous-${VERSION}.jar"
-
-          echo "Prepared release/Venomous-${VERSION}.jar"
-
-      - name: Upload JAR artifact
+      - name: Upload JAR
         uses: actions/upload-artifact@v7
         with:
           name: Venomous-${{ github.sha }}
-          path: release/Venomous-*.jar
+          path: build/libs/*.jar
           if-no-files-found: error
           retention-days: 30
 
@@ -74,7 +56,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Download release JAR
+      - name: Download JAR
         uses: actions/download-artifact@v7
         with:
           name: Venomous-${{ github.sha }}
@@ -87,11 +69,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          JAR="$(find release -maxdepth 1 -type f -name '*.jar' | head -n 1)"
-          DATE="$(date -u +'%Y.%m.%d')"
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-          NIGHTLY_JAR="release/Venomous-nightly-${DATE}+${SHORT_SHA}.jar"
+          JAR="$(find release -maxdepth 1 -type f -name "*.jar" | head -n 1)"
+          if [[ -z "$JAR" ]]; then
+            echo "No JAR found."
+            exit 1
+          fi
 
+          BASE="$(basename "$JAR" .jar)"
+          VERSION="${BASE#venomous-}"
+          DATE="$(date -u +%Y.%m.%d)"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          NIGHTLY_JAR="release/Venomous-${VERSION}-nightly-${DATE}+${SHORT_SHA}.jar"
           mv "$JAR" "$NIGHTLY_JAR"
 
           git config user.name "github-actions[bot]"
@@ -104,13 +92,10 @@ jobs:
           fi
 
           gh release create nightly "$NIGHTLY_JAR" \
-            --title "Venomous Nightly" \
+            --title "Venomous Nightly (${VERSION})" \
             --prerelease \
             --target "$GITHUB_SHA" \
-            --notes "Automated nightly build from main.
-
-          Commit: ${GITHUB_SHA}
-          Build date: ${DATE} UTC"
+            --notes "Automated nightly build from main. Commit: ${GITHUB_SHA}. Build date: ${DATE} UTC."
 
   publish-stable:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
@@ -123,7 +108,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Download release JAR
+      - name: Download JAR
         uses: actions/download-artifact@v7
         with:
           name: Venomous-${{ github.sha }}
@@ -136,25 +121,21 @@ jobs:
         run: |
           set -euo pipefail
 
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PROJECT_VERSION="$(grep '^mod-version' gradle/libs.versions.toml | sed -E 's/.*"([^"]+)".*/\1/')"
-          JAR="release/Venomous-${TAG_VERSION}.jar"
-
-          if [[ "$TAG_VERSION" != "$PROJECT_VERSION" ]]; then
-            echo "Tag version $TAG_VERSION does not match project version $PROJECT_VERSION."
+          VERSION="${GITHUB_REF_NAME#v}"
+          JAR="$(find release -maxdepth 1 -type f -name "*.jar" | head -n 1)"
+          if [[ -z "$JAR" ]]; then
+            echo "No JAR found."
             exit 1
           fi
 
-          if [[ ! -f "$JAR" ]]; then
-            echo "Expected $JAR but it was not produced."
-            exit 1
-          fi
+          STABLE_JAR="release/Venomous-${VERSION}.jar"
+          mv "$JAR" "$STABLE_JAR"
 
           if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            gh release upload "${GITHUB_REF_NAME}" "$JAR" --clobber
+            gh release upload "${GITHUB_REF_NAME}" "$STABLE_JAR" --clobber
           else
-            gh release create "${GITHUB_REF_NAME}" "$JAR" \
-              --title "Venomous ${TAG_VERSION}" \
+            gh release create "${GITHUB_REF_NAME}" "$STABLE_JAR" \
+              --title "Venomous ${VERSION}" \
               --generate-notes
           fi
 

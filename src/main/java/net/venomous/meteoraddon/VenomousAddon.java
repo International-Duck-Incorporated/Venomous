@@ -9,7 +9,7 @@ import net.venomous.meteoraddon.modules.ModuleRegistry;
 import org.slf4j.Logger;
 
 public class VenomousAddon extends MeteorAddon {
-    public static final String VERSION = "6.2.6";
+    public static final String VERSION = "7.0.0";
     public static final Logger LOG = LogUtils.getLogger();
 
     public static final Category CATEGORY = new Category("Venomous");
@@ -17,7 +17,7 @@ public class VenomousAddon extends MeteorAddon {
 
     @Override
     public void onInitialize() {
-        LOG.info("Initializing Venomous V6.2.6 - Optimized & Refined.");
+        LOG.info("Initializing Venomous V7.0.0 - Optimized & Refined.");
         ModuleRegistry.register();
     }
 
