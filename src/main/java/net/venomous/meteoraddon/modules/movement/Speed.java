@@ -11,9 +11,9 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
-import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.McCompat;
+import net.venomous.meteoraddon.utils.MovementMath;
 
 public class Speed extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -103,11 +103,9 @@ public class Speed extends Module {
 
    private void doStrafe() {
       double baseSpeed = this.getBaseMoveSpeed();
-      if (this.mc.player.onGround()) {
-         if (this.autoJump.get()) {
-            this.mc.player.jumpFromGround();
-            baseSpeed *= 1.42;
-         }
+      if (this.mc.player.onGround() && this.autoJump.get() && !this.mc.player.isInWater() && !this.mc.player.onClimbable()) {
+         this.mc.player.jumpFromGround();
+         baseSpeed *= 1.42;
       }
 
       this.setDirectionalSpeed(baseSpeed);
@@ -115,11 +113,7 @@ public class Speed extends Module {
 
    private void doGrimGround() {
       // GrimAC calculates block friction dynamically. Applying slight ground speed on flat surfaces without jumping
-      double speed = this.mc.player.onGround() ? 0.286 : 0.25;
-      if (this.mc.player.hasEffect(MobEffects.SPEED)) {
-         int amp = this.mc.player.getEffect(MobEffects.SPEED).getAmplifier();
-         speed *= (1.0 + 0.2 * (amp + 1));
-      }
+      double speed = this.getBaseMoveSpeed() * (this.mc.player.onGround() ? 1.0 : 0.87);
       this.setDirectionalSpeed(speed);
       this.mc.player.setSprinting(true);
    }
@@ -132,35 +126,34 @@ public class Speed extends Module {
       }
 
       if (this.ticksSinceBoat <= 3) {
-         this.setDirectionalSpeed(0.287 + this.boatSpeed.get());
+         this.setDirectionalSpeed(this.getBaseMoveSpeed() + this.boatSpeed.get());
       } else {
          this.mc.player.setSprinting(true);
       }
    }
 
    private void doVulcanGround() {
-      // Vulcan ground friction exploit (0.355 speed without flagging movement/timer)
-      double speed = 0.355;
-      if (this.mc.player.hasEffect(MobEffects.SPEED)) {
-         speed += 0.05;
-      }
-      this.setDirectionalSpeed(speed);
+      // Vulcan predicts friction from the base attribute, so scale relative to the real
+      // move speed instead of a hardcoded constant that breaks with Speed/Slowness.
+      this.setDirectionalSpeed(this.getBaseMoveSpeed() * 1.12);
    }
 
    private void doVulcanBHop() {
-      if (this.mc.player.onGround()) {
+      double base = this.getBaseMoveSpeed();
+      if (this.mc.player.onGround() && this.autoJump.get()) {
          this.mc.player.jumpFromGround();
-         this.setDirectionalSpeed(0.38);
+         this.setDirectionalSpeed(base * 1.28);
       } else {
-         this.setDirectionalSpeed(0.33);
+         this.setDirectionalSpeed(base * 1.14);
       }
    }
 
    private void doPolarStrafe() {
-      double speed = 0.32;
+      double base = this.getBaseMoveSpeed();
+      double speed = base * 1.1;
       if (this.mc.player.onGround()) {
          this.mc.player.jumpFromGround();
-         speed = 0.36;
+         speed = base * 1.24;
       }
       this.setDirectionalSpeed(speed);
    }
@@ -169,7 +162,7 @@ public class Speed extends Module {
       if (this.mc.player.onGround()) {
          this.mc.player.jumpFromGround();
       }
-      this.setDirectionalSpeed(0.285);
+      this.setDirectionalSpeed(this.getBaseMoveSpeed());
    }
 
    private void doWeakAC() {
@@ -194,33 +187,20 @@ public class Speed extends Module {
    }
 
    private double getBaseMoveSpeed() {
-      double base = 0.2873;
-      if (this.mc.player != null && this.mc.player.hasEffect(MobEffects.SPEED)) {
-         int amp = this.mc.player.getEffect(MobEffects.SPEED).getAmplifier();
-         base *= (1.0 + 0.2 * (amp + 1));
-      }
-      return base;
+      return MovementMath.baseSpeed(this.mc.player.isSprinting(), this.effectAmplifier(MobEffects.SPEED), this.effectAmplifier(MobEffects.SLOWNESS));
+   }
+
+   private int effectAmplifier(net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect) {
+      var instance = this.mc.player.getEffect(effect);
+      return instance == null ? -1 : instance.getAmplifier();
    }
 
    private void setDirectionalSpeed(double speed) {
-      float yaw = this.mc.player.getYRot();
-      double fwd = this.mc.player.input.keyPresses.forward() ? 1.0 : (this.mc.player.input.keyPresses.backward() ? -1 : 0);
-      double str = this.mc.player.input.keyPresses.left() ? 1.0 : (this.mc.player.input.keyPresses.right() ? -1 : 0);
-      if (fwd != 0.0 || str != 0.0) {
-         double angle = Math.toRadians(yaw);
-         if (fwd < 0.0) {
-            angle += Math.PI;
-         }
-
-         if (str > 0.0) {
-            angle -= (Math.PI / 2) * (fwd == 0.0 ? 1.0 : 0.5);
-         }
-
-         if (str < 0.0) {
-            angle += (Math.PI / 2) * (fwd == 0.0 ? 1.0 : 0.5);
-         }
-
-         this.mc.player.setDeltaMovement(-Math.sin(angle) * speed, this.mc.player.getDeltaMovement().y, Math.cos(angle) * speed);
+      double fwd = this.mc.player.input.keyPresses.forward() ? 1.0 : (this.mc.player.input.keyPresses.backward() ? -1.0 : 0.0);
+      double str = this.mc.player.input.keyPresses.left() ? 1.0 : (this.mc.player.input.keyPresses.right() ? -1.0 : 0.0);
+      double[] move = MovementMath.velocity(this.mc.player.getYRot(), fwd, str, speed);
+      if (move[0] != 0.0 || move[1] != 0.0) {
+         this.mc.player.setDeltaMovement(move[0], this.mc.player.getDeltaMovement().y, move[1]);
       }
    }
 
