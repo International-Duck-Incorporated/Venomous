@@ -180,11 +180,13 @@ public class Aimbot extends Module {
    }
 
    private boolean isHoldingProjectile() {
+      if (this.mc.player == null) return false;
       Item item = this.mc.player.getMainHandItem().getItem();
       return item == Items.BOW || item == Items.CROSSBOW || item == Items.TRIDENT;
    }
 
    private void handleAutoShoot() {
+      if (this.mc.player == null) return;
       Item item = this.mc.player.getMainHandItem().getItem();
       if (item == Items.BOW) {
          float charge = (this.mc.player.getUseItem().getUseDuration(this.mc.player) - this.mc.player.getUseItemRemainingTicks()) / 20.0F;

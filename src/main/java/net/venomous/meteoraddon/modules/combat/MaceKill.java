@@ -526,7 +526,7 @@ public class MaceKill extends Module {
    }
 
    private boolean isAbovePathValid(Vec3 abovePos, Entity target) {
-      if (this.mc.level != null && abovePos != null) {
+      if (this.mc.level != null && abovePos != null && target != null && this.mc.player != null) {
          Vec3 targetCenter = target.getBoundingBox().getCenter();
          if (this.isUnsafe(abovePos)) {
             return false;

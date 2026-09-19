@@ -131,6 +131,7 @@ public class NoFallPlus extends Module {
                      }
                   }
                }
+               break;
             case SpoofGround:
             default:
                break;

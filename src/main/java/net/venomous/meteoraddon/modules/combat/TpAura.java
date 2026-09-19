@@ -87,7 +87,7 @@ public class TpAura extends Module {
 
    @EventHandler
    private void onTick(Pre event) {
-      if (this.mc.player != null && this.mc.level != null) {
+      if (this.mc.player != null && this.mc.level != null && this.mc.player.connection != null) {
          this.tickCounter++;
          int effectiveDelay = this.mode.get() == TpAura.Mode.WeakAC ? (Integer)this.weakACInterval.get() : (Integer)this.delay.get();
          if (this.tickCounter >= effectiveDelay) {

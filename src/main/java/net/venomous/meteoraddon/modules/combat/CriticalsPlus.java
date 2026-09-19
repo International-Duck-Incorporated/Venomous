@@ -118,7 +118,7 @@ public class CriticalsPlus extends Module {
 
    @EventHandler
    private void onPacketSend(Send event) {
-      if (this.mc.player != null) {
+      if (this.mc.player != null && this.mc.player.connection != null) {
          Packet<?> packet = event.packet;
          if (packet instanceof ServerboundInteractPacket) {
             long now = System.currentTimeMillis();
