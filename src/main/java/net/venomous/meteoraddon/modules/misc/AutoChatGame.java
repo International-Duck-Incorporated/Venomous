@@ -123,7 +123,8 @@ public class AutoChatGame extends Module {
                         this.queueAnswer(formatResult(var6), "math");
                         this.info("Detected math: %s = %s", new Object[]{var19, this.pendingAnswer});
                         return;
-                     } catch (Exception var12) {
+                     } catch (Exception ignored) {
+                        // Not a solvable expression - fall through to the next strategy.
                      }
                   }
                }
@@ -144,7 +145,11 @@ public class AutoChatGame extends Module {
                            return;
                         }
                      }
-                  } catch (Exception var11) {
+                  } catch (java.util.regex.PatternSyntaxException e) {
+                     // A bad user-supplied pattern is a config error, not a parse miss - surface it.
+                     this.error("Invalid custom pattern \"%s\": %s", var20, e.getDescription());
+                  } catch (Exception ignored) {
+                     // Pattern compiled but didn't apply cleanly - try the next one.
                   }
                }
 
@@ -328,7 +333,8 @@ public class AutoChatGame extends Module {
                         } else if (var3 == null) {
                            var3 = var12;
                         }
-                     } catch (Exception var14) {
+                     } catch (Exception ignored) {
+                        // Operand wasn't numeric - skip this candidate.
                      }
                   }
                } else {
@@ -336,7 +342,8 @@ public class AutoChatGame extends Module {
                   if (var8.find()) {
                      try {
                         var4 = Integer.parseInt(var8.group(4));
-                     } catch (Exception var13) {
+                     } catch (NumberFormatException ignored) {
+                        // Final-equation group wasn't an integer - leave the answer unset.
                      }
                   }
                }

@@ -1,0 +1,9 @@
+# Normalise text files to LF in the repository.
+* text=auto eol=lf
+
+# gradlew.bat is consumed by cmd.exe and must keep CRLF line endings.
+*.bat text eol=crlf
+
+# The Gradle wrapper jar is binary; never touch its bytes.
+*.jar binary
+gradle/wrapper/gradle-wrapper.jar binary

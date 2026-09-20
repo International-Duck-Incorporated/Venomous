@@ -76,7 +76,10 @@ public class ArmorWarning extends Module {
                   }
                }
             }
-         } catch (Exception var3) {
+         } catch (Exception e) {
+            // Never let a warning failure spam every tick: report once, then back off.
+            this.timer = this.cooldown.get();
+            this.error("Armor warning check failed: %s", e.getMessage());
          }
       }
    }

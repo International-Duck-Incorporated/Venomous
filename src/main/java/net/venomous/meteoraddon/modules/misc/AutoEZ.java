@@ -76,6 +76,8 @@ public class AutoEZ extends Module {
 
     @EventHandler
     private void onAttackEntity(AttackEntityEvent event) {
+        if (this.mc.player == null) return;
+
         if (event.entity instanceof Player player && player != this.mc.player) {
             if (!Friends.get().isFriend(player)) {
                 this.attackedTargets.put(player.getUUID(), System.currentTimeMillis());

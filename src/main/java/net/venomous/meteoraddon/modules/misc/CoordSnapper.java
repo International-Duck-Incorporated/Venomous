@@ -73,7 +73,10 @@ public class CoordSnapper extends Module {
          this.error("Failed to copy/send coordinates: " + e.getMessage(), new Object[0]);
          return;
       } finally {
-         this.toggle();
+         // Defer the auto-off so we never re-enter Meteor's toggle logic from inside onActivate().
+         this.mc.execute(() -> {
+            if (this.isActive()) this.toggle();
+         });
       }
    }
 
@@ -82,10 +85,23 @@ public class CoordSnapper extends Module {
       String discordUserId = this.discordId.get().trim();
       boolean pingUser = (Boolean)this.selfPing.get() && !discordUserId.isEmpty();
 
+      URI parsed;
+      try {
+         parsed = URI.create(url);
+      } catch (IllegalArgumentException e) {
+         this.error("Webhook URL is malformed.", new Object[0]);
+         return;
+      }
+
+      if (!"https".equalsIgnoreCase(parsed.getScheme())) {
+         this.error("Webhook URL must use https - refusing to send coordinates in plaintext.", new Object[0]);
+         return;
+      }
+
       Thread thread = new Thread(() -> {
          HttpURLConnection connection = null;
          try {
-            connection = (HttpURLConnection)URI.create(url).toURL().openConnection();
+            connection = (HttpURLConnection)parsed.toURL().openConnection();
             connection.setConnectTimeout(10_000);
             connection.setReadTimeout(30_000);
             connection.setRequestMethod("POST");

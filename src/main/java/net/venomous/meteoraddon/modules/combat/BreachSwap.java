@@ -73,7 +73,8 @@ public class BreachSwap extends Module {
                      highest = l;
                      best = i;
                   }
-               } catch (Exception var7) {
+               } catch (NumberFormatException ignored) {
+                  // Enchantment string didn't carry a parseable level; skip this stack.
                }
             }
          }
