@@ -14,6 +14,9 @@
     <img src="https://img.shields.io/github/stars/International-Duck-Incorporated/Venomous" alt="Stars"/>
     <img src="https://img.shields.io/github/issues/International-Duck-Incorporated/Venomous" alt="Issues"/>
 </div>
+> **Status:** `WIP`
+> Please note this repo is a work in progress, and bugs are to be expected.
+> Feel free to open a issue when problems are encountered
 
 ## Overview
 
