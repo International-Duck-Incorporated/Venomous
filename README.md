@@ -221,9 +221,17 @@ Server owners and network operators may prohibit the use of certain modules or m
 
 ## License
 
-The repository currently does **not declare an explicit license**.
+Venomous is licensed under the **GNU General Public License v3.0 or later**.
+See [LICENSE](LICENSE) for the full text.
 
-Until a license is added to the repository, the source should not be assumed to be available under an open-source license or for unrestricted redistribution.
+This is not a free choice: Venomous links against [Meteor Client](https://github.com/MeteorDevelopment/meteor-client),
+which is GPL-3.0. A derivative work that links GPL-3.0 code must itself be
+distributed under GPL-3.0 (or a later version), so any redistributable build of
+this addon is necessarily GPL-3.0.
+
+In short, anyone may use, study, modify and redistribute Venomous, provided that
+derivative works are also released under the GPL and that source is made
+available to anyone who receives a build.
 
 ## Links
 

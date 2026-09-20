@@ -4,6 +4,7 @@
   "version": "${version}",
   "name": "Venomous",
   "description": "Optimized & Refined Meteor Client addon for Minecraft 26.2.",
+  "license": "GPL-3.0-or-later",
   "authors": [
     "Itsespress0"
   ],

@@ -61,6 +61,13 @@ tasks {
         }
     }
 
+    jar {
+        // GPL-3.0 section 4 requires the licence to travel with the binary, so ship it in the jar.
+        from(rootProject.file("LICENSE")) {
+            rename { "LICENSE_venomous" }
+        }
+    }
+
     withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
         options.release.set(libs.versions.jdk.get().toInt())
