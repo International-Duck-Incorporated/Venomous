@@ -30,7 +30,7 @@ It is designed to provide a large feature set from a single addon while remainin
 ## Features
 
 > **A note on the `v-` prefix.** Meteor registers modules by name globally, and
-> `Modules.add` *replaces* an existing entry with the same name — reusing a Meteor
+> `Modules.add` *replaces* an existing entry with the same name - reusing a Meteor
 > name unregisters their module and can break their mixins. Eleven Venomous modules
 > therefore keep a `v-` prefix because they genuinely collide with a Meteor built-in:
 > `v-air-place`, `v-anti-hunger`, `v-anti-void`, `v-auto-city`, `v-blink`,
