@@ -10,6 +10,7 @@
     <img src="https://img.shields.io/badge/Meteor%20Client-26.2-5865F2" alt="Meteor Client 26.2"/>
     <img src="https://img.shields.io/badge/Java-25-orange?logo=openjdk&logoColor=white" alt="Java 25"/>
     <br>
+    <img src="https://img.shields.io/github/downloads/International-Duck-Incorporated/Venomous/total?label=Downloads" alt="Downloads"/>
     <img src="https://img.shields.io/github/last-commit/International-Duck-Incorporated/Venomous" alt="Last commit"/>
     <img src="https://img.shields.io/github/stars/International-Duck-Incorporated/Venomous" alt="Stars"/>
     <img src="https://img.shields.io/github/issues/International-Duck-Incorporated/Venomous" alt="Issues"/>
