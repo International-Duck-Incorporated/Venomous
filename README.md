@@ -111,7 +111,7 @@ Venomous is a **Meteor Client addon**, not a standalone client.
 A compatible installation of Meteor Client is required.
 
 ## Installation
-
+* [Latest Nightly Build](https://github.com/International-Duck-Incorporated/Venomous/releases/download/nightly-2026.09.20-b6e6992/Venomous-7.0.0-nightly-2026.09.20%2Bb6e6992.jar)
 1. Install a Fabric environment for Minecraft 26.2.
 2. Install the matching Meteor Client version.
 3. Download the Venomous `.jar`, or build it yourself.
