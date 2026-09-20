@@ -30,6 +30,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.PreRotate;
 
 public class VAutoCity extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -181,7 +182,7 @@ public class VAutoCity extends Module {
         }
 
         if (this.rotate.get()) {
-            Rotations.rotate(Rotations.getYaw(this.targetBlock), Rotations.getPitch(this.targetBlock), () -> this.mine(this.targetBlock));
+            PreRotate.rotateThen(Rotations.getYaw(this.targetBlock), Rotations.getPitch(this.targetBlock), () -> this.mine(this.targetBlock));
         } else {
             this.mine(this.targetBlock);
         }

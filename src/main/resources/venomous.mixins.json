@@ -11,7 +11,9 @@
     "ScreenMixin",
     "GameRendererMixin",
     "HudMixin",
-    "NetherPortalBlockMixin"
+    "NetherPortalBlockMixin",
+    "NoPushEntityMixin",
+    "NoPushFishingHookMixin"
   ],
   "injectors": {
     "defaultRequire": 1

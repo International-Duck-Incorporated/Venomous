@@ -5,7 +5,7 @@ import net.minecraft.server.Bootstrap;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.venomous.meteoraddon.modules.combat.VAutoCity;
-import net.venomous.meteoraddon.modules.movement.VHoleSnap;
+import net.venomous.meteoraddon.modules.movement.HoleSnap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -20,16 +20,16 @@ public class ScavengedModulesLogicTest {
 
     @Test
     void testHoleSnapBlastResistantBlocks() {
-        assertTrue(VHoleSnap.isBlastResistant(Blocks.BEDROCK.defaultBlockState()));
-        assertTrue(VHoleSnap.isBlastResistant(Blocks.OBSIDIAN.defaultBlockState()));
-        assertTrue(VHoleSnap.isBlastResistant(Blocks.CRYING_OBSIDIAN.defaultBlockState()));
-        assertTrue(VHoleSnap.isBlastResistant(Blocks.ENDER_CHEST.defaultBlockState()));
-        assertTrue(VHoleSnap.isBlastResistant(Blocks.RESPAWN_ANCHOR.defaultBlockState()));
-        assertTrue(VHoleSnap.isBlastResistant(Blocks.NETHERITE_BLOCK.defaultBlockState()));
+        assertTrue(HoleSnap.isBlastResistant(Blocks.BEDROCK.defaultBlockState()));
+        assertTrue(HoleSnap.isBlastResistant(Blocks.OBSIDIAN.defaultBlockState()));
+        assertTrue(HoleSnap.isBlastResistant(Blocks.CRYING_OBSIDIAN.defaultBlockState()));
+        assertTrue(HoleSnap.isBlastResistant(Blocks.ENDER_CHEST.defaultBlockState()));
+        assertTrue(HoleSnap.isBlastResistant(Blocks.RESPAWN_ANCHOR.defaultBlockState()));
+        assertTrue(HoleSnap.isBlastResistant(Blocks.NETHERITE_BLOCK.defaultBlockState()));
 
-        assertFalse(VHoleSnap.isBlastResistant(Blocks.DIRT.defaultBlockState()));
-        assertFalse(VHoleSnap.isBlastResistant(Blocks.STONE.defaultBlockState()));
-        assertFalse(VHoleSnap.isBlastResistant(Blocks.AIR.defaultBlockState()));
+        assertFalse(HoleSnap.isBlastResistant(Blocks.DIRT.defaultBlockState()));
+        assertFalse(HoleSnap.isBlastResistant(Blocks.STONE.defaultBlockState()));
+        assertFalse(HoleSnap.isBlastResistant(Blocks.AIR.defaultBlockState()));
     }
 
     @Test

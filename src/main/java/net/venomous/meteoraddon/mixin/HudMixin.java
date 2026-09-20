@@ -4,7 +4,7 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Hud;
-import net.venomous.meteoraddon.modules.misc.VHideScoreboard;
+import net.venomous.meteoraddon.modules.misc.HideScoreboard;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,7 +15,7 @@ public class HudMixin {
     @Inject(method = "extractScoreboardSidebar", at = @At("HEAD"), cancellable = true)
     private void venomous$extractScoreboardSidebar(GuiGraphicsExtractor extractor, DeltaTracker tracker, CallbackInfo ci) {
         Modules modules = Modules.get();
-        if (modules != null && modules.isActive(VHideScoreboard.class)) {
+        if (modules != null && modules.isActive(HideScoreboard.class)) {
             ci.cancel();
         }
     }

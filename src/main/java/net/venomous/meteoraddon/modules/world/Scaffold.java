@@ -1,6 +1,7 @@
 package net.venomous.meteoraddon.modules.world;
 
 import java.util.Random;
+import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
@@ -244,6 +245,20 @@ public class Scaffold extends Module {
    private boolean previousSneakDown = false;
    private final Random random = new Random();
 
+   /** How close the server-side rotation must be before a staged placement is flushed. */
+   private static final float ROTATION_TOLERANCE = 1.5F;
+
+   /** Ticks a staged placement may wait for its rotation before being discarded. */
+   private static final int MAX_PENDING_AGE = 4;
+
+   // Placement staged during the tick, flushed on SendMovementPacketsEvent.Pre.
+   private int pendingAge = 0;
+   private BlockPos pendingNeighbor = null;
+   private Direction pendingFace = null;
+   private Vec3 pendingHit = null;
+   private float pendingYaw = 0.0F;
+   private float pendingPitch = 0.0F;
+
    public Scaffold() {
       // Meteor has its own movement module named "scaffold". Modules.add replaces
       // modules by name, so reusing that name removes Meteor's Scaffold class and
@@ -260,6 +275,7 @@ public class Scaffold extends Module {
       this.repeatedAttempts = 0;
       this.managedSneak = false;
       this.previousSneakDown = false;
+      this.clearPendingPlacement();
    }
 
    public void onDeactivate() {
@@ -271,6 +287,7 @@ public class Scaffold extends Module {
       this.placeCooldown = 0;
       this.lastAttemptPos = null;
       this.repeatedAttempts = 0;
+      this.clearPendingPlacement();
    }
 
    private boolean isBridgeMode() {
@@ -279,6 +296,45 @@ public class Scaffold extends Module {
          || this.technique.get() == Scaffold.Technique.VapeBridge
          || this.technique.get() == Scaffold.Technique.GodBridge
          || this.technique.get() == Scaffold.Technique.Breezily;
+   }
+
+   /**
+    * Per-technique placement pitch, in degrees.
+    *
+    * <p>Previously every technique resolved to the same centre-of-face aim, which is why the presets
+    * all behaved identically. Each anticheat fingerprints a different aspect of the placement, so the
+    * techniques now genuinely diverge:
+    *
+    * <ul>
+    *   <li><b>GrimScaffold</b> — Grim's RotationPlace wants a plausible downward look.</li>
+    *   <li><b>GodBridge / Breezily</b> — the classic ~76-78 degree diagonal pitch.</li>
+    *   <li><b>NCPNormal</b> — NCP wants a hard straight-down look.</li>
+    *   <li><b>VulcanExpand / VulcanSprint</b> — shallower, since Vulcan checks pitch-vs-motion.</li>
+    * </ul>
+    *
+    * @return the pitch to aim with, or {@code Float.NaN} to use the geometric face pitch.
+    */
+   private float techniquePitch() {
+      return switch (this.technique.get()) {
+         case GodBridge -> 76.5F;
+         case Breezily -> 78.0F;
+         case NCPNormal -> 89.5F;
+         case GrimScaffold -> 72.0F;
+         case VulcanExpand, VulcanSprint -> 68.0F;
+         default -> Float.NaN;
+      };
+   }
+
+   /** Per-technique placement cadence multiplier applied on top of {@code place-delay}. */
+   private int techniqueDelay() {
+      int base = Math.max(1, this.placeDelay.get());
+      return switch (this.technique.get()) {
+         // Fast bridging techniques need to keep up with sprint speed.
+         case GodBridge, Breezily, VapeBridge -> Math.max(1, base - 2);
+         // Vulcan penalises bursty placement, so slow it down slightly.
+         case VulcanExpand, VulcanSprint -> base + 1;
+         default -> base;
+      };
    }
 
    @EventHandler
@@ -290,6 +346,12 @@ public class Scaffold extends Module {
       this.scaffoldCount++;
       if (this.placeCooldown > 0) {
          this.placeCooldown--;
+      }
+
+      // Drop a staged placement that never became flushable (e.g. the rotation was interrupted),
+      // so a stale target can't wedge placement permanently.
+      if (this.pendingNeighbor != null && ++this.pendingAge > MAX_PENDING_AGE) {
+         this.clearPendingPlacement();
       }
 
       if ((this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
@@ -485,53 +547,123 @@ public class Scaffold extends Module {
       }
    }
 
+   /**
+    * Stages a placement rather than performing it inline.
+    *
+    * <p>This is the fix for the "you are currently attacking/placing on POST" warning. Meteor's
+    * {@link Rotations#rotate(double, double, int, Runnable)} invokes its callback from
+    * {@code SendMovementPacketsEvent.Post} — that is, <em>after</em> this tick's movement packet has
+    * already been flushed. Interacting from there puts the use-item packet after the position packet
+    * in the tick, which is the exact ordering anticheats fingerprint as "post" placement. A vanilla
+    * client always sends its interaction <em>before</em> the movement packet for the same tick.
+    *
+    * <p>So here we only resolve the target face and request the rotation. The interaction itself is
+    * flushed from {@link #onSendMovementPacketsPre}, ahead of the movement packet, and only once the
+    * server has actually observed the rotation the placement needs.
+    */
    private boolean place(BlockPos pos) {
-      if (this.mc.gameMode != null && this.placeCooldown <= 0) {
-         if (pos.equals(this.lastAttemptPos)) {
-            this.repeatedAttempts++;
-         } else {
-            this.lastAttemptPos = pos;
-            this.repeatedAttempts = 0;
-         }
-
-         int delay = Math.max(1, this.placeDelay.get());
-         if (this.repeatedAttempts > 0 && this.repeatedAttempts % delay != 0) {
-            return false;
-         }
-
-         for (Direction face : Direction.values()) {
-            BlockPos neighbor = pos.relative(face);
-            if (!this.mc.level.getBlockState(neighbor).isAir() && this.mc.level.getWorldBorder().isWithinBounds(neighbor)) {
-               Direction placeFace = face.getOpposite();
-               Vec3 hitVec = Vec3.atCenterOf(neighbor).add(placeFace.getStepX() * 0.5, placeFace.getStepY() * 0.5, placeFace.getStepZ() * 0.5);
-               if (!(this.mc.player.getEyePosition().distanceTo(hitVec) > 5.0)) {
-                  BlockHitResult hitResult = new BlockHitResult(hitVec, placeFace, neighbor, false);
-                  Runnable placeAction = () -> {
-                     InteractionResult result = this.mc.gameMode.useItemOn(this.mc.player, InteractionHand.MAIN_HAND, hitResult);
-                     if (result.consumesAction() && this.swing.get()) {
-                        this.mc.player.swing(InteractionHand.MAIN_HAND);
-                     }
-                  };
-                  if (this.serverSideRotations.get()) {
-                     float yaw = this.wrapDegrees((float)Rotations.getYaw(hitVec));
-                     float pitch = this.clampPitch((float)Rotations.getPitch(hitVec));
-                     Rotations.rotate(yaw, pitch, 20, placeAction);
-                  } else {
-                     this.rotateTo(hitVec);
-                     placeAction.run();
-                  }
-
-                  this.placeCooldown = delay;
-                  return true;
-               }
-            }
-         }
-
-         this.placeCooldown = Math.max(1, delay / 2);
-         return false;
-      } else {
+      if (this.mc.gameMode == null || this.placeCooldown > 0) {
          return false;
       }
+
+      // A placement is already queued for this tick; don't stack two interactions into one flush.
+      if (this.pendingNeighbor != null) {
+         return false;
+      }
+
+      if (pos.equals(this.lastAttemptPos)) {
+         this.repeatedAttempts++;
+      } else {
+         this.lastAttemptPos = pos;
+         this.repeatedAttempts = 0;
+      }
+
+      int delay = this.techniqueDelay();
+      if (this.repeatedAttempts > 0 && this.repeatedAttempts % delay != 0) {
+         return false;
+      }
+
+      for (Direction face : Direction.values()) {
+         BlockPos neighbor = pos.relative(face);
+         if (!this.mc.level.getBlockState(neighbor).isAir() && this.mc.level.getWorldBorder().isWithinBounds(neighbor)) {
+            Direction placeFace = face.getOpposite();
+            Vec3 hitVec = Vec3.atCenterOf(neighbor).add(placeFace.getStepX() * 0.5, placeFace.getStepY() * 0.5, placeFace.getStepZ() * 0.5);
+            if (!(this.mc.player.getEyePosition().distanceTo(hitVec) > 5.0)) {
+               float yaw = this.wrapDegrees((float)Rotations.getYaw(hitVec));
+               float pitch = this.clampPitch((float)Rotations.getPitch(hitVec));
+
+               float techPitch = this.techniquePitch();
+               if (!Float.isNaN(techPitch)) {
+                  pitch = this.clampPitch(techPitch);
+               }
+
+               if (this.grimSmoothRotation.get() && this.grimRotationJitter.get() > 0.0) {
+                  // Grim's DuplicateRotPlace flags identical consecutive rotations (xDiff < 0.0001).
+                  double jitter = this.grimRotationJitter.get();
+                  yaw += (float)((this.random.nextDouble() - 0.5) * jitter);
+                  pitch = this.clampPitch(pitch + (float)((this.random.nextDouble() - 0.5) * jitter));
+               }
+
+               this.pendingNeighbor = neighbor;
+               this.pendingFace = placeFace;
+               this.pendingHit = hitVec;
+               this.pendingYaw = yaw;
+               this.pendingPitch = pitch;
+
+               if (this.serverSideRotations.get()) {
+                  // No callback: we place from SendMovementPacketsEvent.Pre instead.
+                  Rotations.rotate(yaw, pitch, 20, null);
+               } else {
+                  this.rotateTo(hitVec);
+               }
+
+               return true;
+            }
+         }
+      }
+
+      this.placeCooldown = Math.max(1, delay / 2);
+      return false;
+   }
+
+   /**
+    * Flushes a staged placement before the movement packet goes out, so the interaction lands in the
+    * PRE phase like a vanilla client's would.
+    */
+   @EventHandler
+   private void onSendMovementPacketsPre(SendMovementPacketsEvent.Pre event) {
+      if (this.pendingNeighbor == null || this.mc.player == null || this.mc.gameMode == null || this.mc.level == null) {
+         return;
+      }
+
+      // Wait until the server has actually seen the rotation this placement depends on, otherwise
+      // we trade a POST flag for a RotationPlace flag.
+      if (this.serverSideRotations.get() && !this.isServerRotationReady()) {
+         return;
+      }
+
+      BlockHitResult hitResult = new BlockHitResult(this.pendingHit, this.pendingFace, this.pendingNeighbor, false);
+      InteractionResult result = this.mc.gameMode.useItemOn(this.mc.player, InteractionHand.MAIN_HAND, hitResult);
+      if (result.consumesAction() && this.swing.get()) {
+         this.mc.player.swing(InteractionHand.MAIN_HAND);
+      }
+
+      this.placeCooldown = this.techniqueDelay();
+      this.clearPendingPlacement();
+   }
+
+   /** True once the last rotation the server received matches what the staged placement needs. */
+   private boolean isServerRotationReady() {
+      float yawDiff = Math.abs(this.wrapDegrees(Rotations.serverYaw - this.pendingYaw));
+      float pitchDiff = Math.abs(Rotations.serverPitch - this.pendingPitch);
+      return yawDiff <= ROTATION_TOLERANCE && pitchDiff <= ROTATION_TOLERANCE;
+   }
+
+   private void clearPendingPlacement() {
+      this.pendingAge = 0;
+      this.pendingNeighbor = null;
+      this.pendingFace = null;
+      this.pendingHit = null;
    }
 
    private void rotateTo(BlockPos pos) {

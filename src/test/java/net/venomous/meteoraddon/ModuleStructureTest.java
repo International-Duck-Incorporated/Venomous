@@ -29,29 +29,26 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.combat.TickBase",
             "net.venomous.meteoraddon.modules.combat.TimerRange",
             "net.venomous.meteoraddon.modules.combat.TpAura",
-            "net.venomous.meteoraddon.modules.combat.VAnchorMacro",
-            "net.venomous.meteoraddon.modules.combat.VAntiTrap",
+            "net.venomous.meteoraddon.modules.combat.AnchorMacro",
+            "net.venomous.meteoraddon.modules.combat.AntiTrap",
             "net.venomous.meteoraddon.modules.combat.VAutoCity",
-            "net.venomous.meteoraddon.modules.combat.VAutoDoubleHand",
-            "net.venomous.meteoraddon.modules.combat.VAutoInvTotem",
-            "net.venomous.meteoraddon.modules.combat.VBreachSwap",
-            "net.venomous.meteoraddon.modules.combat.VKeyPearl",
-            "net.venomous.meteoraddon.modules.combat.VKillAura",
-            "net.venomous.meteoraddon.modules.combat.VMaceKill",
-            "net.venomous.meteoraddon.modules.combat.VPopCounter",
-            "net.venomous.meteoraddon.modules.combat.VShieldBreaker",
-            "net.venomous.meteoraddon.modules.combat.VShieldBypass",
-            "net.venomous.meteoraddon.modules.combat.VSwordPlaceObsidian",
-            "net.venomous.meteoraddon.modules.combat.VWindPearlMacro",
+            "net.venomous.meteoraddon.modules.combat.AutoDoubleHand",
+            "net.venomous.meteoraddon.modules.combat.AutoInvTotem",
+            "net.venomous.meteoraddon.modules.combat.BreachSwap",
+            "net.venomous.meteoraddon.modules.combat.KillAura",
+            "net.venomous.meteoraddon.modules.combat.PopCounter",
+            "net.venomous.meteoraddon.modules.combat.ShieldBreaker",
+            "net.venomous.meteoraddon.modules.combat.SwordPlaceObsidian",
+            "net.venomous.meteoraddon.modules.combat.WindPearlMacro",
             "net.venomous.meteoraddon.modules.combat.VelocityPlus",
             "net.venomous.meteoraddon.modules.detection.AntiCheatDetect",
             "net.venomous.meteoraddon.modules.detection.AntiStaff",
             "net.venomous.meteoraddon.modules.detection.SpectatorAlert",
-            "net.venomous.meteoraddon.modules.detection.VAntiVanish",
-            "net.venomous.meteoraddon.modules.detection.VPlayerDetection",
-            "net.venomous.meteoraddon.modules.esp.VInvisESP",
-            "net.venomous.meteoraddon.modules.esp.VLightESP",
-            "net.venomous.meteoraddon.modules.esp.VSkeletonESP",
+            "net.venomous.meteoraddon.modules.detection.AntiVanish",
+            "net.venomous.meteoraddon.modules.detection.PlayerDetection",
+            "net.venomous.meteoraddon.modules.esp.InvisESP",
+            "net.venomous.meteoraddon.modules.esp.LightESP",
+            "net.venomous.meteoraddon.modules.esp.SkeletonESP",
             "net.venomous.meteoraddon.modules.exploit.AbortBreaking",
             "net.venomous.meteoraddon.modules.exploit.AntiReducedDebugInfo",
             "net.venomous.meteoraddon.modules.exploit.ClickTp",
@@ -60,22 +57,19 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.exploit.Dupe",
             "net.venomous.meteoraddon.modules.exploit.ExtendedFirework",
             "net.venomous.meteoraddon.modules.exploit.Kick",
-            "net.venomous.meteoraddon.modules.exploit.LbClip",
             "net.venomous.meteoraddon.modules.exploit.MoreCarry",
             "net.venomous.meteoraddon.modules.exploit.NameCollector",
             "net.venomous.meteoraddon.modules.exploit.NoPitchLimit",
             "net.venomous.meteoraddon.modules.exploit.PingSpoof",
-            "net.venomous.meteoraddon.modules.exploit.PortalMenu",
+            "net.venomous.meteoraddon.modules.exploit.PortalExploits",
             "net.venomous.meteoraddon.modules.exploit.ResetVL",
             "net.venomous.meteoraddon.modules.exploit.SleepWalker",
             "net.venomous.meteoraddon.modules.exploit.TimeShift",
             "net.venomous.meteoraddon.modules.exploit.VAntiHunger",
-            "net.venomous.meteoraddon.modules.exploit.VBungeeCordSpoof",
-            "net.venomous.meteoraddon.modules.exploit.VChorusExploit",
+            "net.venomous.meteoraddon.modules.exploit.BungeeCordSpoof",
+            "net.venomous.meteoraddon.modules.exploit.ChorusExploit",
             "net.venomous.meteoraddon.modules.exploit.VGhostHand",
-            "net.venomous.meteoraddon.modules.exploit.VNoPortalHitbox",
-            "net.venomous.meteoraddon.modules.exploit.VPortalGodMode",
-            "net.venomous.meteoraddon.modules.exploit.VVehicleOneHit",
+            "net.venomous.meteoraddon.modules.exploit.VehicleOneHit",
             "net.venomous.meteoraddon.modules.fun.DankBobbing",
             "net.venomous.meteoraddon.modules.fun.Derp",
             "net.venomous.meteoraddon.modules.fun.Twerk",
@@ -90,10 +84,9 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.misc.GUICloser",
             "net.venomous.meteoraddon.modules.misc.InventoryTracker",
             "net.venomous.meteoraddon.modules.misc.ItemOrganizer",
-            "net.venomous.meteoraddon.modules.misc.LagNotifier",
             "net.venomous.meteoraddon.modules.misc.MiddleClickAction",
+            "net.venomous.meteoraddon.modules.misc.Notifier",
             "net.venomous.meteoraddon.modules.misc.PearlTools",
-            "net.venomous.meteoraddon.modules.misc.ProphuntESP",
             "net.venomous.meteoraddon.modules.misc.SafeLogout",
             "net.venomous.meteoraddon.modules.misc.SoundESP",
             "net.venomous.meteoraddon.modules.misc.Spammer",
@@ -102,17 +95,16 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.misc.Teams",
             "net.venomous.meteoraddon.modules.misc.TextFieldProtect",
             "net.venomous.meteoraddon.modules.misc.TrueSight",
-            "net.venomous.meteoraddon.modules.misc.VAntiBot",
-            "net.venomous.meteoraddon.modules.misc.VAutoEZ",
-            "net.venomous.meteoraddon.modules.misc.VBookBot",
-            "net.venomous.meteoraddon.modules.misc.VChoir",
-            "net.venomous.meteoraddon.modules.misc.VCoordSnapper",
-            "net.venomous.meteoraddon.modules.misc.VFreecamMining",
-            "net.venomous.meteoraddon.modules.misc.VHideScoreboard",
-            "net.venomous.meteoraddon.modules.misc.VNameProtect",
-            "net.venomous.meteoraddon.modules.misc.VNoBlockInteract",
-            "net.venomous.meteoraddon.modules.misc.VNotifier",
-            "net.venomous.meteoraddon.modules.misc.VPacketLogger",
+            "net.venomous.meteoraddon.modules.misc.AntiBot",
+            "net.venomous.meteoraddon.modules.misc.AutoEZ",
+            "net.venomous.meteoraddon.modules.misc.BookBot",
+            "net.venomous.meteoraddon.modules.misc.Choir",
+            "net.venomous.meteoraddon.modules.misc.CoordSnapper",
+            "net.venomous.meteoraddon.modules.misc.FreecamMining",
+            "net.venomous.meteoraddon.modules.misc.HideScoreboard",
+            "net.venomous.meteoraddon.modules.misc.NameProtect",
+            "net.venomous.meteoraddon.modules.misc.NoBlockInteract",
+            "net.venomous.meteoraddon.modules.misc.PacketLogger",
             "net.venomous.meteoraddon.modules.movement.AntiBounce",
             "net.venomous.meteoraddon.modules.movement.AssertDominance",
             "net.venomous.meteoraddon.modules.movement.Clip",
@@ -122,13 +114,13 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.movement.SnapTap",
             "net.venomous.meteoraddon.modules.movement.Speed",
             "net.venomous.meteoraddon.modules.movement.VBlink",
-            "net.venomous.meteoraddon.modules.movement.VBoatPhase",
-            "net.venomous.meteoraddon.modules.movement.VHoleSnap",
-            "net.venomous.meteoraddon.modules.movement.VRoboWalk",
+            "net.venomous.meteoraddon.modules.movement.BoatPhase",
+            "net.venomous.meteoraddon.modules.movement.HoleSnap",
+            "net.venomous.meteoraddon.modules.movement.RoboWalk",
             "net.venomous.meteoraddon.modules.network.GlobalNetworkInterceptor",
             "net.venomous.meteoraddon.modules.player.NoFallPlus",
             "net.venomous.meteoraddon.modules.render.AntiBlind",
-            "net.venomous.meteoraddon.modules.render.VNewChunks",
+            "net.venomous.meteoraddon.modules.render.NewChunks",
             "net.venomous.meteoraddon.modules.utility.AntiVoid",
             "net.venomous.meteoraddon.modules.utility.AutoBreakSelected",
             "net.venomous.meteoraddon.modules.utility.AutoToolPlus",
@@ -136,12 +128,38 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.world.Scaffold",
             "net.venomous.meteoraddon.modules.world.TimerPlus",
             "net.venomous.meteoraddon.modules.world.VAirPlace",
-            "net.venomous.meteoraddon.modules.world.VAutoFarm"
+            "net.venomous.meteoraddon.modules.world.AutoFarm"
     );
 
+    /**
+     * Guards against the list above silently drifting from the source tree. The expected set is
+     * derived from disk rather than a hardcoded count.
+     */
     @Test
-    void testTotalModuleCount() {
-        assertEquals(124, ALL_MODULE_CLASSES.size());
+    void testModuleListMatchesSourceTree() throws Exception {
+        java.nio.file.Path root = java.nio.file.Path.of("src/main/java/net/venomous/meteoraddon/modules");
+        java.util.Set<String> ignored = java.util.Set.of("ModuleRegistry", "ServerAnalyzer");
+
+        java.util.Set<String> onDisk;
+        try (java.util.stream.Stream<java.nio.file.Path> paths = java.nio.file.Files.walk(root)) {
+            onDisk = paths
+                .filter(p -> p.getFileName().toString().endsWith(".java"))
+                .map(p -> p.getFileName().toString().replace(".java", ""))
+                .filter(n -> !ignored.contains(n))
+                .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
+        }
+
+        java.util.Set<String> listed = ALL_MODULE_CLASSES.stream()
+            .map(c -> c.substring(c.lastIndexOf('.') + 1))
+            .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
+
+        java.util.Set<String> missing = new java.util.TreeSet<>(onDisk);
+        missing.removeAll(listed);
+        assertTrue(missing.isEmpty(), "Modules on disk missing from ALL_MODULE_CLASSES: " + missing);
+
+        java.util.Set<String> stale = new java.util.TreeSet<>(listed);
+        stale.removeAll(onDisk);
+        assertTrue(stale.isEmpty(), "ALL_MODULE_CLASSES lists modules with no source file: " + stale);
     }
 
     @Test

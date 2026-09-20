@@ -9,9 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import meteordevelopment.meteorclient.events.entity.player.AttackEntityEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
+import meteordevelopment.meteorclient.settings.EnumSetting;
+import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friends;
@@ -20,6 +23,7 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockPos.MutableBlockPos;
 import net.minecraft.network.protocol.game.ServerboundAttackPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -45,6 +49,34 @@ public class MaceKill extends Module {
    private final SettingGroup sgTarget = this.settings.createGroup("Targeting");
    private final SettingGroup sgVelocity = this.settings.createGroup("Velocity");
    private final SettingGroup sgSafety = this.settings.createGroup("Safety");
+   private final Setting<MaceKill.Mode> mode = this.sgGeneral.add(
+      new EnumSetting.Builder<MaceKill.Mode>()
+         .name("mode")
+         .description("Slam physically launches you above the target; FakeFall spoofs fall distance with position packets.")
+         .defaultValue(MaceKill.Mode.Slam)
+         .build()
+   );
+
+   private final Setting<Integer> fakeFallHeight = this.sgGeneral.add(
+      new IntSetting.Builder()
+         .name("fake-fall-height")
+         .description("Fall height to spoof when attacking with a mace.")
+         .defaultValue(22)
+         .range(1, 170)
+         .sliderMax(170)
+         .visible(() -> this.mode.get() == MaceKill.Mode.FakeFall)
+         .build()
+   );
+
+   private final Setting<Boolean> fakeFallOnlyOnGround = this.sgGeneral.add(
+      new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+         .name("fake-fall-only-on-ground")
+         .description("Only spoof fall height while standing on the ground.")
+         .defaultValue(true)
+         .visible(() -> this.mode.get() == MaceKill.Mode.FakeFall)
+         .build()
+   );
+
    private final Setting<Boolean> swingHand = this.sgGeneral
       .add(
          ((Builder)((Builder)((Builder)new Builder().name("swing-hand")).description("Send swing animation alongside the attack.")).defaultValue(true)).build()
@@ -197,6 +229,57 @@ public class MaceKill extends Module {
       }
    };
 
+   /**
+    * FakeFall mode, merged in from the former v-mace-kill module.
+    *
+    * <p>Rather than physically launching the player, this spoofs the fall distance the server sees
+    * by sending a raised position immediately followed by the real one, so the mace's fall-damage
+    * bonus applies without any actual movement.
+    */
+   @EventHandler
+   private void onAttackEntity(AttackEntityEvent event) {
+      if (this.mode.get() != MaceKill.Mode.FakeFall) {
+         return;
+      }
+      if (this.mc.player == null || this.mc.level == null || this.mc.player.connection == null) {
+         return;
+      }
+      if (!this.isHoldingMace()) {
+         return;
+      }
+      if (this.fakeFallOnlyOnGround.get() && !this.mc.player.onGround()) {
+         return;
+      }
+
+      int height = this.determineFakeFallHeight();
+      if (height <= 0) {
+         return;
+      }
+
+      Vec3 pos = this.mc.player.getPosition(0.0F);
+      boolean collided = this.mc.player.horizontalCollision;
+      this.mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(pos.x, pos.y + height, pos.z, false, collided));
+      this.mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(pos.x, pos.y, pos.z, false, collided));
+   }
+
+   /** Largest unobstructed spoof height up to the configured maximum. */
+   private int determineFakeFallHeight() {
+      AABB box = this.mc.player.getBoundingBox();
+      for (int i = this.fakeFallHeight.get(); i >= 1; i--) {
+         if (this.mc.level.noBlockCollision(this.mc.player, box.move(0.0, i, 0.0))) {
+            return i;
+         }
+      }
+      return 0;
+   }
+
+   public enum Mode {
+      /** Launch above the target and slam down (original mace-kill behaviour). */
+      Slam,
+      /** Spoof fall distance with position packets (former v-mace-kill). */
+      FakeFall
+   }
+
    public MaceKill() {
       super(VenomousAddon.CATEGORY, "mace-kill", "Velocity-launches you above a target, then slams down with the mace.");
    }
@@ -231,6 +314,13 @@ public class MaceKill extends Module {
 
    @EventHandler
    private void onPreTick(Pre event) {
+      if (this.mode.get() != MaceKill.Mode.Slam) {
+         if (this.phase != MaceKill.Phase.IDLE) {
+            this.resetState();
+         }
+         return;
+      }
+
       if (this.mc.player != null && this.mc.level != null) {
          if (!this.mc.player.isPassenger()) {
             if (!this.isHoldingMace()) {

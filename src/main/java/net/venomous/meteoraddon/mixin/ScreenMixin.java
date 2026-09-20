@@ -1,8 +1,7 @@
 package net.venomous.meteoraddon.mixin;
 
-import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.client.gui.screens.Screen;
-import net.venomous.meteoraddon.modules.exploit.PortalMenu;
+import net.venomous.meteoraddon.modules.exploit.PortalExploits;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -12,8 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class ScreenMixin {
     @Inject(method = "isAllowedInPortal", at = @At("HEAD"), cancellable = true)
     private void venomous$isAllowedInPortal(CallbackInfoReturnable<Boolean> cir) {
-        Modules modules = Modules.get();
-        if (modules != null && modules.isActive(PortalMenu.class)) {
+        if (PortalExploits.menusAllowed()) {
             cir.setReturnValue(true);
         }
     }

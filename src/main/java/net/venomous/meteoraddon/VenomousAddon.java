@@ -6,6 +6,7 @@ import meteordevelopment.meteorclient.addons.MeteorAddon;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.venomous.meteoraddon.modules.ModuleRegistry;
+import net.venomous.meteoraddon.utils.PreRotate;
 import org.slf4j.Logger;
 
 public class VenomousAddon extends MeteorAddon {
@@ -18,6 +19,7 @@ public class VenomousAddon extends MeteorAddon {
     @Override
     public void onInitialize() {
         LOG.info("Initializing Venomous V7.0.0 - Optimized & Refined.");
+        PreRotate.init();
         ModuleRegistry.register();
     }
 

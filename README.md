@@ -29,14 +29,23 @@ It is designed to provide a large feature set from a single addon while remainin
 
 ## Features
 
+> **A note on the `v-` prefix.** Meteor registers modules by name globally, and
+> `Modules.add` *replaces* an existing entry with the same name — reusing a Meteor
+> name unregisters their module and can break their mixins. Eleven Venomous modules
+> therefore keep a `v-` prefix because they genuinely collide with a Meteor built-in:
+> `v-air-place`, `v-anti-hunger`, `v-anti-void`, `v-auto-city`, `v-blink`,
+> `v-click-tp`, `v-ghost-hand`, `v-notifier`, `v-scaffold` and `v-speed`.
+> Every other module uses its plain name.
+
 ### Combat
 
 Combat-focused modules include:
 
 * CrystalPvP
-* VKillAura
+* KillAura
 * SuperKnockback
-* MaceKill
+* MaceKill (Slam / FakeFall)
+* ShieldBreaker (Axe / Behind)
 * AutoPotion
 * Aimbot
 * AutoClickerPlus
@@ -47,11 +56,11 @@ Combat-focused modules include:
 Modules focused on server-side behaviour, networking, and anticheat-related functionality include:
 
 * Disabler
-* VBungeeCordSpoof
+* BungeeCordSpoof
 * PingSpoof
 * TimeShift
-* VChorusExploit
-* VPortalGodMode
+* ChorusExploit
+* PortalExploits
 * And more
 
 ### Movement
@@ -61,9 +70,9 @@ Movement and positioning modules include:
 * Fly
 * Speed
 * Phase
-* Clip
-* VBlink
-* VBoatPhase
+* Clip (HClip / VClip / Combined / NoClip / VulcanClip)
+* Blink
+* BoatPhase
 * AssertDominance
 * NoPush
 * And more
@@ -74,18 +83,18 @@ Detection and player-awareness modules include:
 
 * AntiCheatDetect
 * AntiStaff
-* VAntiVanish
+* AntiVanish
 * SpectatorAlert
-* VPlayerDetection
+* PlayerDetection
 
 ### ESP & Render
 
 Rendering and world-information modules include:
 
-* VNewChunks
-* VSkeletonESP
-* VLightESP
-* VInvisESP
+* NewChunks
+* SkeletonESP
+* LightESP
+* InvisESP
 * AntiBlind
 
 ### Automation & Miscellaneous
@@ -93,10 +102,10 @@ Rendering and world-information modules include:
 Automation, inventory, and utility modules include:
 
 * Scaffold
-* VAutoFarm
+* AutoFarm
 * ItemOrganizer
-* VBookBot
-* VNotifier
+* BookBot
+* Notifier
 * And more
 
 ## Compatibility

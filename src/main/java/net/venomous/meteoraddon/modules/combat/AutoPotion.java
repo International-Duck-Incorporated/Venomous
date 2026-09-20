@@ -21,6 +21,7 @@ import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.PreRotate;
 
 public class AutoPotion extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -200,7 +201,7 @@ public class AutoPotion extends Module {
          this.cooldown = (Integer)this.delay.get();
       };
       if (this.rotate.get() == AutoPotion.RotateMode.Down) {
-         Rotations.rotate(this.mc.player.getYRot(), 90.0, 10, action);
+         PreRotate.rotateThen(this.mc.player.getYRot(), 90.0, action);
       } else {
          action.run();
       }

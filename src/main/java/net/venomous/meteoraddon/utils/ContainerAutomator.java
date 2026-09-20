@@ -121,7 +121,7 @@ public class ContainerAutomator {
          }
 
          BlockPos var3 = this.current;
-         Rotations.rotate(Rotations.getYaw(var3), Rotations.getPitch(var3), 70, () -> {
+         PreRotate.rotateThen(Rotations.getYaw(var3), Rotations.getPitch(var3), 70, () -> {
             BlockHitResult var1x = new BlockHitResult(Vec3.atCenterOf(var3), Direction.UP, var3, false);
             BlockUtils.interact(var1x, InteractionHand.MAIN_HAND, true);
          });

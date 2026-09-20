@@ -20,7 +20,7 @@ public class Clip extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Clip.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("Clip mode: HClip, VClip, NoClip, or VulcanClip."))
+         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("Clip mode: HClip, VClip, Combined, NoClip, or VulcanClip."))
                .defaultValue(Clip.Mode.HClip))
             .build()
       );
@@ -107,6 +107,37 @@ public class Clip extends Module {
             .build()
       );
    private boolean waitFlag;
+   private final Setting<Double> combinedHorizontal = this.sgGeneral.add(
+      new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+         .name("combined-horizontal")
+         .description("Horizontal distance for Combined mode.")
+         .defaultValue(0.0)
+         .range(-10.0, 10.0)
+         .sliderRange(-10.0, 10.0)
+         .visible(() -> this.mode.get() == Clip.Mode.Combined)
+         .build()
+   );
+
+   private final Setting<Double> combinedVertical = this.sgGeneral.add(
+      new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+         .name("combined-vertical")
+         .description("Vertical distance for Combined mode.")
+         .defaultValue(5.0)
+         .range(-10.0, 10.0)
+         .sliderRange(-10.0, 10.0)
+         .visible(() -> this.mode.get() == Clip.Mode.Combined)
+         .build()
+   );
+
+   private final Setting<Boolean> combinedResetVelocity = this.sgGeneral.add(
+      new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+         .name("combined-reset-velocity")
+         .description("Reset velocity after a Combined clip.")
+         .defaultValue(true)
+         .visible(() -> this.mode.get() == Clip.Mode.Combined)
+         .build()
+   );
+
    private boolean canGlide;
    private int ticks;
    private Timer timer;
@@ -126,6 +157,10 @@ public class Clip extends Module {
                break;
             case VClip:
                this.doVClip();
+               this.toggle();
+               break;
+            case Combined:
+               this.doCombinedClip();
                this.toggle();
             case NoClip:
             default:
@@ -218,6 +253,26 @@ public class Clip extends Module {
       this.moveTo(this.mc.player.getX(), this.mc.player.getY() + h, this.mc.player.getZ());
    }
 
+   /**
+    * Combined horizontal and vertical clip, merged in from the former {@code lb-clip} module.
+    *
+    * <p>lb-clip applied both offsets in a single jump, which the existing HClip/VClip modes cannot
+    * express because each only moves along one axis.
+    */
+   private void doCombinedClip() {
+      double yaw = Math.toRadians(this.mc.player.getYRot());
+      double h = this.combinedHorizontal.get();
+      this.moveTo(
+         this.mc.player.getX() - Math.sin(yaw) * h,
+         this.mc.player.getY() + this.combinedVertical.get(),
+         this.mc.player.getZ() + Math.cos(yaw) * h
+      );
+
+      if (this.combinedResetVelocity.get()) {
+         this.mc.player.setDeltaMovement(0.0, 0.0, 0.0);
+      }
+   }
+
    private void moveTo(double x, double y, double z) {
       this.mc.player.setPos(x, y, z);
       if ((Boolean)this.sendPackets.get() && this.mc.getConnection() != null) {
@@ -278,6 +333,8 @@ public class Clip extends Module {
    public enum Mode {
       HClip,
       VClip,
+      /** Combined horizontal + vertical offset in one shot (former lb-clip). */
+      Combined,
       NoClip,
       VulcanClip;
    }

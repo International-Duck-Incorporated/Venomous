@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.PreRotate;
 
 public class AutoBreakSelected extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -96,7 +97,7 @@ public class AutoBreakSelected extends Module {
                if (!this.isInRange(this.currentTarget)) {
                   this.resetMining();
                } else if ((Boolean)this.rotate.get()) {
-                  Rotations.rotate(Rotations.getYaw(this.currentTarget), Rotations.getPitch(this.currentTarget), 10, this::doBreak);
+                  PreRotate.rotateThen(Rotations.getYaw(this.currentTarget), Rotations.getPitch(this.currentTarget), this::doBreak);
                } else {
                   this.doBreak();
                }
