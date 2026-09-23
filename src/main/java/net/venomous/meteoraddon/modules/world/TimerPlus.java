@@ -16,7 +16,7 @@ public class TimerPlus extends Module {
       .add(
          ((Builder)((Builder)((Builder)new Builder().name("mode"))
                   .description("Timer pattern. Custom uses your exact values, NCP/Intave/Grim pulse timer boosts."))
-               .defaultValue(TimerPlus.Mode.NCP))
+               .defaultValue(TimerPlus.Mode.Custom))
             .build()
       );
    private final Setting<Boolean> onlyMoving = this.sgGeneral
@@ -31,8 +31,8 @@ public class TimerPlus extends Module {
       .add(
          ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
                      .name("boost"))
-                  .description("Boost timer multiplier."))
-               .defaultValue(2.0)
+               .description("Boost timer multiplier."))
+               .defaultValue(1.0)
                .range(0.1, 10.0)
                .sliderMax(5.0)
                .visible(() -> this.mode.get() == TimerPlus.Mode.Custom))
@@ -83,6 +83,10 @@ public class TimerPlus extends Module {
       this.timer = (Timer)Modules.get().get(Timer.class);
       this.phaseTicks = 0;
       this.boosting = true;
+      // Start neutral; never inherit a stale override from another module or session.
+      if (this.timer != null) {
+         this.timer.setOverride(1.0);
+      }
    }
 
    public void onDeactivate() {

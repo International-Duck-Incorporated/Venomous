@@ -104,6 +104,7 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.misc.HideScoreboard",
             "net.venomous.meteoraddon.modules.misc.NameProtect",
             "net.venomous.meteoraddon.modules.misc.NoBlockInteract",
+            "net.venomous.meteoraddon.modules.misc.MovementDebug",
             "net.venomous.meteoraddon.modules.misc.PacketLogger",
             "net.venomous.meteoraddon.modules.movement.AntiBounce",
             "net.venomous.meteoraddon.modules.movement.AssertDominance",

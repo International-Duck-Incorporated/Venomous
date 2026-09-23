@@ -4,6 +4,7 @@
 
 <h1 align="center">Venomous</h1>
 <p align="center">A feature-heavy Meteor Client addon for Minecraft 26.2.</p>
+<p align="center"><a href="https://github.com/International-Duck-Incorporated/Venomous">Upstream repository</a></p>
 
 <div align="center">
     <img src="https://img.shields.io/badge/Minecraft-26.2-3C8527?logo=minecraft&logoColor=white" alt="Minecraft 26.2"/>

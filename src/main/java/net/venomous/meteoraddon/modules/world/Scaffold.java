@@ -11,6 +11,7 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.Rotations;
+import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -306,7 +307,7 @@ public class Scaffold extends Module {
     * techniques now genuinely diverge:
     *
     * <ul>
-    *   <li><b>GrimScaffold</b> — Grim's RotationPlace wants a plausible downward look.</li>
+    *   <li><b>GrimScaffold</b> — use the geometric face pitch; a fixed pitch can point away from the target.</li>
     *   <li><b>GodBridge / Breezily</b> — the classic ~76-78 degree diagonal pitch.</li>
     *   <li><b>NCPNormal</b> — NCP wants a hard straight-down look.</li>
     *   <li><b>VulcanExpand / VulcanSprint</b> — shallower, since Vulcan checks pitch-vs-motion.</li>
@@ -319,7 +320,9 @@ public class Scaffold extends Module {
          case GodBridge -> 76.5F;
          case Breezily -> 78.0F;
          case NCPNormal -> 89.5F;
-         case GrimScaffold -> 72.0F;
+         // Do not force Grim to 72 degrees: the target face may require a very
+         // different pitch, and Grim's PositionPlace check validates the hit point.
+         case GrimScaffold -> Float.NaN;
          case VulcanExpand, VulcanSprint -> 68.0F;
          default -> Float.NaN;
       };
@@ -583,42 +586,44 @@ public class Scaffold extends Module {
          return false;
       }
 
-      for (Direction face : Direction.values()) {
+      // Match Meteor's placement-side selection instead of taking the first solid
+      // neighbour. The first enum direction is often not the face visible from
+      // the player, which produces Grim PositionPlace violations.
+      Direction face = BlockUtils.getPlaceSide(pos);
+      if (face != null) {
          BlockPos neighbor = pos.relative(face);
-         if (!this.mc.level.getBlockState(neighbor).isAir() && this.mc.level.getWorldBorder().isWithinBounds(neighbor)) {
+         Vec3 hitVec = Vec3.atCenterOf(neighbor).add(face.getStepX() * 0.5, face.getStepY() * 0.5, face.getStepZ() * 0.5);
+         if (!this.mc.level.getBlockState(neighbor).isAir()
+            && this.mc.level.getWorldBorder().isWithinBounds(neighbor)
+            && this.mc.player.getEyePosition().distanceTo(hitVec) <= 5.0) {
             Direction placeFace = face.getOpposite();
-            Vec3 hitVec = Vec3.atCenterOf(neighbor).add(placeFace.getStepX() * 0.5, placeFace.getStepY() * 0.5, placeFace.getStepZ() * 0.5);
-            if (!(this.mc.player.getEyePosition().distanceTo(hitVec) > 5.0)) {
-               float yaw = this.wrapDegrees((float)Rotations.getYaw(hitVec));
-               float pitch = this.clampPitch((float)Rotations.getPitch(hitVec));
+            float yaw = this.wrapDegrees((float)Rotations.getYaw(hitVec));
+            float pitch = this.clampPitch((float)Rotations.getPitch(hitVec));
 
-               float techPitch = this.techniquePitch();
-               if (!Float.isNaN(techPitch)) {
-                  pitch = this.clampPitch(techPitch);
-               }
-
-               if (this.grimSmoothRotation.get() && this.grimRotationJitter.get() > 0.0) {
-                  // Grim's DuplicateRotPlace flags identical consecutive rotations (xDiff < 0.0001).
-                  double jitter = this.grimRotationJitter.get();
-                  yaw += (float)((this.random.nextDouble() - 0.5) * jitter);
-                  pitch = this.clampPitch(pitch + (float)((this.random.nextDouble() - 0.5) * jitter));
-               }
-
-               this.pendingNeighbor = neighbor;
-               this.pendingFace = placeFace;
-               this.pendingHit = hitVec;
-               this.pendingYaw = yaw;
-               this.pendingPitch = pitch;
-
-               if (this.serverSideRotations.get()) {
-                  // No callback: we place from SendMovementPacketsEvent.Pre instead.
-                  Rotations.rotate(yaw, pitch, 20, null);
-               } else {
-                  this.rotateTo(hitVec);
-               }
-
-               return true;
+            float techPitch = this.techniquePitch();
+            if (!Float.isNaN(techPitch)) {
+               pitch = this.clampPitch(techPitch);
             }
+
+            if (this.grimSmoothRotation.get() && this.grimRotationJitter.get() > 0.0) {
+               double jitter = this.grimRotationJitter.get();
+               yaw += (float)((this.random.nextDouble() - 0.5) * jitter);
+               pitch = this.clampPitch(pitch + (float)((this.random.nextDouble() - 0.5) * jitter));
+            }
+
+            this.pendingNeighbor = neighbor;
+            this.pendingFace = placeFace;
+            this.pendingHit = hitVec;
+            this.pendingYaw = yaw;
+            this.pendingPitch = pitch;
+
+            if (this.serverSideRotations.get()) {
+               Rotations.rotate(yaw, pitch, 20, null);
+            } else {
+               this.rotateTo(hitVec);
+            }
+
+            return true;
          }
       }
 
@@ -643,9 +648,17 @@ public class Scaffold extends Module {
       }
 
       BlockHitResult hitResult = new BlockHitResult(this.pendingHit, this.pendingFace, this.pendingNeighbor, false);
-      InteractionResult result = this.mc.gameMode.useItemOn(this.mc.player, InteractionHand.MAIN_HAND, hitResult);
-      if (result.consumesAction() && this.swing.get()) {
-         this.mc.player.swing(InteractionHand.MAIN_HAND);
+      // Mirror Meteor's BlockUtils.interact: the placement packet itself must not
+      // inherit a locally managed sneak state.
+      boolean wasSneaking = this.mc.player.isShiftKeyDown();
+      this.mc.player.setShiftKeyDown(false);
+      try {
+         InteractionResult result = this.mc.gameMode.useItemOn(this.mc.player, InteractionHand.MAIN_HAND, hitResult);
+         if (result.consumesAction() && this.swing.get()) {
+            this.mc.player.swing(InteractionHand.MAIN_HAND);
+         }
+      } finally {
+         this.mc.player.setShiftKeyDown(wasSneaking);
       }
 
       this.placeCooldown = this.techniqueDelay();

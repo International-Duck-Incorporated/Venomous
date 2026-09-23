@@ -92,6 +92,7 @@ import net.venomous.meteoraddon.modules.misc.FreecamMining;
 import net.venomous.meteoraddon.modules.misc.HideScoreboard;
 import net.venomous.meteoraddon.modules.misc.NameProtect;
 import net.venomous.meteoraddon.modules.misc.NoBlockInteract;
+import net.venomous.meteoraddon.modules.misc.MovementDebug;
 import net.venomous.meteoraddon.modules.misc.PacketLogger;
 import net.venomous.meteoraddon.modules.movement.AntiBounce;
 import net.venomous.meteoraddon.modules.movement.AssertDominance;
@@ -211,6 +212,7 @@ public class ModuleRegistry {
       Modules.get().add(new HideScoreboard());
       Modules.get().add(new NameProtect());
       Modules.get().add(new NoBlockInteract());
+      Modules.get().add(new MovementDebug());
       Modules.get().add(new PacketLogger());
       Modules.get().add(new AntiBounce());
       Modules.get().add(new AssertDominance());

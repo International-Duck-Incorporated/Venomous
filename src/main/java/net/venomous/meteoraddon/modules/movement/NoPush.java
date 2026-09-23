@@ -53,7 +53,13 @@ public class NoPush extends Module {
     * <p>Static so the mixins can consult it without holding a module reference.
     */
    public static boolean blocks(Source source) {
-      NoPush module = Modules.get().get(NoPush.class);
+      // Entity mixins can fire before Meteor's module system exists.
+      Modules modules = Modules.get();
+      if (modules == null) {
+         return false;
+      }
+
+      NoPush module = modules.get(NoPush.class);
       return module != null && module.isActive() && module.suppresses(source);
    }
 
