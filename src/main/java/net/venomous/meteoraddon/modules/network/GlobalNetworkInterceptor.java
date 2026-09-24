@@ -84,7 +84,7 @@ public class GlobalNetworkInterceptor extends Module {
          .add(
             ((Builder)((Builder)((Builder)((Builder)new Builder().name("interpolate")).description("Split fast movements into smaller steps."))
                      .defaultValue(false))
-                  .visible(this.enforceKinematics::get)
+                  .visible(this.enforceKinematics::get))
                .build()
          );
       this.quantizeRotations = this.sgRotation
