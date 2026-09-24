@@ -37,12 +37,6 @@ public class AntiTrap extends Module {
    }
 
    public void onDeactivate() {
-      if (this.mc.level != null) {
-         for (Entity var2 : this.hiddenEntities) {
-            ;
-         }
-      }
-
       this.hiddenEntities.clear();
    }
 

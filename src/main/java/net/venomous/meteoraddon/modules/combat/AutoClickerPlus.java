@@ -129,6 +129,13 @@ public class AutoClickerPlus extends Module {
       this.generateClickTimings();
    }
 
+   @Override
+   public void onDeactivate() {
+      this.ticksUntilClick = 0;
+      this.timingIndex = 0;
+      this.clickTimings = null;
+   }
+
    private void generateClickTimings() {
       int configuredMin = (Integer)this.minCps.get();
       int configuredMax = (Integer)this.maxCps.get();

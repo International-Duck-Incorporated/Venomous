@@ -68,6 +68,11 @@ public class AntiStaff extends Module {
       this.alerted.clear();
    }
 
+   @Override
+   public void onDeactivate() {
+      this.alerted.clear();
+   }
+
    @EventHandler
    private void onPacket(Receive event) {
       if (!this.alertJoin.get()) {

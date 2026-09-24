@@ -51,6 +51,13 @@ public class Phase extends Module {
       super(VenomousAddon.CATEGORY, "phase", "Phases through blocks using Normal, Blink, or Clip modes.");
    }
 
+   @Override
+   public void onActivate() {
+      this.blinkQueue.clear();
+      this.flushing = false;
+   }
+
+   @Override
    public void onDeactivate() {
       if (this.mc.player != null) {
          this.mc.player.noPhysics = false;

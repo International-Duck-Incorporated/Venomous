@@ -116,6 +116,14 @@ public class CriticalsPlus extends Module {
       this.hasAttackedThisJump = false;
    }
 
+   @Override
+   public void onDeactivate() {
+      this.lastCritTime = 0L;
+      this.fallTicks = 0;
+      this.waitingForCrit = false;
+      this.hasAttackedThisJump = false;
+   }
+
    @EventHandler
    private void onPacketSend(Send event) {
       if (this.mc.player != null) {

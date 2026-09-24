@@ -43,6 +43,11 @@ public class AnchorMacro extends Module {
       this.timer = 0;
    }
 
+   @Override
+   public void onDeactivate() {
+      this.timer = 0;
+   }
+
    @EventHandler
    private void onTick(Pre event) {
       if (this.mc.player != null && this.mc.level != null) {

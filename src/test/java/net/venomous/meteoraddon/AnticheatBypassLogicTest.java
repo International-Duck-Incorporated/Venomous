@@ -68,4 +68,31 @@ public class AnticheatBypassLogicTest {
         UUID npcOfflineUuid = UUID.nameUUIDFromBytes("CitizenNPC".getBytes());
         assertEquals(3, npcOfflineUuid.version(), "Offline / NPC UUID is version 3");
     }
+
+    @Test
+    void testAssertDominanceTangentialOrbitVectorMath() {
+        // Target at (10, 64, 10), player at (12, 64, 10) -> dx = 2, dz = 0, dist = 2
+        double dx = 2.0;
+        double dz = 0.0;
+        double dist = Math.hypot(dx, dz);
+        assertEquals(2.0, dist, 1e-6);
+
+        double ux = dx / dist; // 1.0
+        double uz = dz / dist; // 0.0
+
+        double tx = -uz; // 0.0
+        double tz = ux;  // 1.0
+
+        double speed = 0.2;
+        double vx = tx * speed;
+        double vz = tz * speed;
+
+        // Tangential velocity should be purely along Z axis (perpendicular to X offset)
+        assertEquals(0.0, vx, 1e-6);
+        assertEquals(0.2, vz, 1e-6);
+
+        // Dot product between radial unit vector (ux, uz) and tangential unit vector (tx, tz) must be 0 (orthogonal)
+        double dotProduct = ux * tx + uz * tz;
+        assertEquals(0.0, dotProduct, 1e-6);
+    }
 }

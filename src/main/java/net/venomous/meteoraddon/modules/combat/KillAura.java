@@ -185,9 +185,11 @@ public class KillAura extends Module {
 
    @Override
    public void onDeactivate() {
-      if (this.mc.player != null && this.autoBlock.get()) {
+      if (this.mc.options != null && this.mc.options.keyUse != null && this.autoBlock.get()) {
          this.mc.options.keyUse.setDown(false);
       }
+      this.ticksUntilAttack = 0;
+      this.target = null;
    }
 
    @EventHandler

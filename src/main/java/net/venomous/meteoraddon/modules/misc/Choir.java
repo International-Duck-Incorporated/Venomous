@@ -118,6 +118,7 @@ public class Choir extends Module {
       this.script = new ArrayList<>();
    }
 
+   @Override
    public void onActivate() {
       this.script.clear();
       this.index = 0;
@@ -125,23 +126,29 @@ public class Choir extends Module {
       this.failed = false;
       if (!this.load()) {
          this.failed = true;
-         this.toggle();
+         this.mc.execute(() -> {
+            if (this.isActive()) this.toggle();
+         });
       } else if (this.script.isEmpty()) {
          if ((Boolean)this.notify.get()) {
             this.warning("Nothing to sing - the file has no sendable lines.", new Object[0]);
          }
 
          this.failed = true;
-         this.toggle();
+         this.mc.execute(() -> {
+            if (this.isActive()) this.toggle();
+         });
       } else {
          this.timer = this.script.getFirst().delayTicks;
       }
    }
 
+   @Override
    public void onDeactivate() {
       this.script.clear();
       this.index = 0;
       this.timer = 0;
+      this.failed = false;
    }
 
    @EventHandler

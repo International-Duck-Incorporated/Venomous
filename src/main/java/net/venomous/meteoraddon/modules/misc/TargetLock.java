@@ -40,13 +40,16 @@ public class TargetLock extends Module {
       super(VenomousAddon.CATEGORY, "targetlock", "Locks onto a target player when attacking.");
    }
 
+   @Override
    public void onActivate() {
       this.lockedEntityId = null;
       this.lockTime = 0L;
    }
 
+   @Override
    public void onDeactivate() {
       this.lockedEntityId = null;
+      this.lockTime = 0L;
    }
 
    @EventHandler

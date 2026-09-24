@@ -15,7 +15,6 @@ import meteordevelopment.meteorclient.utils.entity.SortPriority;
 import meteordevelopment.meteorclient.utils.entity.Target;
 import meteordevelopment.meteorclient.utils.entity.TargetUtils;
 import meteordevelopment.meteorclient.utils.player.PlayerUtils;
-import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -86,18 +85,10 @@ public class Aimbot extends Module {
    private final Setting<Double> speed = this.sgHumanlike.add(
       new DoubleSetting.Builder()
          .name("speed")
-         .description("How fast to aim at the entity.")
-         .defaultValue(5.0)
+         .description("How fast to aim at the entity (degrees per tick).")
+         .defaultValue(15.0)
          .min(1.0)
-         .sliderMax(20.0)
-         .build()
-   );
-
-   private final Setting<Boolean> serverSide = this.sgHumanlike.add(
-      new BoolSetting.Builder()
-         .name("server-side")
-         .description("Spoof rotations to the server to avoid jittery camera for the player.")
-         .defaultValue(true)
+         .sliderMax(60.0)
          .build()
    );
 
@@ -171,12 +162,9 @@ public class Aimbot extends Module {
          targetPitch += (float)(this.random.nextGaussian() * 0.1);
       }
 
-      if (this.serverSide.get()) {
-         Rotations.rotate(targetYaw, targetPitch, 10, null);
-      } else {
-         this.mc.player.setYRot(this.smooth(this.mc.player.getYRot(), targetYaw));
-         this.mc.player.setXRot(this.smooth(this.mc.player.getXRot(), targetPitch));
-      }
+      // Smooth client camera directly; never spoof a disconnected server rotation state for aimbot.
+      this.mc.player.setYRot(this.smooth(this.mc.player.getYRot(), targetYaw));
+      this.mc.player.setXRot(this.smooth(this.mc.player.getXRot(), targetPitch));
    }
 
    private float smooth(float current, float target) {
@@ -194,6 +182,7 @@ public class Aimbot extends Module {
    }
 
    private float applyGcd(float delta) {
+      if (this.mc.options == null) return delta;
       double sens = this.mc.options.sensitivity().get();
       double f = sens * 0.6 + 0.2;
       double gcd = f * f * f * 1.2;

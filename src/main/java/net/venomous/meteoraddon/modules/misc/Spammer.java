@@ -24,6 +24,20 @@ public class Spammer extends Module {
       );
    private int tickCounter = 0;
 
+   public Spammer() {
+      super(VenomousAddon.CATEGORY, "spammer", "Spam chat with messages.");
+   }
+
+   @Override
+   public void onActivate() {
+      this.tickCounter = 0;
+   }
+
+   @Override
+   public void onDeactivate() {
+      this.tickCounter = 0;
+   }
+
    @EventHandler
    private void onTick(Pre event) {
       if (this.mc.player != null) {
@@ -39,9 +53,5 @@ public class Spammer extends Module {
             this.tickCounter = 0;
          }
       }
-   }
-
-   public Spammer() {
-      super(VenomousAddon.CATEGORY, "spammer", "Spam chat with messages.");
    }
 }

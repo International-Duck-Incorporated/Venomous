@@ -40,32 +40,42 @@ public class AntiVoid extends Module {
    private double safeX;
    private double safeY;
    private double safeZ;
+   private boolean hasSafePos = false;
 
    public AntiVoid() {
       // Keep Meteor's built-in anti-void module available; module names are global.
       super(VenomousAddon.CATEGORY, "v-anti-void", "Prevents falling into the void.");
    }
 
+   @Override
    public void onActivate() {
-      if (this.mc.player != null) {
+      if (this.mc.player != null && this.mc.level != null && this.mc.player.getY() > this.mc.level.getMinY() + (Integer)this.threshold.get()) {
          this.rememberSafe();
+      } else {
+         this.hasSafePos = false;
       }
+   }
+
+   @Override
+   public void onDeactivate() {
+      this.hasSafePos = false;
    }
 
    @EventHandler
    private void onTick(Pre event) {
       if (this.mc.player != null && this.mc.level != null) {
-         if (this.mc.player.onGround()) {
+         if (this.mc.player.onGround() && this.mc.player.getY() > this.mc.level.getMinY() + (Integer)this.threshold.get()) {
             this.rememberSafe();
          }
 
          if (this.nearVoid()) {
             if (this.mode.get() == AntiVoid.Mode.Motion) {
                this.mc.player.setDeltaMovement(this.mc.player.getDeltaMovement().x, (Double)this.upwardVelocity.get(), this.mc.player.getDeltaMovement().z);
-               this.mc.player.fallDistance = 0.0;
-            } else {
+               this.mc.player.fallDistance = 0.0F;
+            } else if (this.hasSafePos) {
                this.mc.player.setPos(this.safeX, this.safeY, this.safeZ);
-               this.mc.player.fallDistance = 0.0;
+               this.mc.player.setDeltaMovement(0.0, 0.0, 0.0);
+               this.mc.player.fallDistance = 0.0F;
             }
          }
       }
@@ -79,6 +89,7 @@ public class AntiVoid extends Module {
       this.safeX = this.mc.player.getX();
       this.safeY = this.mc.player.getY();
       this.safeZ = this.mc.player.getZ();
+      this.hasSafePos = true;
    }
 
    public enum Mode {

@@ -58,6 +58,7 @@ public class NoSignScreen extends Module {
       super(VenomousAddon.CATEGORY, "no-sign-screen", "Skips the sign edit screen when placing signs, leaving them blank.");
    }
 
+   @Override
    public void onActivate() {
       this.placed.clear();
       this.queue.clear();
@@ -65,9 +66,12 @@ public class NoSignScreen extends Module {
       this.timer = 0;
    }
 
+   @Override
    public void onDeactivate() {
       this.placed.clear();
       this.queue.clear();
+      this.tick = 0;
+      this.timer = 0;
    }
 
    @EventHandler

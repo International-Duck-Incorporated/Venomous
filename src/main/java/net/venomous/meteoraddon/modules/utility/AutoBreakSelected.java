@@ -63,7 +63,14 @@ public class AutoBreakSelected extends Module {
       super(VenomousAddon.CATEGORY, "auto-break-selected", "Automatically mines nearby blocks of the selected types.");
    }
 
+   @Override
    public void onActivate() {
+      this.resetMining();
+      this.bypassDelay = 0;
+   }
+
+   @Override
+   public void onDeactivate() {
       this.resetMining();
       this.bypassDelay = 0;
    }

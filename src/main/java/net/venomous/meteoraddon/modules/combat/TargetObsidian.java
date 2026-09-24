@@ -132,6 +132,12 @@ public class TargetObsidian extends Module {
       this.placePos = null;
    }
 
+   @Override
+   public void onDeactivate() {
+      this.timer = 0;
+      this.placePos = null;
+   }
+
    @EventHandler
    private void onTick(Pre event) {
       this.placePos = null;

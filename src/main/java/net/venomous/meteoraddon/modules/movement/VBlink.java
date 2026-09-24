@@ -43,21 +43,24 @@ public class VBlink extends Module {
       super(VenomousAddon.CATEGORY, "v-blink", "Suspends movement packets, making you appear frozen to others.");
    }
 
+   @Override
    public void onActivate() {
       this.outgoingPackets.clear();
       this.startPos = this.mc.player != null ? this.mc.player.position() : null;
       this.ticks = 0;
    }
 
+   @Override
    public void onDeactivate() {
-      for (Packet<?> packet : this.outgoingPackets) {
-         if (this.mc.player != null && this.mc.player.connection != null) {
+      if (this.mc.player != null && this.mc.player.connection != null) {
+         for (Packet<?> packet : this.outgoingPackets) {
             this.mc.player.connection.send(packet);
          }
       }
 
       this.outgoingPackets.clear();
       this.startPos = null;
+      this.ticks = 0;
    }
 
    @EventHandler

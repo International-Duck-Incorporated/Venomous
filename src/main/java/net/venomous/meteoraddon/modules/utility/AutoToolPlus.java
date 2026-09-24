@@ -62,6 +62,12 @@ public class AutoToolPlus extends Module {
       super(VenomousAddon.CATEGORY, "auto-tool-plus", "Fast auto-tool with durability safety, enchant preference and weapon fallback.");
    }
 
+   @Override
+   public void onActivate() {
+      this.previousSlot = -1;
+   }
+
+   @Override
    public void onDeactivate() {
       this.restoreSlot();
    }

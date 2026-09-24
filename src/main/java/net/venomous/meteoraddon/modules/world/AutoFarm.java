@@ -81,7 +81,14 @@ public class AutoFarm extends Module {
       super(VenomousAddon.CATEGORY, "auto-farm", "Automatically harvests and plants crops correctly on servers.");
    }
 
+   @Override
    public void onActivate() {
+      this.delayCounter = 0;
+      this.currentTarget = null;
+   }
+
+   @Override
+   public void onDeactivate() {
       this.delayCounter = 0;
       this.currentTarget = null;
    }

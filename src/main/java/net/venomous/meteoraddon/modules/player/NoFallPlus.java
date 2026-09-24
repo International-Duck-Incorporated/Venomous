@@ -87,8 +87,16 @@ public class NoFallPlus extends Module {
    }
 
    @Override
+   public void onActivate() {
+      this.blinkQueue.clear();
+      this.sending = false;
+      this.ticksFalling = 0;
+   }
+
+   @Override
    public void onDeactivate() {
       this.flushBlink();
+      this.ticksFalling = 0;
    }
 
    @EventHandler

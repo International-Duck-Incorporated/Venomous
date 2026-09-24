@@ -109,6 +109,7 @@ public class VAirPlace extends Module {
     @Override
     public void onDeactivate() {
         this.targetPos = null;
+        this.timer = 0;
     }
 
     @EventHandler

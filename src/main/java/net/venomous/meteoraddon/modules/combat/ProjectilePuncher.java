@@ -82,6 +82,11 @@ public class ProjectilePuncher extends Module {
       this.ticksUntilPunch = 0;
    }
 
+   @Override
+   public void onDeactivate() {
+      this.ticksUntilPunch = 0;
+   }
+
    @EventHandler
    private void onTick(Pre event) {
       if (this.mc.player != null && this.mc.level != null) {

@@ -1,7 +1,5 @@
 package net.venomous.meteoraddon.modules.world;
 
-import java.util.Random;
-import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
@@ -10,21 +8,20 @@ import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import meteordevelopment.meteorclient.utils.player.Rotations;
+import meteordevelopment.meteorclient.utils.player.FindItemResult;
+import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.MovementMath;
 
 public class Scaffold extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -74,10 +71,10 @@ public class Scaffold extends Module {
          .build()
    );
 
-   private final Setting<Boolean> serverSideRotations = this.sgGeneral.add(
+   private final Setting<Boolean> rotate = this.sgGeneral.add(
       new BoolSetting.Builder()
-         .name("server-side-rotations")
-         .description("Spoof rotations to the server so you don't notice camera shifts.")
+         .name("rotate")
+         .description("Rotate towards the placement block.")
          .defaultValue(true)
          .build()
    );
@@ -124,9 +121,9 @@ public class Scaffold extends Module {
    private final Setting<Boolean> bridgePitchAssist = this.sgBridge.add(
       new BoolSetting.Builder()
          .name("pitch-assist")
-         .description("Automatically pitch down towards placement face when nearing block edges.")
+         .description("Automatically pitch down towards placement face when nearing block edges (bypasses Vulcan/NCP pitch checks).")
          .defaultValue(true)
-         .visible(() -> this.technique.get() == Scaffold.Technique.VapeBridge || this.technique.get() == Scaffold.Technique.GodBridge)
+         .visible(this::isBridgeMode)
          .build()
    );
 
@@ -135,7 +132,7 @@ public class Scaffold extends Module {
          .name("strafe-assist")
          .description("Smooth strafe lock along bridge vector (keeps movement aligned).")
          .defaultValue(false)
-         .visible(() -> this.technique.get() == Scaffold.Technique.VapeBridge || this.technique.get() == Scaffold.Technique.Breezily)
+         .visible(this::isBridgeMode)
          .build()
    );
 
@@ -148,40 +145,11 @@ public class Scaffold extends Module {
          .build()
    );
 
-   private final Setting<Boolean> grimSmoothRotation = this.sgGrim.add(
-      new BoolSetting.Builder()
-         .name("grim-smooth-rotation")
-         .description("Smooth rotation with jitter to avoid DuplicateRotPlace.")
-         .defaultValue(true)
-         .build()
-   );
-
-   private final Setting<Double> grimRotationJitter = this.sgGrim.add(
-      new DoubleSetting.Builder()
-         .name("grim-rotation-jitter")
-         .description("Rotation jitter to avoid DuplicateRotPlace (xDiff < 0.0001 flags).")
-         .defaultValue(0.5)
-         .range(0.0, 5.0)
-         .sliderMax(3.0)
-         .visible(this.grimSmoothRotation::get)
-         .build()
-   );
-
-   private final Setting<Double> rotationSpeed = this.sgGeneral.add(
-      new DoubleSetting.Builder()
-         .name("rotation-speed")
-         .description("Rotation speed (degrees/tick).")
-         .defaultValue(120.0)
-         .range(10.0, 360.0)
-         .sliderMax(360.0)
-         .build()
-   );
-
    private final Setting<Integer> vulcanExpand = this.sgVulcan.add(
       new IntSetting.Builder()
          .name("vulcan-expand")
-         .description("Expand for Vulcan — high value bypasses because isBridging becomes false!")
-         .defaultValue(2)
+         .description("Blocks to expand ahead for Vulcan bridging.")
+         .defaultValue(1)
          .range(0, 5)
          .sliderMax(5)
          .visible(() -> this.technique.get() == Scaffold.Technique.VulcanExpand)
@@ -191,8 +159,8 @@ public class Scaffold extends Module {
    private final Setting<Boolean> vulcanSprintDisabler = this.sgVulcan.add(
       new BoolSetting.Builder()
          .name("vulcan-sprint-disabler")
-         .description("Send sprint/unsneak packets to bypass Vulcan scaffold checks (LB style).")
-         .defaultValue(true)
+         .description("Send sprint toggle packets for legacy Vulcan versions (disable on modern Vulcan).")
+         .defaultValue(false)
          .visible(() -> this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
          .build()
    );
@@ -244,29 +212,13 @@ public class Scaffold extends Module {
    private int repeatedAttempts = 0;
    private boolean managedSneak = false;
    private boolean previousSneakDown = false;
-   private final Random random = new Random();
-
-   /** How close the server-side rotation must be before a staged placement is flushed. */
-   private static final float ROTATION_TOLERANCE = 1.5F;
-
-   /** Ticks a staged placement may wait for its rotation before being discarded. */
-   private static final int MAX_PENDING_AGE = 4;
-
-   // Placement staged during the tick, flushed on SendMovementPacketsEvent.Pre.
-   private int pendingAge = 0;
-   private BlockPos pendingNeighbor = null;
-   private Direction pendingFace = null;
-   private Vec3 pendingHit = null;
-   private float pendingYaw = 0.0F;
-   private float pendingPitch = 0.0F;
+   private int targetY = -1;
 
    public Scaffold() {
-      // Meteor has its own movement module named "scaffold". Modules.add replaces
-      // modules by name, so reusing that name removes Meteor's Scaffold class and
-      // makes Meteor's LocalPlayer mixin fail with a NullPointerException.
       super(VenomousAddon.CATEGORY, "v-scaffold", "Scaffold & Bridge bypasses for Grim, Vulcan, NCP, and fast bridging.");
    }
 
+   @Override
    public void onActivate() {
       this.prevSlot = -1;
       this.towerTicks = 0;
@@ -276,9 +228,10 @@ public class Scaffold extends Module {
       this.repeatedAttempts = 0;
       this.managedSneak = false;
       this.previousSneakDown = false;
-      this.clearPendingPlacement();
+      this.targetY = this.mc.player != null ? (int)Math.floor(this.mc.player.getY() - 1.0) : -1;
    }
 
+   @Override
    public void onDeactivate() {
       if (this.prevSlot != -1 && this.mc.player != null) {
          this.mc.player.getInventory().setSelectedSlot(this.prevSlot);
@@ -288,7 +241,7 @@ public class Scaffold extends Module {
       this.placeCooldown = 0;
       this.lastAttemptPos = null;
       this.repeatedAttempts = 0;
-      this.clearPendingPlacement();
+      this.targetY = -1;
    }
 
    private boolean isBridgeMode() {
@@ -296,46 +249,16 @@ public class Scaffold extends Module {
          || this.technique.get() == Scaffold.Technique.BridgeMacro
          || this.technique.get() == Scaffold.Technique.VapeBridge
          || this.technique.get() == Scaffold.Technique.GodBridge
-         || this.technique.get() == Scaffold.Technique.Breezily;
-   }
-
-   /**
-    * Per-technique placement pitch, in degrees.
-    *
-    * <p>Previously every technique resolved to the same centre-of-face aim, which is why the presets
-    * all behaved identically. Each anticheat fingerprints a different aspect of the placement, so the
-    * techniques now genuinely diverge:
-    *
-    * <ul>
-    *   <li><b>GrimScaffold</b> — use the geometric face pitch; a fixed pitch can point away from the target.</li>
-    *   <li><b>GodBridge / Breezily</b> — the classic ~76-78 degree diagonal pitch.</li>
-    *   <li><b>NCPNormal</b> — NCP wants a hard straight-down look.</li>
-    *   <li><b>VulcanExpand / VulcanSprint</b> — shallower, since Vulcan checks pitch-vs-motion.</li>
-    * </ul>
-    *
-    * @return the pitch to aim with, or {@code Float.NaN} to use the geometric face pitch.
-    */
-   private float techniquePitch() {
-      return switch (this.technique.get()) {
-         case GodBridge -> 76.5F;
-         case Breezily -> 78.0F;
-         case NCPNormal -> 89.5F;
-         // Do not force Grim to 72 degrees: the target face may require a very
-         // different pitch, and Grim's PositionPlace check validates the hit point.
-         case GrimScaffold -> Float.NaN;
-         case VulcanExpand, VulcanSprint -> 68.0F;
-         default -> Float.NaN;
-      };
+         || this.technique.get() == Scaffold.Technique.Breezily
+         || this.technique.get() == Scaffold.Technique.VulcanSprint;
    }
 
    /** Per-technique placement cadence multiplier applied on top of {@code place-delay}. */
    private int techniqueDelay() {
       int base = Math.max(1, this.placeDelay.get());
       return switch (this.technique.get()) {
-         // Fast bridging techniques need to keep up with sprint speed.
          case GodBridge, Breezily, VapeBridge -> Math.max(1, base - 2);
-         // Vulcan penalises bursty placement, so slow it down slightly.
-         case VulcanExpand, VulcanSprint -> base + 1;
+         case VulcanExpand, VulcanSprint -> Math.max(1, base);
          default -> base;
       };
    }
@@ -351,10 +274,8 @@ public class Scaffold extends Module {
          this.placeCooldown--;
       }
 
-      // Drop a staged placement that never became flushable (e.g. the rotation was interrupted),
-      // so a stale target can't wedge placement permanently.
-      if (this.pendingNeighbor != null && ++this.pendingAge > MAX_PENDING_AGE) {
-         this.clearPendingPlacement();
+      if (this.mc.options.keyJump.isDown() || (int)Math.floor(this.mc.player.getY() - 1.0) > this.targetY) {
+         this.targetY = (int)Math.floor(this.mc.player.getY() - 1.0);
       }
 
       if ((this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
@@ -366,23 +287,8 @@ public class Scaffold extends Module {
       }
 
       if (!isBridgeMode()) {
-         int blockSlot = this.findBlockSlot();
-         if (blockSlot != -1) {
-            if (this.autoBlockSwitch.get()) {
-               if (this.prevSlot == -1) {
-                  this.prevSlot = this.mc.player.getInventory().getSelectedSlot();
-               }
-
-               if (this.technique.get() == Scaffold.Technique.GrimScaffold && this.grimUseScaffolding.get()) {
-                  int scaffoldSlot = this.findScaffoldSlot();
-                  if (scaffoldSlot != -1) {
-                     blockSlot = scaffoldSlot;
-                  }
-               }
-
-               this.mc.player.getInventory().setSelectedSlot(blockSlot);
-            }
-
+         FindItemResult block = this.findBlock();
+         if (block.found()) {
             if (this.tower.get() && this.mc.player.getXRot() < -75.0F) {
                this.doTower();
             } else {
@@ -430,18 +336,17 @@ public class Scaffold extends Module {
          return;
       }
 
-      int blockSlot = this.findBlockSlot();
-      if (blockSlot != -1 && this.autoBlockSwitch.get()) {
-         if (this.prevSlot == -1) {
-            this.prevSlot = this.mc.player.getInventory().getSelectedSlot();
+      if (this.bridgeStrafeAssist.get()) {
+         float yaw = this.mc.player.getYRot();
+         float snappedYaw = Math.round(yaw / 45.0F) * 45.0F;
+         if (Math.abs(yaw - snappedYaw) < 15.0F) {
+            this.mc.player.setYRot(snappedYaw);
          }
-         this.mc.player.getInventory().setSelectedSlot(blockSlot);
       }
 
       boolean edge = this.edgeDistance(dir) <= this.bridgeEdgeThreshold.get();
       Scaffold.Technique tech = this.technique.get();
 
-      // GodBridge / Breezily: fast timing, no sneak on ground if aligned
       boolean isFastBridge = (tech == Scaffold.Technique.GodBridge || tech == Scaffold.Technique.Breezily);
 
       if (!edge) {
@@ -457,8 +362,8 @@ public class Scaffold extends Module {
             float oldYaw = this.mc.player.getYRot();
             float oldPitch = this.mc.player.getXRot();
 
-            if (this.bridgePitchAssist.get() && (tech == Scaffold.Technique.VapeBridge || tech == Scaffold.Technique.GodBridge)) {
-               if (this.mc.player.getXRot() < 65.0F && !this.serverSideRotations.get()) {
+            if (this.bridgePitchAssist.get() && (tech == Scaffold.Technique.VapeBridge || tech == Scaffold.Technique.GodBridge || tech == Scaffold.Technique.VulcanSprint)) {
+               if (this.mc.player.getXRot() < 65.0F && !this.rotate.get()) {
                   this.mc.player.setXRot(75.5F);
                }
             }
@@ -485,10 +390,8 @@ public class Scaffold extends Module {
          return Vec3.ZERO;
       }
 
-      double yaw = Math.toRadians(this.mc.player.getYRot());
-      double x = strafe * Math.cos(yaw) - forward * Math.sin(yaw);
-      double z = forward * Math.cos(yaw) + strafe * Math.sin(yaw);
-      return new Vec3(x, 0.0, z).normalize();
+      double[] vel = MovementMath.velocity(this.mc.player.getYRot(), forward, strafe, 1.0);
+      return new Vec3(vel[0], 0.0, vel[1]);
    }
 
    private double edgeDistance(Vec3 dir) {
@@ -500,11 +403,12 @@ public class Scaffold extends Module {
    }
 
    private int blockY() {
-      return (int)Math.floor(this.mc.player.getY() - 1.0);
+      return (this.sameY.get() && this.targetY != -1) ? this.targetY : (int)Math.floor(this.mc.player.getY() - 1.0);
    }
 
    private BlockPos getPlacePos() {
-      BlockPos below = BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ());
+      int y = this.blockY();
+      BlockPos below = BlockPos.containing(this.mc.player.getX(), y, this.mc.player.getZ());
       if (this.mc.level.getBlockState(below).isAir()) {
          return below;
       }
@@ -532,9 +436,13 @@ public class Scaffold extends Module {
    }
 
    private BlockPos getExpandPos(int fwd) {
-      double yaw = Math.toRadians(this.mc.player.getYRot());
+      Vec3 dir = this.movementDirection();
+      if (dir.lengthSqr() < 1.0E-4) {
+         double yaw = Math.toRadians(this.mc.player.getYRot());
+         dir = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
+      }
       double d = fwd + 1;
-      BlockPos pos = BlockPos.containing(this.mc.player.getX() - Math.sin(yaw) * d, this.mc.player.getY() - 1.0, this.mc.player.getZ() + Math.cos(yaw) * d);
+      BlockPos pos = BlockPos.containing(this.mc.player.getX() + dir.x * d, this.blockY(), this.mc.player.getZ() + dir.z * d);
       return this.mc.level.getBlockState(pos).isAir() ? pos : null;
    }
 
@@ -551,26 +459,18 @@ public class Scaffold extends Module {
    }
 
    /**
-    * Stages a placement rather than performing it inline.
+    * Places a block at the given position using Meteor's normal placement utility.
     *
-    * <p>This is the fix for the "you are currently attacking/placing on POST" warning. Meteor's
-    * {@link Rotations#rotate(double, double, int, Runnable)} invokes its callback from
-    * {@code SendMovementPacketsEvent.Post} — that is, <em>after</em> this tick's movement packet has
-    * already been flushed. Interacting from there puts the use-item packet after the position packet
-    * in the tick, which is the exact ordering anticheats fingerprint as "post" placement. A vanilla
-    * client always sends its interaction <em>before</em> the movement packet for the same tick.
-    *
-    * <p>So here we only resolve the target face and request the rotation. The interaction itself is
-    * flushed from {@link #onSendMovementPacketsPre}, ahead of the movement packet, and only once the
-    * server has actually observed the rotation the placement needs.
+    * <p>Using Meteor's standard {@link BlockUtils#place} path avoids custom rotation spoofing
+    * desyncs between client camera state and server rotation state.
     */
    private boolean place(BlockPos pos) {
-      if (this.mc.gameMode == null || this.placeCooldown > 0) {
+      if (this.mc.player == null || this.mc.level == null || this.placeCooldown > 0) {
          return false;
       }
 
-      // A placement is already queued for this tick; don't stack two interactions into one flush.
-      if (this.pendingNeighbor != null) {
+      FindItemResult block = this.findBlock();
+      if (!block.found()) {
          return false;
       }
 
@@ -586,43 +486,9 @@ public class Scaffold extends Module {
          return false;
       }
 
-      // Match Meteor's placement-side selection instead of taking the first solid
-      // neighbour. The first enum direction is often not the face visible from
-      // the player, which produces Grim PositionPlace violations.
-      Direction face = BlockUtils.getPlaceSide(pos);
-      if (face != null) {
-         BlockPos neighbor = pos.relative(face);
-         Vec3 hitVec = Vec3.atCenterOf(neighbor).add(face.getStepX() * 0.5, face.getStepY() * 0.5, face.getStepZ() * 0.5);
-         if (!this.mc.level.getBlockState(neighbor).isAir()
-            && this.mc.level.getWorldBorder().isWithinBounds(neighbor)
-            && this.mc.player.getEyePosition().distanceTo(hitVec) <= 5.0) {
-            Direction placeFace = face.getOpposite();
-            float yaw = this.wrapDegrees((float)Rotations.getYaw(hitVec));
-            float pitch = this.clampPitch((float)Rotations.getPitch(hitVec));
-
-            float techPitch = this.techniquePitch();
-            if (!Float.isNaN(techPitch)) {
-               pitch = this.clampPitch(techPitch);
-            }
-
-            if (this.grimSmoothRotation.get() && this.grimRotationJitter.get() > 0.0) {
-               double jitter = this.grimRotationJitter.get();
-               yaw += (float)((this.random.nextDouble() - 0.5) * jitter);
-               pitch = this.clampPitch(pitch + (float)((this.random.nextDouble() - 0.5) * jitter));
-            }
-
-            this.pendingNeighbor = neighbor;
-            this.pendingFace = placeFace;
-            this.pendingHit = hitVec;
-            this.pendingYaw = yaw;
-            this.pendingPitch = pitch;
-
-            if (this.serverSideRotations.get()) {
-               Rotations.rotate(yaw, pitch, 20, null);
-            } else {
-               this.rotateTo(hitVec);
-            }
-
+      if (BlockUtils.canPlace(pos)) {
+         if (BlockUtils.place(pos, block, this.rotate.get(), 10, this.swing.get(), true)) {
+            this.placeCooldown = delay;
             return true;
          }
       }
@@ -631,116 +497,23 @@ public class Scaffold extends Module {
       return false;
    }
 
-   /**
-    * Flushes a staged placement before the movement packet goes out, so the interaction lands in the
-    * PRE phase like a vanilla client's would.
-    */
-   @EventHandler
-   private void onSendMovementPacketsPre(SendMovementPacketsEvent.Pre event) {
-      if (this.pendingNeighbor == null || this.mc.player == null || this.mc.gameMode == null || this.mc.level == null) {
-         return;
-      }
-
-      // Wait until the server has actually seen the rotation this placement depends on, otherwise
-      // we trade a POST flag for a RotationPlace flag.
-      if (this.serverSideRotations.get() && !this.isServerRotationReady()) {
-         return;
-      }
-
-      BlockHitResult hitResult = new BlockHitResult(this.pendingHit, this.pendingFace, this.pendingNeighbor, false);
-      // Mirror Meteor's BlockUtils.interact: the placement packet itself must not
-      // inherit a locally managed sneak state.
-      boolean wasSneaking = this.mc.player.isShiftKeyDown();
-      this.mc.player.setShiftKeyDown(false);
-      try {
-         InteractionResult result = this.mc.gameMode.useItemOn(this.mc.player, InteractionHand.MAIN_HAND, hitResult);
-         if (result.consumesAction() && this.swing.get()) {
-            this.mc.player.swing(InteractionHand.MAIN_HAND);
+   private FindItemResult findBlock() {
+      if (!this.autoBlockSwitch.get()) {
+         ItemStack held = this.mc.player.getMainHandItem();
+         if (held.getItem() instanceof BlockItem) {
+            return InvUtils.findInHotbar(held.getItem());
          }
-      } finally {
-         this.mc.player.setShiftKeyDown(wasSneaking);
+         return InvUtils.findInHotbar(item -> false);
       }
 
-      this.placeCooldown = this.techniqueDelay();
-      this.clearPendingPlacement();
-   }
-
-   /** True once the last rotation the server received matches what the staged placement needs. */
-   private boolean isServerRotationReady() {
-      float yawDiff = Math.abs(this.wrapDegrees(Rotations.serverYaw - this.pendingYaw));
-      float pitchDiff = Math.abs(Rotations.serverPitch - this.pendingPitch);
-      return yawDiff <= ROTATION_TOLERANCE && pitchDiff <= ROTATION_TOLERANCE;
-   }
-
-   private void clearPendingPlacement() {
-      this.pendingAge = 0;
-      this.pendingNeighbor = null;
-      this.pendingFace = null;
-      this.pendingHit = null;
-   }
-
-   private void rotateTo(BlockPos pos) {
-      double dx = pos.getX() + 0.5 - this.mc.player.getX();
-      double dy = pos.getY() + 0.5 - (this.mc.player.getY() + this.mc.player.getEyeHeight());
-      double dz = pos.getZ() + 0.5 - this.mc.player.getZ();
-      double dist = Math.sqrt(dx * dx + dz * dz);
-      float targetYaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
-      float targetPitch = (float)(-Math.toDegrees(Math.atan2(dy, dist)));
-      if (this.serverSideRotations.get()) {
-         Rotations.rotate(targetYaw, targetPitch, 10, null);
-      } else {
-         float yawDiff = this.wrapDegrees(targetYaw - this.mc.player.getYRot());
-         float pitchDiff = this.wrapDegrees(targetPitch - this.mc.player.getXRot());
-         float maxTurn = this.rotationSpeed.get().floatValue();
-         if (Math.abs(yawDiff) > maxTurn) {
-            yawDiff = Math.signum(yawDiff) * maxTurn;
+      if (this.technique.get() == Scaffold.Technique.GrimScaffold && this.grimUseScaffolding.get()) {
+         FindItemResult scaffold = InvUtils.findInHotbar(Items.SCAFFOLDING);
+         if (scaffold.found()) {
+            return scaffold;
          }
-
-         if (Math.abs(pitchDiff) > maxTurn) {
-            pitchDiff = Math.signum(pitchDiff) * maxTurn;
-         }
-
-         this.mc.player.setYRot(this.mc.player.getYRot() + yawDiff);
-         this.mc.player.setXRot(this.mc.player.getXRot() + pitchDiff);
-      }
-   }
-
-   private void rotateTo(Vec3 hitVec) {
-      double dx = hitVec.x - this.mc.player.getX();
-      double dy = hitVec.y - (this.mc.player.getY() + this.mc.player.getEyeHeight());
-      double dz = hitVec.z - this.mc.player.getZ();
-      double dist = Math.sqrt(dx * dx + dz * dz);
-      float targetYaw = this.wrapDegrees((float)Math.toDegrees(Math.atan2(-dx, dz)));
-      float targetPitch = this.clampPitch((float)(-Math.toDegrees(Math.atan2(dy, dist))));
-      float yawDiff = this.wrapDegrees(targetYaw - this.mc.player.getYRot());
-      float pitchDiff = this.wrapDegrees(targetPitch - this.mc.player.getXRot());
-      float maxTurn = this.rotationSpeed.get().floatValue();
-      if (Math.abs(yawDiff) > maxTurn) {
-         yawDiff = Math.signum(yawDiff) * maxTurn;
       }
 
-      if (Math.abs(pitchDiff) > maxTurn) {
-         pitchDiff = Math.signum(pitchDiff) * maxTurn;
-      }
-
-      this.mc.player.setYRot(this.mc.player.getYRot() + yawDiff);
-      this.mc.player.setXRot(this.mc.player.getXRot() + pitchDiff);
-   }
-
-   private float clampPitch(float pitch) {
-      return Math.max(-90.0F, Math.min(90.0F, pitch));
-   }
-
-   private float wrapDegrees(float v) {
-      while (v > 180.0F) {
-         v -= 360.0F;
-      }
-
-      while (v < -180.0F) {
-         v += 360.0F;
-      }
-
-      return v;
+      return InvUtils.findInHotbar(item -> item.getItem() instanceof BlockItem);
    }
 
    private void pressManagedSneak() {
@@ -765,28 +538,7 @@ public class Scaffold extends Module {
       return this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ())).isAir();
    }
 
-   private int findBlockSlot() {
-      for (int i = 0; i < 9; i++) {
-         ItemStack stack = this.mc.player.getInventory().getItem(i);
-         if (!stack.isEmpty() && stack.getItem() instanceof BlockItem) {
-            return i;
-         }
-      }
-
-      return -1;
-   }
-
-   private int findScaffoldSlot() {
-      for (int i = 0; i < 9; i++) {
-         ItemStack stack = this.mc.player.getInventory().getItem(i);
-         if (stack.is(Items.SCAFFOLDING)) {
-            return i;
-         }
-      }
-
-      return -1;
-   }
-
+   @Override
    public String getInfoString() {
       return this.technique.get().name();
    }

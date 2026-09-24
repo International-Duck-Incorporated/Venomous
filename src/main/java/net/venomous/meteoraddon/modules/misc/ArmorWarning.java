@@ -59,6 +59,16 @@ public class ArmorWarning extends Module {
       super(VenomousAddon.CATEGORY, "armor-warning", "Warns about low armor, elytra durability and low totem count.");
    }
 
+   @Override
+   public void onActivate() {
+      this.timer = 0;
+   }
+
+   @Override
+   public void onDeactivate() {
+      this.timer = 0;
+   }
+
    @EventHandler
    private void onTick(Post event) {
       if (this.mc.player != null) {

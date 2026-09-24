@@ -16,7 +16,9 @@ import net.minecraft.world.entity.player.Player;
 import net.venomous.meteoraddon.VenomousAddon;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class PopCounter extends Module {
@@ -63,6 +65,7 @@ public class PopCounter extends Module {
     );
 
     private final Object2IntMap<UUID> popMap = new Object2IntOpenHashMap<>();
+    private final Map<UUID, String> nameMap = new HashMap<>();
 
     public PopCounter() {
         super(VenomousAddon.CATEGORY, "pop-counter", "Counts and announces totem pops and kills for nearby players.");
@@ -71,11 +74,13 @@ public class PopCounter extends Module {
     @Override
     public void onActivate() {
         this.popMap.clear();
+        this.nameMap.clear();
     }
 
     @Override
     public void onDeactivate() {
         this.popMap.clear();
+        this.nameMap.clear();
     }
 
     @EventHandler
@@ -90,11 +95,12 @@ public class PopCounter extends Module {
                     if (this.ignoreFriends.get() && !Friends.get().shouldAttack(player)) return;
 
                     UUID uuid = player.getUUID();
+                    String name = player.getName().getString();
+                    this.nameMap.put(uuid, name);
                     int count = this.popMap.getOrDefault(uuid, 0) + 1;
                     this.popMap.put(uuid, count);
 
                     if (this.announcePops.get()) {
-                        String name = player.getName().getString();
                         String suffix = count == 1 ? " totem!" : " totems!";
                         String msg = name + " popped " + count + suffix;
 
@@ -124,9 +130,10 @@ public class PopCounter extends Module {
 
         for (UUID uuid : deadPlayers) {
             int pops = this.popMap.removeInt(uuid);
+            String cachedName = this.nameMap.remove(uuid);
             if (this.announceKills.get()) {
                 Player player = this.mc.level.getPlayerByUUID(uuid);
-                String name = player != null ? player.getName().getString() : "Unknown";
+                String name = player != null ? player.getName().getString() : (cachedName != null ? cachedName : "Unknown");
                 String suffix = pops == 1 ? " totem" : " totems";
                 String msg = name + " died after popping " + pops + " " + suffix + "!";
 

@@ -5,13 +5,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 
 public class LightESP extends Module {
@@ -42,6 +43,12 @@ public class LightESP extends Module {
       super(VenomousAddon.CATEGORY, "light-esp", "Displays light levels on blocks.");
    }
 
+   @Override
+   public void onActivate() {
+      this.lightLevels.clear();
+   }
+
+   @Override
    public void onDeactivate() {
       this.lightLevels.clear();
    }
@@ -72,8 +79,9 @@ public class LightESP extends Module {
       for (Entry<BlockPos, Integer> entry : this.lightLevels.entrySet()) {
          BlockPos pos = entry.getKey();
          int light = entry.getValue();
-         String text = String.valueOf(light);
-         Vec3 var7 = Vec3.atCenterOf(pos);
+         Color color = light == 0 ? new Color(255, 50, 50, 60) : (light <= 7 ? new Color(255, 200, 50, 60) : new Color(50, 255, 50, 60));
+         Color lineColor = new Color(color.r, color.g, color.b, 200);
+         event.renderer.box(pos, color, lineColor, ShapeMode.Both, 0);
       }
    }
 
@@ -81,3 +89,4 @@ public class LightESP extends Module {
       return this.lightLevels.isEmpty() ? null : this.lightLevels.size() + " blocks";
    }
 }
+

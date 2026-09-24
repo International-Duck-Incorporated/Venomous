@@ -53,6 +53,7 @@ public class TickBase extends Module {
       }
 
       this.delayedTicks = 0;
+      this.shouldBurst = false;
    }
 
    @EventHandler
@@ -80,7 +81,7 @@ public class TickBase extends Module {
    }
 
    private void sendPositionPacket() {
-      if (this.mc.player != null) {
+      if (this.mc.player != null && this.mc.player.connection != null) {
          this.mc.player.connection.send(new Pos(this.mc.player.getX(), this.mc.player.getY(), this.mc.player.getZ(), this.mc.player.onGround(), false));
       }
    }

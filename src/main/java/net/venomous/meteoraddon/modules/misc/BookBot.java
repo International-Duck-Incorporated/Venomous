@@ -73,7 +73,14 @@ public class BookBot extends Module {
       super(VenomousAddon.CATEGORY, "bookbot", "Automatically writes and signs books with generated text.");
    }
 
+   @Override
    public void onActivate() {
+      this.bookCount = 0;
+      this.tickCounter = 0;
+   }
+
+   @Override
+   public void onDeactivate() {
       this.bookCount = 0;
       this.tickCounter = 0;
    }

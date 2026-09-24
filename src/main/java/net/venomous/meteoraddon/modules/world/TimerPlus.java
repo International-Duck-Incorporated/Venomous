@@ -79,6 +79,7 @@ public class TimerPlus extends Module {
       super(VenomousAddon.CATEGORY, "timer-plus", "Pulse/custom timer override using Meteor's built-in Timer module safely.");
    }
 
+   @Override
    public void onActivate() {
       this.timer = (Timer)Modules.get().get(Timer.class);
       this.phaseTicks = 0;
@@ -89,10 +90,14 @@ public class TimerPlus extends Module {
       }
    }
 
+   @Override
    public void onDeactivate() {
       if (this.timer != null) {
          this.timer.setOverride(1.0);
+         this.timer = null;
       }
+      this.phaseTicks = 0;
+      this.boosting = true;
    }
 
    @EventHandler

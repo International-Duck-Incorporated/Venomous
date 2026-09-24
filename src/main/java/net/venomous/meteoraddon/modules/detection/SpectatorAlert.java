@@ -58,6 +58,12 @@ public class SpectatorAlert extends Module {
       this.timer = 0;
    }
 
+   @Override
+   public void onDeactivate() {
+      this.alerted.clear();
+      this.timer = 0;
+   }
+
    @EventHandler
    private void onTick(Post event) {
       if (this.mc.player == null || this.mc.level == null) {

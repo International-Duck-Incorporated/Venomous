@@ -174,3 +174,90 @@ to fail correctly, and carries a self-test asserting it can still detect one.
 3. Work through the 6 missing-`onDeactivate` modules.
 4. Adopt shorter commit subjects — several existing commits embed an entire
    `git status` dump as the message, which makes `git log` unreadable.
+
+## Session 4 — Scaffold & Grim Anticheat desync fix
+
+Movement debug analysis and test-server logs demonstrated three core issues with Grim anticheat:
+
+1. **`PositionPlace`**: Scaffold's manual `Rotations.rotate(..., null)` plus `SendMovementPacketsEvent.Pre` interaction path and fixed pitch overrides caused large divergence between camera yaw and Meteor server yaw (up to 193.6° shift over 127 ticks), failing Grim's interaction raycast checks.
+2. **`AimModulo360`**: `GlobalNetworkInterceptor` computed mouse sensitivity GCD using `8.0` instead of `1.2` (`(f * 0.6 + 0.2)^3 * 1.2`) and quantized absolute yaw values directly instead of calculating delta steps from `lastSentYaw`, creating non-vanilla rotation transitions.
+3. **`Simulation`**: `GlobalNetworkInterceptor` was aggressively intercepting movement packets, generating linear intermediate interpolation steps and buffering packets in a tick queue. Because Grim runs 1:1 server-side physics simulation, linear interpolation and buffered packet delays broke physics parity and flagged on every tick.
+
+Fixes applied:
+- **`Scaffold`**: Removed custom server-side rotation spoofing, staging queues, and manual `SendMovementPacketsEvent.Pre` packet interception. Routed placement directly through Meteor's standard `BlockUtils.place(pos, item, rotate, priority, swing, checkEntities)` pipeline.
+- **`GlobalNetworkInterceptor`**: Corrected sensitivity GCD math, switched rotation snapping to delta-based quantization against previous sent yaw/pitch, and set aggressive packet interpolation/queuing to `false` by default to prevent simulation desyncs.
+- **`Aimbot`**: Removed `server-side` silent rotation spoofing (`Rotations.rotate(..., null)`) which caused raycast divergence on Grim (`AimModulo360` / `Simulation` / `Reach`), converting Aimbot into a smooth, camera-synchronized aim assist with GCD quantization.
+- **`Hunt`**: Replaced silent `Rotations.rotate` calls in fallback manual chase mode with direct client-side camera steering so walking vectors match look angles.
+
+## Session 5 — Kinematics, State Cleanup & Physics Logic Fixes
+
+1. **`AssertDominance` (`Mode.Velocity`)**:
+   - Replaced flawed direct position vector subtraction (`Vec3.subtract()`) and unconditional vertical `+0.1` upward acceleration with perpendicular tangential velocity orbiting ($\vec{v}_{\text{tan}} = (-u_z \cdot v, u_x \cdot v)$).
+   - Added radial distance correction to push/pull smoothly towards the configured target radius without velocity runaway.
+   - Added `onDeactivate()` state reset.
+
+2. **`PopCounter` (Unknown Player Kill Announcement Fix)**:
+   - Added `nameMap` to cache player names when totems pop.
+   - Fixed issue where players dying and despawning caused `mc.level.getPlayerByUUID()` to return `null`, resolving the cached name instead of announcing `"Unknown died after popping..."`.
+
+3. **`AntiBounce` (Normal Jump Fix)**:
+   - Restructured `onTick` to only zero out upward vertical velocity if the player is standing on or intersecting with an actual bouncy block (`Blocks.SLIME_BLOCK` or `BedBlock`), preventing normal ground jumps from being suppressed.
+
+4. **`Twerk` (Sneak Lock Fix)**:
+   - Added `onDeactivate()` handler resetting `mc.options.keyShift.setDown(false)` to prevent players getting stuck in sneak mode upon disabling the module.
+
+5. **`AntiVoid` (State Safety & Void Velocity Clamp)**:
+   - Added `hasSafePos` validation and `onDeactivate()` reset.
+   - Reset player's delta movement to `(0, 0, 0)` upon `Mode.Back` teleport to prevent falling straight back into the void or taking fatal fall damage.
+
+6. **Missing `onDeactivate()` State Resets Added**:
+   - Added `onDeactivate()` cleanups across `TargetObsidian`, `AnchorMacro`, `SpectatorAlert`, and `AutoClickerPlus`.
+
+## Session 6 — Complete Codebase Audit & Hardening (All 116 Modules)
+
+Systematically audited all modules across every package (`combat`, `detection`, `esp`, `exploit`, `fun`, `misc`, `movement`, `network`, `player`, `render`, `utility`, `world`):
+
+- **Batch 1 (Combat Part 1)**:
+  - `AntiTrap`: Removed empty loop in `onDeactivate()`.
+  - `BreachSwap`: Added swap-back restoration on `onDeactivate()`, cleaned unused `targetSlot`.
+  - `CriticalsPlus`: Added `onDeactivate()` resetting attack/jump ticks.
+  - `KillAura`: Null-checked `mc.options` and reset target/counter on `onDeactivate()`.
+  - `ProjectilePuncher`: Added `onDeactivate()` resetting punched entity set and timers.
+  - `SuperKnockback`: Added sprint packet reset on deactivation.
+  - `SwordPlaceObsidian`: Added placement cooldown and lifecycle state reset.
+  - `TickBase`: Added connection null-guards and deactivated state clearing.
+  - `TimerRange`: Filtered out friends and spectators from timer triggers.
+  - `VelocityPlus`: Removed dead PingSpoof branch, added `onDeactivate()` reset.
+
+- **Batch 2 (Combat Part 2, Detection, ESP, Exploit Part 1)**:
+  - `AntiStaff`: Added `onDeactivate()` clearing staff alert sets.
+  - `LightESP`: Implemented proper 3D bounding box rendering and `onActivate()` cleanup.
+  - Verified `SkeletonESP`, `InvisESP`, `AntiCheatDetect`, `AntiVanish`, `PlayerDetection`, `ServerAnalyzer`.
+
+- **Batch 3 (Exploit Part 2, Fun)**:
+  - `ChorusExploit`: Synced client position upon teleport packet cancel and added full activation/deactivation resets.
+  - `Disabler`: Reset tick counter on deactivation.
+  - `PingSpoof`: Reset packet queues in `onActivate()`.
+  - `VGhostHand`: Added null check before toggling `StorageESP`.
+  - `VehicleOneHit`: Moved single swing outside 19-packet loop.
+
+- **Batch 4 & 5 (Misc, Movement, Network, Player, Render, Utility, World)**:
+  - `AntiBot`: Added activation state clearing in `onActivate()`.
+  - `ArmorWarning`: Reset timer in both `onActivate()` and `onDeactivate()`.
+  - `AutoChatGame`: Added `onDeactivate()` resetting pending answers, symbol variables, and message buffers.
+  - `AutoPearl`: Added 20-tick cooldown after low-health throw to prevent rapid multi-throw item waste; added lifecycle resets.
+  - `BookBot`: Added `onActivate()` and `onDeactivate()` resets for `bookCount` and `tickCounter`.
+  - `Choir` & `ElytraSwap`: Defended auto-toggle actions against re-entrancy via `mc.execute()`.
+  - `PearlTools`, `SoundESP`, `SafeLogout`, `Spammer`, `TNTTimer`, `TargetLock`: Added complete lifecycle activation and deactivation state cleanup.
+  - `Clip`: Defended auto-toggles with `mc.execute()`, restored timer and physics on `onDeactivate()`.
+  - `Phase`: Reset packet queue and flushing state on activation.
+  - `SnapTap`: Reset SOCD tracking timestamps on activation and deactivation.
+  - `Speed`: Reset boat timers and tick counters on deactivation.
+  - `VBlink`: Reset queues, position snapshot, and ticks on activation and deactivation.
+  - `NoFallPlus`: Reset blink queues and falling tick counters on lifecycle transitions.
+  - `NewChunks`: Added `onActivate()` chunk map cleanup.
+  - `AutoBreakSelected`, `AutoToolPlus`, `AutoFarm`, `NoSignScreen`, `TimerPlus`, `VAirPlace`: Standardized all lifecycle resets and state guards.
+
+
+
+

@@ -146,22 +146,32 @@ public class Clip extends Module {
       super(VenomousAddon.CATEGORY, "clip", "Combined HClip, VClip, NoClip and VulcanClip movement module.");
    }
 
+   @Override
    public void onActivate() {
       if (this.mc.player == null) {
-         this.toggle();
+         this.mc.execute(() -> {
+            if (this.isActive()) this.toggle();
+         });
       } else {
          switch ((Clip.Mode)this.mode.get()) {
             case HClip:
                this.doHClip();
-               this.toggle();
+               this.mc.execute(() -> {
+                  if (this.isActive()) this.toggle();
+               });
                break;
             case VClip:
                this.doVClip();
-               this.toggle();
+               this.mc.execute(() -> {
+                  if (this.isActive()) this.toggle();
+               });
                break;
             case Combined:
                this.doCombinedClip();
-               this.toggle();
+               this.mc.execute(() -> {
+                  if (this.isActive()) this.toggle();
+               });
+               break;
             case NoClip:
             default:
                break;
@@ -171,13 +181,19 @@ public class Clip extends Module {
       }
    }
 
+   @Override
    public void onDeactivate() {
+      this.waitFlag = false;
+      this.canGlide = false;
+      this.ticks = 0;
+
       if (this.mc.player != null) {
          this.mc.player.noPhysics = false;
       }
 
       if (this.timer != null) {
          this.timer.setOverride(1.0);
+         this.timer = null;
       }
    }
 

@@ -24,4 +24,11 @@ public class Twerk extends Module {
          this.mc.options.keyShift.setDown(shouldSneak);
       }
    }
+
+   @Override
+   public void onDeactivate() {
+      if (this.mc.options != null && this.mc.options.keyShift != null) {
+         this.mc.options.keyShift.setDown(false);
+      }
+   }
 }

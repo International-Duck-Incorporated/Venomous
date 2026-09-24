@@ -63,6 +63,11 @@ public class AntiBot extends Module {
    }
 
    @Override
+   public void onActivate() {
+      this.bots.clear();
+   }
+
+   @Override
    public void onDeactivate() {
       this.bots.clear();
    }

@@ -61,12 +61,15 @@ public class AutoPearl extends Module {
          .build()
    );
 
+   private int cooldown = 0;
+
    public AutoPearl() {
       super(VenomousAddon.CATEGORY, "autopearl", "Throws ender pearls automatically at low health, or instantly on demand.");
    }
 
    @Override
    public void onActivate() {
+      this.cooldown = 0;
       if (this.mode.get() != Mode.Instant) {
          return;
       }
@@ -86,14 +89,25 @@ public class AutoPearl extends Module {
       });
    }
 
+   @Override
+   public void onDeactivate() {
+      this.cooldown = 0;
+   }
+
    @EventHandler
    private void onTick(Pre event) {
+      if (this.cooldown > 0) {
+         this.cooldown--;
+      }
+
       if (this.mode.get() != Mode.LowHealth || this.mc.player == null) {
          return;
       }
 
-      if (this.mc.player.getHealth() <= this.health.get() && (!this.onGround.get() || this.mc.player.onGround())) {
-         this.throwPearl();
+      if (this.cooldown <= 0 && this.mc.player.getHealth() <= this.health.get() && (!this.onGround.get() || this.mc.player.onGround())) {
+         if (this.throwPearl()) {
+            this.cooldown = 20;
+         }
       }
    }
 

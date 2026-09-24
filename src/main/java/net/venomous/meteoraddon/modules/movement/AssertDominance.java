@@ -26,7 +26,7 @@ public class AssertDominance extends Module {
    private final Setting<AssertDominance.Mode> mode = this.sgGeneral
       .add(
          ((Builder)((Builder)((Builder)new Builder().name("mode"))
-                  .description("Orbit circles smoothly; Random teleports around the nearest target at intervals."))
+                  .description("Orbit circles smoothly; Random teleports around; Velocity orbits smoothly using motion physics."))
                .defaultValue(AssertDominance.Mode.Orbit))
             .build()
       );
@@ -44,11 +44,11 @@ public class AssertDominance extends Module {
       .add(
          ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
                      .name("speed"))
-                  .description("Orbit angular speed per tick."))
+                  .description("Orbit speed per tick."))
                .defaultValue(0.1)
                .range(0.01, 3.0)
                .sliderMax(2.0)
-               .visible(() -> this.mode.get() == AssertDominance.Mode.Orbit))
+               .visible(() -> this.mode.get() == AssertDominance.Mode.Orbit || this.mode.get() == AssertDominance.Mode.Velocity))
             .build()
       );
    private final Setting<Integer> randomDelay = this.sgGeneral
@@ -128,7 +128,14 @@ public class AssertDominance extends Module {
       super(VenomousAddon.CATEGORY, "assert-dominance", "Moves around the nearest player or mob using orbit or random teleport mode.");
    }
 
+   @Override
    public void onActivate() {
+      this.ticks = 0;
+      this.angle = 0.0;
+   }
+
+   @Override
+   public void onDeactivate() {
       this.ticks = 0;
       this.angle = 0.0;
    }
@@ -148,19 +155,37 @@ public class AssertDominance extends Module {
                var7 = var2.getX() + Math.cos(this.angle) * var3;
                var9 = var2.getY();
                var11 = var2.getZ() + Math.sin(this.angle) * var3;
-            } else {
-               if (this.mode.get() != AssertDominance.Mode.Random) {
-                  Vec3 var21 = var2.position().subtract(this.mc.player.position());
-                  Vec3 var22 = new Vec3(var21.x, 0.0, var21.z);
-                  if (var22.lengthSqr() <= 1.0E-6) {
-                     return;
-                  }
+            } else if (this.mode.get() == AssertDominance.Mode.Velocity) {
+               double dx = this.mc.player.getX() - var2.getX();
+               double dz = this.mc.player.getZ() - var2.getZ();
+               double dist = Math.hypot(dx, dz);
 
-                  Vec3 var23 = var22.normalize().scale(var5);
-                  this.mc.player.addDeltaMovement(new Vec3(var23.x, 0.1, var23.z));
-                  return;
+               if (dist < 1.0E-4) {
+                  dx = 1.0;
+                  dz = 0.0;
+                  dist = 1.0;
                }
 
+               double ux = dx / dist;
+               double uz = dz / dist;
+
+               double tx = -uz;
+               double tz = ux;
+
+               double vx = tx * var5;
+               double vz = tz * var5;
+
+               double radialDiff = var3 - dist;
+               double radialSpeed = Math.max(-0.5, Math.min(0.5, radialDiff * 0.4));
+               vx += ux * radialSpeed;
+               vz += uz * radialSpeed;
+
+               double dy = var2.getY() - this.mc.player.getY();
+               double vy = Math.max(-0.3, Math.min(0.3, dy * 0.3));
+
+               this.mc.player.setDeltaMovement(vx, vy, vz);
+               return;
+            } else {
                int var13 = Math.max(1, (Integer)this.randomDelay.get());
                if (++this.ticks < var13) {
                   return;

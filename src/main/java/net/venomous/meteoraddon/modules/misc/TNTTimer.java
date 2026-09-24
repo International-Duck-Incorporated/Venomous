@@ -72,6 +72,12 @@ public class TNTTimer extends Module {
       super(VenomousAddon.CATEGORY, "tnt-timer", "Highlights primed TNT and shows a timer above it.");
    }
 
+   @Override
+   public void onActivate() {
+      this.warned.clear();
+   }
+
+   @Override
    public void onDeactivate() {
       this.warned.clear();
    }

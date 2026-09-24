@@ -66,7 +66,13 @@ public class SafeLogout extends Module {
       super(VenomousAddon.CATEGORY, "safe-logout", "Disconnects when health, nearby players, armor, totems or void danger become unsafe.");
    }
 
+   @Override
    public void onActivate() {
+      this.disconnecting = false;
+   }
+
+   @Override
+   public void onDeactivate() {
       this.disconnecting = false;
    }
 

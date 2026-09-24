@@ -81,6 +81,13 @@ public class SoundESP extends Module {
       super(VenomousAddon.CATEGORY, "sound-esp", "Renders ESP boxes at the origin of nearby sound events.");
    }
 
+   @Override
+   public void onActivate() {
+      this.positions.clear();
+      this.timers.clear();
+   }
+
+   @Override
    public void onDeactivate() {
       this.positions.clear();
       this.timers.clear();

@@ -8,6 +8,8 @@ import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -53,6 +55,16 @@ public class SuperKnockback extends Module {
       super(VenomousAddon.CATEGORY, "super-kb", "Increases the knockback dealt to other entities.");
    }
 
+   @Override
+   public void onActivate() {
+      this.ticksSinceLastHit = 0;
+   }
+
+   @Override
+   public void onDeactivate() {
+      this.ticksSinceLastHit = 0;
+   }
+
    @EventHandler
    private void onAttack(AttackEntityEvent event) {
       if (this.mc.player != null
@@ -61,20 +73,24 @@ public class SuperKnockback extends Module {
          && (!(Boolean)this.requireSprint.get() || this.mc.player.isSprinting())) {
          switch ((SuperKnockback.Mode)this.mode.get()) {
             case PACKET:
-               this.mc
-                  .player
-                  .connection
-                  .send(new ServerboundInteractPacket(event.entity.getId(), InteractionHand.MAIN_HAND, Vec3.ZERO, this.mc.player.isShiftKeyDown()));
+               if (this.mc.getConnection() != null) {
+                  this.mc
+                     .getConnection()
+                     .send(new ServerboundInteractPacket(event.entity.getId(), InteractionHand.MAIN_HAND, Vec3.ZERO, this.mc.player.isShiftKeyDown()));
+               }
                break;
             case W_TAP:
-               this.mc.player.setSprinting(false);
-               this.mc.options.keyUp.setDown(false);
-               this.mc.options.keyUp.setDown(true);
+               if (this.mc.getConnection() != null) {
+                  this.mc.getConnection().send(new ServerboundPlayerCommandPacket(this.mc.player, Action.STOP_SPRINTING));
+                  this.mc.getConnection().send(new ServerboundPlayerCommandPacket(this.mc.player, Action.START_SPRINTING));
+               }
                this.mc.player.setSprinting(true);
                break;
             case S_TAP:
-               this.mc.options.keyDown.setDown(true);
-               this.mc.options.keyDown.setDown(false);
+               if (this.mc.getConnection() != null) {
+                  this.mc.getConnection().send(new ServerboundPlayerCommandPacket(this.mc.player, Action.STOP_SPRINTING));
+               }
+               this.mc.player.setSprinting(false);
                break;
             case HIT_DELAY:
                if (this.ticksSinceLastHit < (Integer)this.hitDelay.get()) {

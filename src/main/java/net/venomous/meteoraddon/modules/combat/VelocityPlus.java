@@ -198,16 +198,19 @@ public class VelocityPlus extends Module {
       this.receivedVulcanVelocity = false;
    }
 
+   @Override
+   public void onDeactivate() {
+      this.shouldJump = false;
+      this.strafeTicks = 0;
+      this.wTapTicks = 0;
+      this.ticksSinceBoat = 999;
+      this.receivedVulcanVelocity = false;
+   }
+
    @EventHandler
    private void onPacketReceive(Receive event) {
       if (this.mc.player != null) {
          Packet<?> packet = event.packet;
-         if (this.mode.get() == VelocityPlus.Mode.VulcanTransaction
-            && (Boolean)this.vulcanCancelTransaction.get()
-            && packet instanceof ClientboundPingPacket velocityPacket) {
-            ;
-         }
-
          if (packet instanceof ClientboundSetEntityMotionPacket velocityPacket) {
             if (velocityPacket.id() != this.mc.player.getId()) {
                return;

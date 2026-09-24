@@ -84,6 +84,15 @@ public class AutoChatGame extends Module {
       this.varWindowTicks = 0;
    }
 
+   @Override
+   public void onDeactivate() {
+      this.pendingAnswer = null;
+      this.answerDelay = 0;
+      this.recentLines.clear();
+      this.pendingVarSymbol = null;
+      this.varWindowTicks = 0;
+   }
+
    @EventHandler
    private void onReceiveMessage(ReceiveMessageEvent var1) {
       if (this.isActive() && this.pendingAnswer == null) {

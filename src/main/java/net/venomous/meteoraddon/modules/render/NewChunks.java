@@ -59,6 +59,12 @@ public class NewChunks extends Module {
       super(VenomousAddon.CATEGORY, "new-chunks", "Highlights chunks that are likely newly generated.");
    }
 
+   @Override
+   public void onActivate() {
+      this.chunks.clear();
+   }
+
+   @Override
    public void onDeactivate() {
       this.chunks.clear();
    }

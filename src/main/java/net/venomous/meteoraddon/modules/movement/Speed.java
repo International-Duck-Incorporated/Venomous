@@ -68,7 +68,14 @@ public class Speed extends Module {
       super(VenomousAddon.CATEGORY, "v-speed", "Adaptive speed engine with bypasses for Grim, Vulcan, Polar, Matrix, NCP, and Strafe.");
    }
 
+   @Override
    public void onActivate() {
+      this.tickCounter = 0;
+      this.ticksSinceBoat = 999;
+   }
+
+   @Override
+   public void onDeactivate() {
       this.tickCounter = 0;
       this.ticksSinceBoat = 999;
    }

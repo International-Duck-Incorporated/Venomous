@@ -65,6 +65,12 @@ public class PearlTools extends Module {
       super(VenomousAddon.CATEGORY, "pearl-tools", "Tracks ender pearls, predicts landing spots and warns about dangerous pearls.");
    }
 
+   @Override
+   public void onActivate() {
+      this.warned.clear();
+   }
+
+   @Override
    public void onDeactivate() {
       this.warned.clear();
    }

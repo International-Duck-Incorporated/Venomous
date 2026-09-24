@@ -511,7 +511,6 @@ public class MaceKill extends Module {
    private void executeAttack(LivingEntity target) {
       if (this.mc.player != null && this.mc.player.connection != null) {
          if ((Boolean)this.swingHand.get()) {
-            this.mc.player.connection.send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             this.mc.player.swing(InteractionHand.MAIN_HAND);
          }
 

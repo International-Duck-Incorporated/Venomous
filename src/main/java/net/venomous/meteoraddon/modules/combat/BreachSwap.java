@@ -20,7 +20,6 @@ public class BreachSwap extends Module {
                .defaultValue(true))
             .build()
       );
-   private final Setting<Integer> targetSlot = null;
    private final Setting<Boolean> checkWeapon = this.sgGeneral
       .add(
          ((Builder)((Builder)((Builder)new Builder().name("check-weapon")).description("Only activate when holding a sword or axe.")).defaultValue(true))
@@ -56,6 +55,15 @@ public class BreachSwap extends Module {
 
    public BreachSwap() {
       super(VenomousAddon.CATEGORY, "breach-swap", "Swaps to breach mace on attack.");
+   }
+
+   @Override
+   public void onDeactivate() {
+      if (this.prevSlot != -1 && this.mc.player != null) {
+         InvUtils.swap(this.prevSlot, false);
+      }
+      this.prevSlot = -1;
+      this.swapDelay = 0;
    }
 
    private int findBreachMace() {

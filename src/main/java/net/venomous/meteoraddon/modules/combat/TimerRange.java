@@ -6,6 +6,7 @@ import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.IntSetting.Builder;
+import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.world.Timer;
@@ -189,7 +190,7 @@ public class TimerRange extends Module {
          double closestDist = maxDist;
 
          for (Player player : this.mc.level.players()) {
-            if (player != this.mc.player) {
+            if (player != this.mc.player && !player.isSpectator() && Friends.get().shouldAttack(player)) {
                double dist = this.mc.player.distanceTo(player);
                if (dist < closestDist) {
                   closestDist = dist;

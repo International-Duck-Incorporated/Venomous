@@ -9,22 +9,16 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 
 /**
  * Walks toward a named player.
  *
- * <p>This module used to delegate unconditionally to {@link PathManagers}. Meteor only supplies a
- * real path manager when Baritone (or Voyager) is on the classpath — otherwise {@code PathManagers.get()}
- * returns a {@code NopPathManager} whose {@code moveTo} is literally an empty method body. With no
- * pathing mod installed the module therefore did nothing at all, silently.
- *
- * <p>It now detects that case and falls back to driving the movement keys directly, so Hunt works
- * standalone. Pathfinding is still preferred when it is genuinely available.
+ * <p>This module uses Baritone when available on the classpath, falling back to direct movement
+ * controls otherwise. In direct mode, camera steering is applied client-side so player movement
+ * and look orientation remain synchronized without triggering simulation desyncs.
  */
 public class Hunt extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -168,7 +162,7 @@ public class Hunt extends Module {
       this.driveToward(target);
    }
 
-   /** Direct movement fallback: aim at the target and hold forward. */
+   /** Direct movement fallback: steer player camera toward the target and hold forward. */
    private void driveToward(Player target) {
       double stop = this.stopDistance.get();
       if (this.mc.player.distanceToSqr(target) <= stop * stop) {
@@ -176,14 +170,18 @@ public class Hunt extends Module {
          return;
       }
 
+      double dx = target.getX() - this.mc.player.getX();
+      double dz = target.getZ() - this.mc.player.getZ();
+      float targetYaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
+
       if (this.rotate.get()) {
-         Vec3 eye = target.getEyePosition();
-         Rotations.rotate(Rotations.getYaw(eye), Rotations.getPitch(eye));
+         double dy = (target.getY() + target.getEyeHeight() * 0.8) - (this.mc.player.getY() + this.mc.player.getEyeHeight());
+         double dist = Math.sqrt(dx * dx + dz * dz);
+         float targetPitch = (float)(-Math.toDegrees(Math.atan2(dy, dist)));
+         this.mc.player.setYRot(targetYaw);
+         this.mc.player.setXRot(targetPitch);
       } else {
-         // Still need to face roughly the right way for "forward" to mean anything.
-         double dx = target.getX() - this.mc.player.getX();
-         double dz = target.getZ() - this.mc.player.getZ();
-         this.mc.player.setYRot((float)Math.toDegrees(Math.atan2(-dx, dz)));
+         this.mc.player.setYRot(targetYaw);
       }
 
       this.mc.options.keyUp.setDown(true);

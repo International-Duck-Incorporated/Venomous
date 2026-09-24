@@ -24,6 +24,22 @@ public class SnapTap extends Module {
       super(VenomousAddon.CATEGORY, "snap-tap", "Prioritize the last pressed movement key (SOCD).");
    }
 
+   @Override
+   public void onActivate() {
+      this.lastLeftPressTime = 0L;
+      this.lastRightPressTime = 0L;
+      this.lastForwardPressTime = 0L;
+      this.lastBackPressTime = 0L;
+   }
+
+   @Override
+   public void onDeactivate() {
+      this.lastLeftPressTime = 0L;
+      this.lastRightPressTime = 0L;
+      this.lastForwardPressTime = 0L;
+      this.lastBackPressTime = 0L;
+   }
+
    @EventHandler
    private void onTick(Pre event) {
       if (this.mc.player != null && this.mc.player.input != null) {

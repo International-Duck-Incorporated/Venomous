@@ -30,6 +30,7 @@ public class BoatPhase extends Module {
       }
    }
 
+   @Override
    public void onDeactivate() {
       if ((this.mc.player == null ? null : this.mc.player.getVehicle()) instanceof Boat boat) {
          boat.noPhysics = false;
