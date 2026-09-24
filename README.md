@@ -1,26 +1,28 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/International-Duck-Incorporated/Venomous/main/src/main/resources/assets/venomous/icon.png" alt="Venomous" width="160">
+  <img src="https://gitlab.com/international-duck-incorporated/Venomous/-/raw/main/src/main/resources/assets/venomous/icon.png" alt="Venomous" width="160">
 </p>
 
 <h1 align="center">Venomous</h1>
 <p align="center">A feature-heavy Meteor Client addon for Minecraft 26.2.</p>
-<p align="center"><a href="https://github.com/International-Duck-Incorporated/Venomous">Upstream repository</a></p>
+<p align="center"><a href="https://gitlab.com/international-duck-incorporated/Venomous">GitLab repository</a></p>
 
 <div align="center">
     <img src="https://img.shields.io/badge/Minecraft-26.2-3C8527?logo=minecraft&logoColor=white" alt="Minecraft 26.2"/>
     <img src="https://img.shields.io/badge/Meteor%20Client-26.2-5865F2" alt="Meteor Client 26.2"/>
     <img src="https://img.shields.io/badge/Java-25-orange?logo=openjdk&logoColor=white" alt="Java 25"/>
     <br>
-    <img src="https://img.shields.io/github/downloads/International-Duck-Incorporated/Venomous/total?label=Downloads" alt="Downloads"/>
-    <img src="https://img.shields.io/github/last-commit/International-Duck-Incorporated/Venomous" alt="Last commit"/>
-    <img src="https://img.shields.io/github/stars/International-Duck-Incorporated/Venomous" alt="Stars"/>
-    <img src="https://img.shields.io/github/issues/International-Duck-Incorporated/Venomous" alt="Issues"/>
+    <img src="https://img.shields.io/gitlab/last-commit/international-duck-incorporated%2FVenomous?gitlab_url=https%3A%2F%2Fgitlab.com" alt="Last commit"/>
+    <img src="https://img.shields.io/gitlab/stars/international-duck-incorporated%2FVenomous?gitlab_url=https%3A%2F%2Fgitlab.com" alt="Stars"/>
+    <img src="https://img.shields.io/gitlab/issues/open/international-duck-incorporated%2FVenomous?gitlab_url=https%3A%2F%2Fgitlab.com" alt="Open issues"/>
 </div>
 
 > **Status:** `WIP`
 >
 > This repository is a work in progress, and bugs are to be expected.
-> If you encounter a problem, feel free to [open an issue](https://github.com/International-Duck-Incorporated/Venomous/issues).
+>
+> This project was migrated to GitLab after the original GitHub account was suspended. GitLab is now the official home of Venomous, and development continues here.
+>
+> If you encounter a problem, feel free to [open an issue](https://gitlab.com/international-duck-incorporated/Venomous/-/issues).
 
 ## Overview
 
@@ -122,7 +124,7 @@ Venomous is a **Meteor Client addon**, not a standalone client.
 A compatible installation of Meteor Client is required.
 
 ## Installation
-* [Latest Nightly Build](https://github.com/International-Duck-Incorporated/Venomous/releases/download/nightly-2026.09.20-b6e6992/Venomous-7.0.0-nightly-2026.09.20%2Bb6e6992.jar)
+> **Binary releases:** GitLab Releases are not published yet. Until a binary release is available, build the addon locally using the instructions below.
 1. Install a Fabric environment for Minecraft 26.2.
 2. Install the matching Meteor Client version.
 3. Download the Venomous `.jar`, or build it yourself.
@@ -179,7 +181,7 @@ The project uses Gradle Kotlin DSL for its build configuration.
 
 Found a bug, crash, compatibility problem, or unexpected behaviour?
 
-Open an issue in the [issue tracker](https://github.com/International-Duck-Incorporated/Venomous/issues).
+Open an issue in the [issue tracker](https://gitlab.com/international-duck-incorporated/Venomous/-/issues).
 
 Please include as much relevant information as possible:
 
@@ -236,6 +238,6 @@ available to anyone who receives a build.
 
 ## Links
 
-* [GitHub Repository](https://github.com/International-Duck-Incorporated/Venomous)
-* [Issue Tracker](https://github.com/International-Duck-Incorporated/Venomous/issues)
+* [GitLab Repository](https://gitlab.com/international-duck-incorporated/Venomous)
+* [Issue Tracker](https://gitlab.com/international-duck-incorporated/Venomous/-/issues)
 * [Meteor Client](https://github.com/MeteorDevelopment/meteor-client)
