@@ -1,13 +1,23 @@
 name: Build Venomous
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - "v*"
-  pull_request:
+  # Manual runs only: this workflow never triggers automatically on pushes
+  # (including version tags) or pull requests. Trigger it from the
+  # Actions tab -> "Build Venomous" -> "Run workflow".
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Publish a release after building"
+        type: choice
+        options:
+          - none
+          - nightly
+          - stable
+        default: none
+      version:
+        description: "Stable release version (required for 'stable', e.g. 1.2.3)"
+        required: false
+        default: ""
 
 concurrency:
   group: venomous-${{ github.ref_name }}
@@ -46,7 +56,7 @@ jobs:
           retention-days: 30
 
   publish-nightly:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: inputs.release == 'nightly'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -100,7 +110,7 @@ jobs:
           Nightly tag: ${NIGHTLY_TAG}"
 
   publish-stable:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: inputs.release == 'stable'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -119,11 +129,17 @@ jobs:
       - name: Publish Stable
         env:
           GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
         shell: bash
         run: |
           set -euo pipefail
 
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${INPUT_VERSION#v}"
+          if [[ -z "$VERSION" ]]; then
+            echo "ERROR: the 'version' input is required for a stable release."
+            exit 1
+          fi
+
           JAR="$(find release -maxdepth 1 -type f -name "*.jar" | head -n 1)"
           if [[ -z "$JAR" ]]; then
             echo "No JAR found."
@@ -133,15 +149,23 @@ jobs:
           STABLE_JAR="release/Venomous-${VERSION}.jar"
           mv "$JAR" "$STABLE_JAR"
 
-          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            gh release upload "${GITHUB_REF_NAME}" "$STABLE_JAR" --clobber
-          else
-            gh release create "${GITHUB_REF_NAME}" "$STABLE_JAR" \
-              --title "Venomous ${VERSION}" \
-              --generate-notes
-          fi
+          TAG="v${VERSION}"
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Point the release tag at the commit being built.
+          git tag -f "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/${TAG}" --force
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$STABLE_JAR" --clobber
+          else
+            gh release create "$TAG" "$STABLE_JAR" \
+              --title "Venomous ${VERSION}" \
+              --target "$GITHUB_SHA" \
+              --generate-notes
+          fi
+
           git tag -f stable "$GITHUB_SHA"
           git push origin refs/tags/stable --force
