@@ -9,7 +9,7 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class HideScoreboard extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> hideNumbers = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("hide-numbers")).description("Also hide the scoreboard numbers.")).defaultValue(true)).build());
+      .add(new Builder().name("hide-numbers").description("Also hide the scoreboard numbers.").defaultValue(true).build());
 
    public HideScoreboard() {
       super(VenomousAddon.CATEGORY, "hide-scoreboard", "Hides the scoreboard sidebar from the HUD.");

@@ -19,34 +19,34 @@ public class SuperKnockback extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<SuperKnockback.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("The method to increase knockback.")).defaultValue(SuperKnockback.Mode.W_TAP))
+         new Builder().name("mode").description("The method to increase knockback.").defaultValue(SuperKnockback.Mode.W_TAP)
             .build()
       );
    private final Setting<Integer> hitDelay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("hit-delay"))
-                     .description("Delay between hits for knockback."))
-                  .defaultValue(10))
-               .min(0)
-               .max(20)
-               .visible(() -> this.mode.get() == SuperKnockback.Mode.HIT_DELAY))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("hit-delay")
+            .description("Delay between hits for knockback.")
+            .defaultValue(10)
+            .min(0)
+            .max(20)
+            .visible(() -> this.mode.get() == SuperKnockback.Mode.HIT_DELAY)
             .build()
       );
    private final Setting<Boolean> onlyPlayers = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("only-players"))
-                  .description("Only apply to players."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("only-players")
+            .description("Only apply to players.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> requireSprint = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("require-sprint"))
-                  .description("Only apply when sprinting."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("require-sprint")
+            .description("Only apply when sprinting.")
+            .defaultValue(true)
             .build()
       );
    private int ticksSinceLastHit = 0;

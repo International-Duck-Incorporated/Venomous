@@ -25,15 +25,15 @@ public class PearlTools extends Module {
    private final SettingGroup sgRender = this.settings.createGroup("Render");
    private final Setting<Boolean> landingWarning = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("landing-warning")).description("Warn when a non-owned pearl is predicted to land near you."))
-               .defaultValue(true))
+         new Builder().name("landing-warning").description("Warn when a non-owned pearl is predicted to land near you.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Double> dangerRange = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("danger-range"))
-               .description("Distance from predicted landing to warn."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("danger-range")
+            .description("Distance from predicted landing to warn.")
             .defaultValue(6.0)
             .range(1.0, 32.0)
             .sliderMax(16.0)
@@ -41,21 +41,21 @@ public class PearlTools extends Module {
       );
    private final Setting<Integer> simSteps = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("sim-steps"))
-                  .description("Ticks to simulate pearl trajectory."))
-               .defaultValue(80))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("sim-steps")
+            .description("Ticks to simulate pearl trajectory.")
+            .defaultValue(80)
             .range(10, 200)
             .sliderMax(120)
             .build()
       );
    private final Setting<Boolean> render = this.sgRender
-      .add(((Builder)((Builder)((Builder)new Builder().name("render")).description("Render pearl trajectory and landing boxes.")).defaultValue(true)).build());
+      .add(new Builder().name("render").description("Render pearl trajectory and landing boxes.").defaultValue(true).build());
    private final Setting<SettingColor> color = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                  .name("color"))
-               .description("Pearl render color."))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("color")
+            .description("Pearl render color.")
             .defaultValue(new SettingColor(80, 200, 255, 210))
             .build()
       );

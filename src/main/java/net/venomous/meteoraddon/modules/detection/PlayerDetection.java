@@ -48,71 +48,71 @@ public class PlayerDetection extends Module {
    public PlayerDetection() {
       super(VenomousAddon.CATEGORY, "player-detection", "Detects when players are in the world and reacts.");
       this.notifications = this.sgGeneral
-         .add(((Builder)((Builder)((Builder)new Builder().name("notifications")).description("Show player detection notifications.")).defaultValue(true)).build());
+         .add(new Builder().name("notifications").description("Show player detection notifications.").defaultValue(true).build());
       this.userWhitelist = this.sgWhitelist
          .add(
-            ((meteordevelopment.meteorclient.settings.StringListSetting.Builder)((meteordevelopment.meteorclient.settings.StringListSetting.Builder)((meteordevelopment.meteorclient.settings.StringListSetting.Builder)new meteordevelopment.meteorclient.settings.StringListSetting.Builder()
-                        .name("user-whitelist"))
-                     .description("List of player names to ignore."))
-                  .defaultValue(new ArrayList()))
+            new meteordevelopment.meteorclient.settings.StringListSetting.Builder()
+               .name("user-whitelist")
+               .description("List of player names to ignore.")
+               .defaultValue(new ArrayList())
                .build()
          );
       this.modulesToToggle = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.ModuleListSetting.Builder)((meteordevelopment.meteorclient.settings.ModuleListSetting.Builder)((meteordevelopment.meteorclient.settings.ModuleListSetting.Builder)new meteordevelopment.meteorclient.settings.ModuleListSetting.Builder()
-                        .name("modules-to-toggle"))
-                     .description("Modules to toggle when a non-whitelisted player is detected."))
-                  .defaultValue(new ArrayList()))
+            new meteordevelopment.meteorclient.settings.ModuleListSetting.Builder()
+               .name("modules-to-toggle")
+               .description("Modules to toggle when a non-whitelisted player is detected.")
+               .defaultValue(new ArrayList())
                .build()
          );
       this.enableDisconnect = this.sgGeneral
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("disconnect")).description("Automatically disconnect when players are detected."))
-                  .defaultValue(true))
+            new Builder().name("disconnect").description("Automatically disconnect when players are detected.")
+               .defaultValue(true)
                .build()
          );
       this.notificationMode = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                        .name("notification-mode"))
-                     .description("How to notify when players are detected."))
-                  .defaultValue(PlayerDetection.Mode.Both))
+            new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+               .name("notification-mode")
+               .description("How to notify when players are detected.")
+               .defaultValue(PlayerDetection.Mode.Both)
                .build()
          );
       this.toggleOnPlayer = this.sgGeneral
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("toggle-on-player")).description("Automatically toggles this module when a player is detected."))
-                  .defaultValue(true))
+            new Builder().name("toggle-on-player").description("Automatically toggles this module when a player is detected.")
+               .defaultValue(true)
                .build()
          );
       this.enableWebhook = this.sgWebhook
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("webhook")).description("Send webhook notifications when players are detected."))
-                  .defaultValue(false))
+            new Builder().name("webhook").description("Send webhook notifications when players are detected.")
+               .defaultValue(false)
                .build()
          );
       this.webhookUrl = this.sgWebhook
          .add(
-            ((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)new meteordevelopment.meteorclient.settings.StringSetting.Builder()
-                           .name("webhook-url"))
-                        .description("Discord webhook URL."))
-                     .defaultValue(""))
-                  .visible(this.enableWebhook::get))
+            new meteordevelopment.meteorclient.settings.StringSetting.Builder()
+               .name("webhook-url")
+               .description("Discord webhook URL.")
+               .defaultValue("")
+               .visible(this.enableWebhook::get)
                .build()
          );
       this.selfPing = this.sgWebhook
          .add(
-            ((Builder)((Builder)((Builder)((Builder)new Builder().name("self-ping")).description("Ping yourself in the webhook message.")).defaultValue(false))
-                  .visible(this.enableWebhook::get))
+            new Builder().name("self-ping").description("Ping yourself in the webhook message.").defaultValue(false)
+               .visible(this.enableWebhook::get)
                .build()
          );
       this.discordId = this.sgWebhook
          .add(
-            ((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)new meteordevelopment.meteorclient.settings.StringSetting.Builder()
-                           .name("discord-id"))
-                        .description("Your Discord user ID for pinging."))
-                     .defaultValue(""))
-                  .visible(() -> (Boolean)this.enableWebhook.get() && (Boolean)this.selfPing.get()))
+            new meteordevelopment.meteorclient.settings.StringSetting.Builder()
+               .name("discord-id")
+               .description("Your Discord user ID for pinging.")
+               .defaultValue("")
+               .visible(() -> (Boolean)this.enableWebhook.get() && (Boolean)this.selfPing.get())
                .build()
          );
    }

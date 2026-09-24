@@ -9,7 +9,7 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class FlagCheck extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> chat = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("chat")).description("Show flag alerts in chat.")).defaultValue(true)).build());
+      .add(new Builder().name("chat").description("Show flag alerts in chat.").defaultValue(true).build());
 
    public FlagCheck() {
       super(VenomousAddon.CATEGORY, "flagcheck", "Check if you're flagged by anti-cheat.");

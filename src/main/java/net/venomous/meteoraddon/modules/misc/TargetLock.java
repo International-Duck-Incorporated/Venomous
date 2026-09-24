@@ -14,23 +14,23 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class TargetLock extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> range = this.sgGeneral
-      .add(((Builder)((Builder)new Builder().name("range")).description("Maximum range to maintain lock.")).defaultValue(20.0).min(1.0).max(64.0).build());
+      .add(new Builder().name("range").description("Maximum range to maintain lock.").defaultValue(20.0).min(1.0).max(64.0).build());
    private final Setting<Integer> maxTime = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("max-time"))
-                  .description("Maximum time in seconds to keep lock."))
-               .defaultValue(30))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("max-time")
+            .description("Maximum time in seconds to keep lock.")
+            .defaultValue(30)
             .min(1)
             .sliderMax(120)
             .build()
       );
    private final Setting<Boolean> combatOnly = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("combat-only"))
-                  .description("Only lock for combat modules."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("combat-only")
+            .description("Only lock for combat modules.")
+            .defaultValue(false)
             .build()
       );
    private Integer lockedEntityId = null;

@@ -24,7 +24,7 @@ public class WindPearlMacro extends Module {
       super(VenomousAddon.CATEGORY, "pearl-wind-macro", "Throws pearl first, then uses wind charge at 90 degrees up.");
       this.delayTicks = this.sgGeneral
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("delay")).description("Delay between pearl throw and wind charge.")).defaultValue(1))
+            new Builder().name("delay").description("Delay between pearl throw and wind charge.").defaultValue(1)
                .min(1)
                .max(10)
                .build()

@@ -27,13 +27,13 @@ public class AntiTrap extends Module {
       super(VenomousAddon.CATEGORY, "anti-trap", "Hides armor stands and chest minecarts that trap you.");
       this.notifications = this.sgGeneral
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("notifications")).description("Notify in chat when a trap entity is hidden.")).defaultValue(true))
+            new Builder().name("notifications").description("Notify in chat when a trap entity is hidden.").defaultValue(true)
                .build()
          );
       this.armorStands = this.sgGeneral
-         .add(((Builder)((Builder)((Builder)new Builder().name("armor-stands")).description("Hide armor stands near you.")).defaultValue(true)).build());
+         .add(new Builder().name("armor-stands").description("Hide armor stands near you.").defaultValue(true).build());
       this.chestMinecarts = this.sgGeneral
-         .add(((Builder)((Builder)((Builder)new Builder().name("chest-minecarts")).description("Hide chest minecarts near you.")).defaultValue(true)).build());
+         .add(new Builder().name("chest-minecarts").description("Hide chest minecarts near you.").defaultValue(true).build());
    }
 
    public void onDeactivate() {

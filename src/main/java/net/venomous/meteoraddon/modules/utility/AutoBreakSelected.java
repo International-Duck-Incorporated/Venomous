@@ -20,39 +20,39 @@ import net.venomous.meteoraddon.utils.PreRotate;
 public class AutoBreakSelected extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<List<Block>> blocks = this.sgGeneral
-      .add(((Builder)((Builder)new Builder().name("blocks")).description("Block types to automatically mine.")).build());
+      .add(new Builder().name("blocks").description("Block types to automatically mine.").build());
    private final Setting<Integer> radius = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("radius"))
-                  .description("Block radius around the player to scan for targets."))
-               .defaultValue(4))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("radius")
+            .description("Block radius around the player to scan for targets.")
+            .defaultValue(4)
             .range(1, 6)
             .build()
       );
    private final Setting<Integer> failTicks = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("fail-ticks"))
-                  .description("Give up on the current block after this many ticks without it breaking."))
-               .defaultValue(40))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("fail-ticks")
+            .description("Give up on the current block after this many ticks without it breaking.")
+            .defaultValue(40)
             .range(10, 200)
             .build()
       );
    private final Setting<Boolean> rotate = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("rotate"))
-                  .description("Rotate toward the target block while mining."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("rotate")
+            .description("Rotate toward the target block while mining.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> grimBypass = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("grim-vulcan-bypass"))
-                  .description("Bypass Grim/Vulcan by slowing down actions and smoothing rotations."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("grim-vulcan-bypass")
+            .description("Bypass Grim/Vulcan by slowing down actions and smoothing rotations.")
+            .defaultValue(true)
             .build()
       );
    private BlockPos currentTarget = null;

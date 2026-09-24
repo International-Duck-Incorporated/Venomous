@@ -18,16 +18,16 @@ public class TrueSight extends Module {
    private final SettingGroup sgRender = this.settings.createGroup("Render");
    private final Setting<Boolean> invisibleEntities = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("invisible-entities"))
-                  .description("Highlight invisible living entities that the client knows about."))
-               .defaultValue(true))
+         new Builder().name("invisible-entities")
+            .description("Highlight invisible living entities that the client knows about.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Double> range = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("range"))
-               .description("Maximum render range for invisible entities."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("range")
+            .description("Maximum render range for invisible entities.")
             .defaultValue(96.0)
             .range(8.0, 256.0)
             .sliderMax(128.0)
@@ -35,25 +35,25 @@ public class TrueSight extends Module {
       );
    private final Setting<ShapeMode> shapeMode = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                     .name("shape-mode"))
-                  .description("How boxes are rendered."))
-               .defaultValue(ShapeMode.Both))
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+            .name("shape-mode")
+            .description("How boxes are rendered.")
+            .defaultValue(ShapeMode.Both)
             .build()
       );
    private final Setting<SettingColor> sideColor = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                  .name("side-color"))
-               .description("Box side color."))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("side-color")
+            .description("Box side color.")
             .defaultValue(new SettingColor(255, 255, 255, 45))
             .build()
       );
    private final Setting<SettingColor> lineColor = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                  .name("line-color"))
-               .description("Box line color."))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("line-color")
+            .description("Box line color.")
             .defaultValue(new SettingColor(255, 255, 255, 220))
             .build()
       );

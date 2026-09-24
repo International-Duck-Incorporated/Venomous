@@ -53,9 +53,9 @@ public class GlobalNetworkInterceptor extends Module {
 
       this.enforceKinematics = this.sgKinematics
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("smooth-movement"))
-                     .description("Limits movement packet distance per tick for legacy anticheats (disable on Grim/modern simulation)."))
-                  .defaultValue(false))
+            new Builder().name("smooth-movement")
+               .description("Limits movement packet distance per tick for legacy anticheats (disable on Grim/modern simulation).")
+               .defaultValue(false)
                .build()
          );
       this.maxHorizontalPerTick = this.sgKinematics
@@ -82,22 +82,22 @@ public class GlobalNetworkInterceptor extends Module {
          );
       this.interpolateViolations = this.sgKinematics
          .add(
-            ((Builder)((Builder)((Builder)((Builder)new Builder().name("interpolate")).description("Split fast movements into smaller steps."))
-                     .defaultValue(false))
-                  .visible(this.enforceKinematics::get))
+            new Builder().name("interpolate").description("Split fast movements into smaller steps.")
+               .defaultValue(false)
+               .visible(this.enforceKinematics::get)
                .build()
          );
       this.quantizeRotations = this.sgRotation
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("snap-to-grid")).description("Snap rotation deltas to the vanilla sensitivity GCD grid."))
-                  .defaultValue(true))
+            new Builder().name("snap-to-grid").description("Snap rotation deltas to the vanilla sensitivity GCD grid.")
+               .defaultValue(true)
                .build()
          );
       this.enforceTickOrder = this.sgSerializer
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("limit-to-one-packet"))
-                     .description("Only allow one movement packet per tick (legacy anticheat option)."))
-                  .defaultValue(false))
+            new Builder().name("limit-to-one-packet")
+               .description("Only allow one movement packet per tick (legacy anticheat option).")
+               .defaultValue(false)
                .build()
          );
       this.maxQueueDepth = this.sgSerializer

@@ -22,9 +22,9 @@ public class PacketLogger extends Module {
 
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> incoming = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("incoming")).description("Log incoming packets.")).defaultValue(false)).build());
+      .add(new Builder().name("incoming").description("Log incoming packets.").defaultValue(false).build());
    private final Setting<Boolean> outgoing = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("outgoing")).description("Log outgoing packets.")).defaultValue(true)).build());
+      .add(new Builder().name("outgoing").description("Log outgoing packets.").defaultValue(true).build());
    private final Deque<String> log = new ArrayDeque<>();
    private int droppedEntries;
 

@@ -15,7 +15,7 @@ public class FarmlandTremble extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> radius = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("radius")).description("Radius in blocks to tremble farmland.")).defaultValue(5))
+         new Builder().name("radius").description("Radius in blocks to tremble farmland.").defaultValue(5)
             .min(1)
             .max(16)
             .build()

@@ -15,8 +15,8 @@ public class SwordBlock extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> onlyVisual = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("only-visual")).description("Only show the blocking animation, don't actually block."))
-               .defaultValue(false))
+         new Builder().name("only-visual").description("Only show the blocking animation, don't actually block.")
+            .defaultValue(false)
             .build()
       );
 

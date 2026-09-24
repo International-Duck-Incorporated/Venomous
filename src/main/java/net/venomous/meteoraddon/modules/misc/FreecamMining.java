@@ -14,7 +14,7 @@ public class FreecamMining extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> range = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("range")).description("Maximum range to mine blocks from freecam position."))
+         new Builder().name("range").description("Maximum range to mine blocks from freecam position.")
             .defaultValue(64.0)
             .min(4.0)
             .max(256.0)
@@ -23,10 +23,10 @@ public class FreecamMining extends Module {
       );
    private final Setting<Boolean> rotate = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("rotate"))
-                  .description("Rotate towards the block before mining."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("rotate")
+            .description("Rotate towards the block before mining.")
+            .defaultValue(false)
             .build()
       );
 

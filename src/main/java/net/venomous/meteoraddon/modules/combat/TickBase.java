@@ -12,22 +12,22 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class TickBase extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> onlyOnAttack = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("only-on-attack")).description("Only delay ticks when attacking.")).defaultValue(true)).build());
+      .add(new Builder().name("only-on-attack").description("Only delay ticks when attacking.").defaultValue(true).build());
    private final Setting<Integer> maxDelay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("max-delay"))
-                  .description("Maximum ticks to delay."))
-               .defaultValue(5))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("max-delay")
+            .description("Maximum ticks to delay.")
+            .defaultValue(5)
             .range(1, 20)
             .sliderMax(10)
             .build()
       );
    private final Setting<Double> healthThreshold = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("health-threshold"))
-               .description("Don't delay if health is below this."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("health-threshold")
+            .description("Don't delay if health is below this.")
             .defaultValue(6.0)
             .range(0.0, 36.0)
             .sliderMax(20.0)

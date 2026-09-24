@@ -15,8 +15,8 @@ public class RoboWalk extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> playerPackets = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("player-packets")).description("Round outgoing player movement X/Z coordinates to two decimals."))
-               .defaultValue(true))
+         new Builder().name("player-packets").description("Round outgoing player movement X/Z coordinates to two decimals.")
+            .defaultValue(true)
             .build()
       );
    private boolean sending;

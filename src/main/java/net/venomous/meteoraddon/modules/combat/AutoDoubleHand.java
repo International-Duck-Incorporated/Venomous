@@ -16,7 +16,7 @@ public class AutoDoubleHand extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> healthThreshold = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("health-threshold")).description("Only activate when health is below this value."))
+         new Builder().name("health-threshold").description("Only activate when health is below this value.")
             .defaultValue(20.0)
             .min(0.0)
             .max(36.0)
@@ -25,18 +25,18 @@ public class AutoDoubleHand extends Module {
       );
    private final Setting<Boolean> onlyWhileHoldingWeapon = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("only-weapon"))
-                  .description("Only activate while holding a sword or axe."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("only-weapon")
+            .description("Only activate while holding a sword or axe.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> requireTarget = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("require-target"))
-                  .description("Only activate when looking at a target entity."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("require-target")
+            .description("Only activate when looking at a target entity.")
+            .defaultValue(false)
             .build()
       );
 

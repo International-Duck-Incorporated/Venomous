@@ -12,11 +12,11 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class AntiBlind extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> blockNausea = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("block-nausea")).description("Block nausea effect.")).defaultValue(true)).build());
+      .add(new Builder().name("block-nausea").description("Block nausea effect.").defaultValue(true).build());
    private final Setting<Boolean> blockBlindness = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("block-blindness")).description("Block blindness effect.")).defaultValue(true)).build());
+      .add(new Builder().name("block-blindness").description("Block blindness effect.").defaultValue(true).build());
    private final Setting<Boolean> blockDarkness = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("block-darkness")).description("Block darkness effect.")).defaultValue(true)).build());
+      .add(new Builder().name("block-darkness").description("Block darkness effect.").defaultValue(true).build());
 
    public AntiBlind() {
       super(VenomousAddon.CATEGORY, "anti-blind", "Blocks annoying screen effects like blindness, nausea, etc.");

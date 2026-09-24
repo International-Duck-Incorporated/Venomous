@@ -20,7 +20,7 @@ public class InventoryTracker extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> range = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("range")).description("Range to track player inventory changes.")).defaultValue(8.0).min(1.0).max(64.0).build()
+         new Builder().name("range").description("Range to track player inventory changes.").defaultValue(8.0).min(1.0).max(64.0).build()
       );
    private final Map<UUID, Map<Integer, ItemStack>> trackedInventories = new HashMap<>();
 

@@ -173,7 +173,7 @@ public class Scaffold extends Module {
          .range(1, 10)
          .visible(() -> (this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
                      && this.vulcanSprintDisabler.get())
-         .build()
+                        .build()
    );
 
    private final Setting<Integer> expand = this.sgExpand.add(

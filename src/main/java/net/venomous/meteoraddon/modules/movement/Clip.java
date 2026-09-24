@@ -20,90 +20,90 @@ public class Clip extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Clip.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("Clip mode: HClip, VClip, Combined, NoClip, or VulcanClip."))
-               .defaultValue(Clip.Mode.HClip))
+         new Builder().name("mode").description("Clip mode: HClip, VClip, Combined, NoClip, or VulcanClip.")
+            .defaultValue(Clip.Mode.HClip)
             .build()
       );
    private final Setting<Double> distance = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("distance"))
-                  .description("Horizontal clip distance. Positive is forward, negative is backward."))
-               .defaultValue(3.0)
-               .range(-20.0, 20.0)
-               .sliderMin(-10.0)
-               .sliderMax(10.0)
-               .visible(() -> this.mode.get() == Clip.Mode.HClip))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("distance")
+            .description("Horizontal clip distance. Positive is forward, negative is backward.")
+            .defaultValue(3.0)
+            .range(-20.0, 20.0)
+            .sliderMin(-10.0)
+            .sliderMax(10.0)
+            .visible(() -> this.mode.get() == Clip.Mode.HClip)
             .build()
       );
    private final Setting<Double> height = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("height"))
-                  .description("Vertical clip height."))
-               .defaultValue(3.0)
-               .range(-20.0, 20.0)
-               .sliderMin(-10.0)
-               .sliderMax(10.0)
-               .visible(() -> this.mode.get() == Clip.Mode.VClip))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("height")
+            .description("Vertical clip height.")
+            .defaultValue(3.0)
+            .range(-20.0, 20.0)
+            .sliderMin(-10.0)
+            .sliderMax(10.0)
+            .visible(() -> this.mode.get() == Clip.Mode.VClip)
             .build()
       );
    private final Setting<Boolean> autoVClip = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("auto-vclip"))
-                     .description("In VClip mode, find a nearby free spot up/down instead of using custom height."))
-                  .defaultValue(false))
-               .visible(() -> this.mode.get() == Clip.Mode.VClip))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("auto-vclip")
+            .description("In VClip mode, find a nearby free spot up/down instead of using custom height.")
+            .defaultValue(false)
+            .visible(() -> this.mode.get() == Clip.Mode.VClip)
             .build()
       );
    private final Setting<Clip.DirectionMode> direction = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)((Builder)new Builder().name("direction")).description("Auto VClip search direction."))
-                  .defaultValue(Clip.DirectionMode.Up))
-               .visible(() -> this.mode.get() == Clip.Mode.VClip && (Boolean)this.autoVClip.get()))
+         new Builder().name("direction").description("Auto VClip search direction.")
+            .defaultValue(Clip.DirectionMode.Up)
+            .visible(() -> this.mode.get() == Clip.Mode.VClip && (Boolean)this.autoVClip.get())
             .build()
       );
    private final Setting<Double> noClipHorizontal = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("noclip-horizontal-speed"))
-                  .description("Horizontal velocity in NoClip mode."))
-               .defaultValue(0.4)
-               .range(0.0, 3.0)
-               .sliderMax(1.5)
-               .visible(() -> this.mode.get() == Clip.Mode.NoClip))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("noclip-horizontal-speed")
+            .description("Horizontal velocity in NoClip mode.")
+            .defaultValue(0.4)
+            .range(0.0, 3.0)
+            .sliderMax(1.5)
+            .visible(() -> this.mode.get() == Clip.Mode.NoClip)
             .build()
       );
    private final Setting<Double> noClipVertical = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("noclip-vertical-speed"))
-                  .description("Vertical velocity in NoClip mode."))
-               .defaultValue(0.25)
-               .range(0.0, 3.0)
-               .sliderMax(1.5)
-               .visible(() -> this.mode.get() == Clip.Mode.NoClip))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("noclip-vertical-speed")
+            .description("Vertical velocity in NoClip mode.")
+            .defaultValue(0.25)
+            .range(0.0, 3.0)
+            .sliderMax(1.5)
+            .visible(() -> this.mode.get() == Clip.Mode.NoClip)
             .build()
       );
    private final Setting<Boolean> sendPackets = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("send-packets"))
-                     .description("Send movement packets after instant clip actions."))
-                  .defaultValue(true))
-               .visible(() -> this.mode.get() == Clip.Mode.HClip || this.mode.get() == Clip.Mode.VClip))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("send-packets")
+            .description("Send movement packets after instant clip actions.")
+            .defaultValue(true)
+            .visible(() -> this.mode.get() == Clip.Mode.HClip || this.mode.get() == Clip.Mode.VClip)
             .build()
       );
    private final Setting<Integer> packetRepeats = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("packet-repeats"))
-                     .description("How many position packets to send after an instant clip."))
-                  .defaultValue(1))
-               .range(1, 5)
-               .sliderMax(5)
-               .visible(() -> (Boolean)this.sendPackets.get() && (this.mode.get() == Clip.Mode.HClip || this.mode.get() == Clip.Mode.VClip)))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("packet-repeats")
+            .description("How many position packets to send after an instant clip.")
+            .defaultValue(1)
+            .range(1, 5)
+            .sliderMax(5)
+            .visible(() -> (Boolean)this.sendPackets.get() && (this.mode.get() == Clip.Mode.HClip || this.mode.get() == Clip.Mode.VClip))
             .build()
       );
    private boolean waitFlag;

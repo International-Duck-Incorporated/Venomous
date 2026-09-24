@@ -20,20 +20,20 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class VBlink extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> cancelOutgoing = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("cancel-outgoing")).description("Cancel outgoing movement packets.")).defaultValue(true)).build());
+      .add(new Builder().name("cancel-outgoing").description("Cancel outgoing movement packets.").defaultValue(true).build());
    private final Setting<Integer> autoDisable = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("auto-disable"))
-                  .description("Automatically disable after this many ticks. 0 = never."))
-               .defaultValue(0))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("auto-disable")
+            .description("Automatically disable after this many ticks. 0 = never.")
+            .defaultValue(0)
             .min(0)
             .sliderMax(500)
             .build()
       );
    private final Setting<Boolean> dummy = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("dummy")).description("Show a fake player at your original position.")).defaultValue(false)).build()
+         new Builder().name("dummy").description("Show a fake player at your original position.").defaultValue(false).build()
       );
    private final List<Packet<?>> outgoingPackets = new ArrayList<>();
    private Vec3 startPos = null;

@@ -17,38 +17,38 @@ public class ArmorWarning extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> durability = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("durability")).description("Warn when armor/elytra durability is at or below this percent."))
-               .defaultValue(20))
+         new Builder().name("durability").description("Warn when armor/elytra durability is at or below this percent.")
+            .defaultValue(20)
             .range(1, 100)
             .sliderMax(50)
             .build()
       );
    private final Setting<Integer> totems = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("totems")).description("Warn when totem count is at or below this value.")).defaultValue(1))
+         new Builder().name("totems").description("Warn when totem count is at or below this value.").defaultValue(1)
             .range(0, 10)
             .sliderMax(5)
             .build()
       );
    private final Setting<Boolean> chat = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("chat"))
-                  .description("Send chat warnings."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("chat")
+            .description("Send chat warnings.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> sound = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("sound"))
-                  .description("Play a warning sound."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("sound")
+            .description("Play a warning sound.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Integer> cooldown = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("cooldown")).description("Ticks between repeated warnings.")).defaultValue(100))
+         new Builder().name("cooldown").description("Ticks between repeated warnings.").defaultValue(100)
             .range(20, 600)
             .sliderMax(200)
             .build()

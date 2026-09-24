@@ -23,54 +23,54 @@ public class SoundESP extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final SettingGroup sgRender = this.settings.createGroup("Render");
    private final Setting<Boolean> useFilter = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("use-filter")).description("Only show sounds in the filter list.")).defaultValue(false)).build());
+      .add(new Builder().name("use-filter").description("Only show sounds in the filter list.").defaultValue(false).build());
    private final Setting<List<SoundEvent>> filter = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.SoundEventListSetting.Builder)((meteordevelopment.meteorclient.settings.SoundEventListSetting.Builder)((meteordevelopment.meteorclient.settings.SoundEventListSetting.Builder)((meteordevelopment.meteorclient.settings.SoundEventListSetting.Builder)new meteordevelopment.meteorclient.settings.SoundEventListSetting.Builder()
-                        .name("filter"))
-                     .description("Sounds to track when the filter is enabled."))
-                  .defaultValue(new ArrayList(0)))
-               .visible(() -> (Boolean)this.useFilter.get()))
+         new meteordevelopment.meteorclient.settings.SoundEventListSetting.Builder()
+            .name("filter")
+            .description("Sounds to track when the filter is enabled.")
+            .defaultValue(new ArrayList(0))
+            .visible(() -> (Boolean)this.useFilter.get())
             .build()
       );
    private final Setting<Integer> lifetime = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("lifetime"))
-                  .description("Ticks a sound marker stays visible."))
-               .defaultValue(80))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("lifetime")
+            .description("Ticks a sound marker stays visible.")
+            .defaultValue(80)
             .min(10)
             .sliderMax(400)
             .build()
       );
    private final Setting<Integer> maxSounds = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("max-sounds"))
-                  .description("Maximum markers tracked simultaneously. Oldest evicted first."))
-               .defaultValue(64))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("max-sounds")
+            .description("Maximum markers tracked simultaneously. Oldest evicted first.")
+            .defaultValue(64)
             .min(8)
             .sliderMax(256)
             .build()
       );
    private final Setting<Boolean> logChat = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("log-to-chat")).description("Print each sound position to chat.")).defaultValue(false)).build());
+      .add(new Builder().name("log-to-chat").description("Print each sound position to chat.").defaultValue(false).build());
    private final Setting<ShapeMode> shapeMode = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                  .name("shape-mode"))
-               .defaultValue(ShapeMode.Both))
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+            .name("shape-mode")
+            .defaultValue(ShapeMode.Both)
             .build()
       );
    private final Setting<SettingColor> sideColor = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder().name("side-color"))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder().name("side-color")
             .defaultValue(new SettingColor(255, 165, 0, 50))
             .build()
       );
    private final Setting<SettingColor> lineColor = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder().name("line-color"))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder().name("line-color")
             .defaultValue(new SettingColor(255, 165, 0, 210))
             .build()
       );

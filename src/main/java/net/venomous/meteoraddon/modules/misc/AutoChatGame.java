@@ -20,45 +20,45 @@ public class AutoChatGame extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> math = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("math")).description("Solve simple math questions in chat (ChatGames + generic)."))
-               .defaultValue(true))
+         new Builder().name("math").description("Solve simple math questions in chat (ChatGames + generic).")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> scramble = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("scramble")).description("Unscramble words from a word list.")).defaultValue(false)).build());
+      .add(new Builder().name("scramble").description("Unscramble words from a word list.").defaultValue(false).build());
    private final Setting<Boolean> unreverse = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("unreverse")).description("Answer ChatGames 'unreverse the word' games.")).defaultValue(true))
+         new Builder().name("unreverse").description("Answer ChatGames 'unreverse the word' games.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> random = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("random")).description("Answer ChatGames 'write out' random-string games.")).defaultValue(true))
+         new Builder().name("random").description("Answer ChatGames 'write out' random-string games.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> variable = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("variable"))
-                  .description("Solve ChatGames 'solve for <symbol>' variable games (needs the 3 equation lines)."))
-               .defaultValue(true))
+         new Builder().name("variable")
+            .description("Solve ChatGames 'solve for <symbol>' variable games (needs the 3 equation lines).")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Integer> delay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("delay"))
-                  .description("Delay before answering in ticks."))
-               .defaultValue(20))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("delay")
+            .description("Delay before answering in ticks.")
+            .defaultValue(20)
             .min(1)
             .sliderMax(100)
             .build()
       );
    private final Setting<List<String>> customPatterns = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.StringListSetting.Builder)((meteordevelopment.meteorclient.settings.StringListSetting.Builder)((meteordevelopment.meteorclient.settings.StringListSetting.Builder)new meteordevelopment.meteorclient.settings.StringListSetting.Builder()
-                     .name("custom-patterns"))
-                  .description("Custom regex patterns to match questions. Use group 1 for the math expression."))
-               .defaultValue(new ArrayList()))
+         new meteordevelopment.meteorclient.settings.StringListSetting.Builder()
+            .name("custom-patterns")
+            .description("Custom regex patterns to match questions. Use group 1 for the math expression.")
+            .defaultValue(new ArrayList())
             .build()
       );
    private static final Pattern MATH_PATTERN = Pattern.compile("(?:what\\s+is\\s+|calculate\\s+|solve\\s+)?([\\d]+\\s*[+\\-*/]\\s*[\\d]+)\\s*[?=]?", 2);

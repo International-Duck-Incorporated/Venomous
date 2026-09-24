@@ -52,67 +52,67 @@ public class Choir extends Module {
       this.filters.rewind();
       this.file = this.sgGeneral
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("file")).description("The .txt file to read lines from.")).defaultValue(this.DEFAULT_FILE))
+            new Builder().name("file").description("The .txt file to read lines from.").defaultValue(this.DEFAULT_FILE)
                .filter(this.filters)
                .build()
          );
       this.defaultDelay = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("default-delay"))
-                     .description("Milliseconds between lines when the file doesn't specify a .wait."))
-                  .defaultValue(1000))
+            new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+               .name("default-delay")
+               .description("Milliseconds between lines when the file doesn't specify a .wait.")
+               .defaultValue(1000)
                .min(0)
                .sliderRange(0, 10000)
                .build()
          );
       this.loop = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("loop"))
-                     .description("Start again from the top once the file has finished."))
-                  .defaultValue(false))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("loop")
+               .description("Start again from the top once the file has finished.")
+               .defaultValue(false)
                .build()
          );
       this.disableWhenDone = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                           .name("disable-when-done"))
-                        .description("Automatically toggle the module off after the last line. Ignored while looping."))
-                     .defaultValue(true))
-                  .visible(() -> !(Boolean)this.loop.get()))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("disable-when-done")
+               .description("Automatically toggle the module off after the last line. Ignored while looping.")
+               .defaultValue(true)
+               .visible(() -> !(Boolean)this.loop.get())
                .build()
          );
       this.keepBlankLines = this.sgAdvanced
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("keep-blank-lines"))
-                     .description("Send blank lines too. Most servers reject empty messages, so this is off by default."))
-                  .defaultValue(false))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("keep-blank-lines")
+               .description("Send blank lines too. Most servers reject empty messages, so this is off by default.")
+               .defaultValue(false)
                .build()
          );
       this.trimLines = this.sgAdvanced
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("trim-lines"))
-                     .description("Strip leading/trailing whitespace from each line before sending."))
-                  .defaultValue(true))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("trim-lines")
+               .description("Strip leading/trailing whitespace from each line before sending.")
+               .defaultValue(true)
                .build()
          );
       this.truncateLong = this.sgAdvanced
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("truncate-long"))
-                     .description("Cut lines longer than 256 characters instead of skipping them. Sending an over-length message gets you kicked."))
-                  .defaultValue(true))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("truncate-long")
+               .description("Cut lines longer than 256 characters instead of skipping them. Sending an over-length message gets you kicked.")
+               .defaultValue(true)
                .build()
          );
       this.notify = this.sgAdvanced
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("notify"))
-                     .description("Report loading errors and completion in chat."))
-                  .defaultValue(true))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("notify")
+               .description("Report loading errors and completion in chat.")
+               .defaultValue(true)
                .build()
          );
       this.script = new ArrayList<>();

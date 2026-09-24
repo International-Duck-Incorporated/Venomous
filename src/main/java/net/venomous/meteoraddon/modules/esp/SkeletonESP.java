@@ -16,7 +16,7 @@ public class SkeletonESP extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> lineWidth = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("line-width")).description("Width of the skeleton lines."))
+         new Builder().name("line-width").description("Width of the skeleton lines.")
             .defaultValue(2.0)
             .min(0.5)
             .max(5.0)
@@ -25,25 +25,25 @@ public class SkeletonESP extends Module {
       );
    private final Setting<Boolean> showPlayers = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("show-players"))
-                  .description("Render skeletons on players."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("show-players")
+            .description("Render skeletons on players.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> showSelf = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("show-self"))
-                  .description("Render your own skeleton."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("show-self")
+            .description("Render your own skeleton.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<SettingColor> color = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                  .name("color"))
-               .description("Skeleton line color."))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("color")
+            .description("Skeleton line color.")
             .defaultValue(new SettingColor(255, 255, 255, 255))
             .build()
       );

@@ -19,15 +19,15 @@ public class CriticalsPlus extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<CriticalsPlus.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("Criticals mode — select your anticheat."))
-               .defaultValue(CriticalsPlus.Mode.GrimLegit))
+         new Builder().name("mode").description("Criticals mode — select your anticheat.")
+            .defaultValue(CriticalsPlus.Mode.GrimLegit)
             .build()
       );
    private final Setting<Double> delay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("delay"))
-               .description("Delay between crit attempts in seconds."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("delay")
+            .description("Delay between crit attempts in seconds.")
             .defaultValue(0.5)
             .range(0.0, 2.0)
             .sliderMax(1.5)
@@ -35,69 +35,69 @@ public class CriticalsPlus extends Module {
       );
    private final Setting<Boolean> onlyOnGround = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("only-on-ground"))
-                  .description("Only attempt crits when on ground."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("only-on-ground")
+            .description("Only attempt crits when on ground.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> hurtTimeCheck = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("hurt-time-check"))
-                  .description("Don't crit if target is in hurt time."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("hurt-time-check")
+            .description("Don't crit if target is in hurt time.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Integer> grimMinFallTicks = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("grim-min-fall-ticks"))
-                     .description("Min ticks after jump before attacking (must be falling). Grim needs 2+."))
-                  .defaultValue(2))
-               .range(1, 10)
-               .visible(() -> this.mode.get() == CriticalsPlus.Mode.GrimLegit || this.mode.get() == CriticalsPlus.Mode.GrimSlime))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("grim-min-fall-ticks")
+            .description("Min ticks after jump before attacking (must be falling). Grim needs 2+.")
+            .defaultValue(2)
+            .range(1, 10)
+            .visible(() -> this.mode.get() == CriticalsPlus.Mode.GrimLegit || this.mode.get() == CriticalsPlus.Mode.GrimSlime)
             .build()
       );
    private final Setting<Boolean> grimWaitForAttackStrength = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("grim-wait-attack-strength"))
-                     .description("Wait for attack cooldown before jumping (humanlike)."))
-                  .defaultValue(true))
-               .visible(() -> this.mode.get() == CriticalsPlus.Mode.GrimLegit || this.mode.get() == CriticalsPlus.Mode.GrimSlime))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("grim-wait-attack-strength")
+            .description("Wait for attack cooldown before jumping (humanlike).")
+            .defaultValue(true)
+            .visible(() -> this.mode.get() == CriticalsPlus.Mode.GrimLegit || this.mode.get() == CriticalsPlus.Mode.GrimSlime)
             .build()
       );
    private final Setting<Integer> vulcanMinFallTicks = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("vulcan-min-fall-ticks"))
-                     .description("Min ticks after jump before attacking for Vulcan."))
-                  .defaultValue(3))
-               .range(1, 10)
-               .visible(() -> this.mode.get() == CriticalsPlus.Mode.VulcanJump || this.mode.get() == CriticalsPlus.Mode.VulcanMini))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("vulcan-min-fall-ticks")
+            .description("Min ticks after jump before attacking for Vulcan.")
+            .defaultValue(3)
+            .range(1, 10)
+            .visible(() -> this.mode.get() == CriticalsPlus.Mode.VulcanJump || this.mode.get() == CriticalsPlus.Mode.VulcanMini)
             .build()
       );
    private final Setting<Double> vulcanMiniHeight = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("vulcan-mini-height"))
-                  .description("Mini-jump height for VulcanMini mode (0.1 = subtle)."))
-               .defaultValue(0.12)
-               .range(0.05, 0.42)
-               .sliderMax(0.42)
-               .visible(() -> this.mode.get() == CriticalsPlus.Mode.VulcanMini))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("vulcan-mini-height")
+            .description("Mini-jump height for VulcanMini mode (0.1 = subtle).")
+            .defaultValue(0.12)
+            .range(0.05, 0.42)
+            .sliderMax(0.42)
+            .visible(() -> this.mode.get() == CriticalsPlus.Mode.VulcanMini)
             .build()
       );
    private final Setting<Double> ncpMiniHeight = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("ncp-mini-height"))
-                  .description("Mini-jump height for NCP mode."))
-               .defaultValue(0.1)
-               .range(0.05, 0.42)
-               .sliderMax(0.42)
-               .visible(() -> this.mode.get() == CriticalsPlus.Mode.NCPMini))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("ncp-mini-height")
+            .description("Mini-jump height for NCP mode.")
+            .defaultValue(0.1)
+            .range(0.05, 0.42)
+            .sliderMax(0.42)
+            .visible(() -> this.mode.get() == CriticalsPlus.Mode.NCPMini)
             .build()
       );
    private long lastCritTime = 0L;

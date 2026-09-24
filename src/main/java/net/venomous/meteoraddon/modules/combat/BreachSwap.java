@@ -16,38 +16,38 @@ public class BreachSwap extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> autoSwap = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("auto-swap-breach-mace")).description("Automatically finds and swaps to a breach mace."))
-               .defaultValue(true))
+         new Builder().name("auto-swap-breach-mace").description("Automatically finds and swaps to a breach mace.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> checkWeapon = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("check-weapon")).description("Only activate when holding a sword or axe.")).defaultValue(true))
+         new Builder().name("check-weapon").description("Only activate when holding a sword or axe.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> allowSword = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)((Builder)new Builder().name("allow-sword")).description("Allow activation when holding a sword.")).defaultValue(true))
-               .visible(this.checkWeapon::get))
+         new Builder().name("allow-sword").description("Allow activation when holding a sword.").defaultValue(true)
+            .visible(this.checkWeapon::get)
             .build()
       );
    private final Setting<Boolean> allowAxe = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)((Builder)new Builder().name("allow-axe")).description("Allow activation when holding an axe.")).defaultValue(true))
-               .visible(this.checkWeapon::get))
+         new Builder().name("allow-axe").description("Allow activation when holding an axe.").defaultValue(true)
+            .visible(this.checkWeapon::get)
             .build()
       );
    private final Setting<Boolean> swapBack = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("swap-back")).description("Swap back after delay.")).defaultValue(true)).build());
+      .add(new Builder().name("swap-back").description("Swap back after delay.").defaultValue(true).build());
    private final Setting<Integer> delay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("swap-back-delay"))
-                     .description("Delay in ticks before swapping back."))
-                  .defaultValue(8))
-               .min(1)
-               .sliderMax(20)
-               .visible(this.swapBack::get))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("swap-back-delay")
+            .description("Delay in ticks before swapping back.")
+            .defaultValue(8)
+            .min(1)
+            .sliderMax(20)
+            .visible(this.swapBack::get)
             .build()
       );
    private int prevSlot = -1;

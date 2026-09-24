@@ -16,59 +16,59 @@ public class ProjectilePuncher extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> range = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("range")).description("Range to punch projectiles.")).defaultValue(4.0).range(1.0, 6.0).sliderMax(6.0).build()
+         new Builder().name("range").description("Range to punch projectiles.").defaultValue(4.0).range(1.0, 6.0).sliderMax(6.0).build()
       );
    private final Setting<Integer> minCps = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("min-cps"))
-                  .description("Minimum clicks per second for punching."))
-               .defaultValue(6))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("min-cps")
+            .description("Minimum clicks per second for punching.")
+            .defaultValue(6)
             .range(1, 20)
             .sliderMax(15)
             .build()
       );
    private final Setting<Integer> maxCps = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("max-cps"))
-                  .description("Maximum clicks per second for punching."))
-               .defaultValue(9))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("max-cps")
+            .description("Maximum clicks per second for punching.")
+            .defaultValue(9)
             .range(1, 20)
             .sliderMax(15)
             .build()
       );
    private final Setting<Boolean> rotate = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("rotate"))
-                  .description("Rotate to projectile before punching."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("rotate")
+            .description("Rotate to projectile before punching.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Double> rotationSpeed = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("rotation-speed")).description("Rotation speed (degrees per tick)."))
-               .defaultValue(180.0)
-               .range(30.0, 360.0)
-               .sliderMax(360.0)
-               .visible(this.rotate::get))
+         new Builder().name("rotation-speed").description("Rotation speed (degrees per tick).")
+            .defaultValue(180.0)
+            .range(30.0, 360.0)
+            .sliderMax(360.0)
+            .visible(this.rotate::get)
             .build()
       );
    private final Setting<Boolean> onlyIncoming = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("only-incoming"))
-                  .description("Only punch projectiles heading toward you."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("only-incoming")
+            .description("Only punch projectiles heading toward you.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Boolean> respectCooldown = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("respect-cooldown"))
-                  .description("Respect attack cooldown (humanlike)."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("respect-cooldown")
+            .description("Respect attack cooldown (humanlike).")
+            .defaultValue(true)
             .build()
       );
    private int ticksUntilPunch = 0;

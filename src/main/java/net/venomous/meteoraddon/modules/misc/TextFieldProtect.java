@@ -9,14 +9,14 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class TextFieldProtect extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> blockChat = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("block-chat")).description("Block interaction with chat input.")).defaultValue(false)).build());
+      .add(new Builder().name("block-chat").description("Block interaction with chat input.").defaultValue(false).build());
    private final Setting<Boolean> blockSign = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("block-sign")).description("Block interaction with sign text fields.")).defaultValue(true)).build());
+      .add(new Builder().name("block-sign").description("Block interaction with sign text fields.").defaultValue(true).build());
    private final Setting<Boolean> blockBook = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("block-book")).description("Block interaction with book text fields.")).defaultValue(true)).build());
+      .add(new Builder().name("block-book").description("Block interaction with book text fields.").defaultValue(true).build());
    private final Setting<Boolean> blockAnvil = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("block-anvil")).description("Block interaction with anvil text fields.")).defaultValue(false))
+         new Builder().name("block-anvil").description("Block interaction with anvil text fields.").defaultValue(false)
             .build()
       );
 

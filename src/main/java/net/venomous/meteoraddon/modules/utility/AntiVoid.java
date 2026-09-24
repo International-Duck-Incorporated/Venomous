@@ -12,29 +12,29 @@ public class AntiVoid extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<AntiVoid.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("Motion boosts you up, Back teleports you to your last safe position."))
-               .defaultValue(AntiVoid.Mode.Motion))
+         new Builder().name("mode").description("Motion boosts you up, Back teleports you to your last safe position.")
+            .defaultValue(AntiVoid.Mode.Motion)
             .build()
       );
    private final Setting<Integer> threshold = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("threshold"))
-                  .description("Blocks above world bottom to activate."))
-               .defaultValue(5))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("threshold")
+            .description("Blocks above world bottom to activate.")
+            .defaultValue(5)
             .min(0)
             .max(64)
             .build()
       );
    private final Setting<Double> upwardVelocity = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("upward-velocity"))
-                  .description("Upward velocity for Motion mode."))
-               .defaultValue(0.5)
-               .min(0.0)
-               .max(5.0)
-               .visible(() -> this.mode.get() == AntiVoid.Mode.Motion))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("upward-velocity")
+            .description("Upward velocity for Motion mode.")
+            .defaultValue(0.5)
+            .min(0.0)
+            .max(5.0)
+            .visible(() -> this.mode.get() == AntiVoid.Mode.Motion)
             .build()
       );
    private double safeX;

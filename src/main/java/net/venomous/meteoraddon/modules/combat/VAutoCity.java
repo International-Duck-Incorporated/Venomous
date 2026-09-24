@@ -38,97 +38,97 @@ public class VAutoCity extends Module {
 
     private final Setting<Double> targetRange = this.sgGeneral.add(
         new DoubleSetting.Builder()
-            .name("target-range")
-            .description("Maximum distance to find an enemy target.")
-            .defaultValue(6.0)
-            .min(1.0)
-            .sliderMax(10.0)
-            .build()
+           .name("target-range")
+           .description("Maximum distance to find an enemy target.")
+           .defaultValue(6.0)
+           .min(1.0)
+           .sliderMax(10.0)
+           .build()
     );
 
     private final Setting<Double> mineRange = this.sgGeneral.add(
         new DoubleSetting.Builder()
-            .name("mine-range")
-            .description("Maximum reach distance to mine the surround block.")
-            .defaultValue(4.5)
-            .min(1.0)
-            .sliderMax(6.0)
-            .build()
+           .name("mine-range")
+           .description("Maximum reach distance to mine the surround block.")
+           .defaultValue(4.5)
+           .min(1.0)
+           .sliderMax(6.0)
+           .build()
     );
 
     private final Setting<Boolean> autoSwitch = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("auto-switch")
-            .description("Automatically swap to the best pickaxe in your hotbar.")
-            .defaultValue(true)
-            .build()
+           .name("auto-switch")
+           .description("Automatically swap to the best pickaxe in your hotbar.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<Boolean> support = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("support")
-            .description("Automatically place a block beneath floating city blocks.")
-            .defaultValue(true)
-            .build()
+           .name("support")
+           .description("Automatically place a block beneath floating city blocks.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<Boolean> rotate = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("rotate")
-            .description("Rotate towards the target block when breaking.")
-            .defaultValue(false)
-            .build()
+           .name("rotate")
+           .description("Rotate towards the target block when breaking.")
+           .defaultValue(false)
+           .build()
     );
 
     private final Setting<Boolean> swing = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("swing")
-            .description("Swing your hand visually when mining.")
-            .defaultValue(true)
-            .build()
+           .name("swing")
+           .description("Swing your hand visually when mining.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<Boolean> ignoreFriends = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("ignore-friends")
-            .description("Never target surrounding blocks of friends.")
-            .defaultValue(true)
-            .build()
+           .name("ignore-friends")
+           .description("Never target surrounding blocks of friends.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<Boolean> render = this.sgRender.add(
         new BoolSetting.Builder()
-            .name("render")
-            .description("Render the targeted city block in the world.")
-            .defaultValue(true)
-            .build()
+           .name("render")
+           .description("Render the targeted city block in the world.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<ShapeMode> shapeMode = this.sgRender.add(
         new EnumSetting.Builder<ShapeMode>()
-            .name("shape-mode")
-            .description("How the target block outline is rendered.")
-            .defaultValue(ShapeMode.Both)
-            .visible(this.render::get)
-            .build()
+           .name("shape-mode")
+           .description("How the target block outline is rendered.")
+           .defaultValue(ShapeMode.Both)
+           .visible(this.render::get)
+           .build()
     );
 
     private final Setting<SettingColor> sideColor = this.sgRender.add(
         new ColorSetting.Builder()
-            .name("side-color")
-            .description("Color of the sides.")
-            .defaultValue(new SettingColor(255, 60, 60, 35))
-            .visible(() -> this.render.get() && this.shapeMode.get().sides())
-            .build()
+           .name("side-color")
+           .description("Color of the sides.")
+           .defaultValue(new SettingColor(255, 60, 60, 35))
+           .visible(() -> this.render.get() && this.shapeMode.get().sides())
+           .build()
     );
 
     private final Setting<SettingColor> lineColor = this.sgRender.add(
         new ColorSetting.Builder()
-            .name("line-color")
-            .description("Color of the outline lines.")
-            .defaultValue(new SettingColor(255, 60, 60, 220))
-            .visible(() -> this.render.get() && this.shapeMode.get().lines())
-            .build()
+           .name("line-color")
+           .description("Color of the outline lines.")
+           .defaultValue(new SettingColor(255, 60, 60, 220))
+           .visible(() -> this.render.get() && this.shapeMode.get().lines())
+           .build()
     );
 
     private BlockPos targetBlock;

@@ -21,39 +21,39 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class AutoToolPlus extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> mining = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("mining")).description("Switch to the best tool while mining.")).defaultValue(true)).build());
+      .add(new Builder().name("mining").description("Switch to the best tool while mining.").defaultValue(true).build());
    private final Setting<Boolean> weaponFallback = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("weapon-fallback")).description("Switch to a weapon when attacking an entity.")).defaultValue(true))
+         new Builder().name("weapon-fallback").description("Switch to a weapon when attacking an entity.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> durabilitySafety = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("durability-safety")).description("Avoid tools below the durability threshold.")).defaultValue(true))
+         new Builder().name("durability-safety").description("Avoid tools below the durability threshold.").defaultValue(true)
             .build()
       );
    private final Setting<Integer> minDurability = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("anti-break-threshold"))
-                     .description("Minimum durability percent allowed for selected tools."))
-                  .defaultValue(8))
-               .range(0, 100)
-               .sliderMax(30)
-               .visible(() -> (Boolean)this.durabilitySafety.get()))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("anti-break-threshold")
+            .description("Minimum durability percent allowed for selected tools.")
+            .defaultValue(8)
+            .range(0, 100)
+            .sliderMax(30)
+            .visible(() -> (Boolean)this.durabilitySafety.get())
             .build()
       );
    private final Setting<AutoToolPlus.EnchantPreference> enchantPreference = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                     .name("enchant-preference"))
-                  .description("Prefer Silk Touch or Fortune when tool speeds are close."))
-               .defaultValue(AutoToolPlus.EnchantPreference.None))
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+            .name("enchant-preference")
+            .description("Prefer Silk Touch or Fortune when tool speeds are close.")
+            .defaultValue(AutoToolPlus.EnchantPreference.None)
             .build()
       );
    private final Setting<Boolean> restore = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("restore-slot")).description("Restore previous slot after releasing attack.")).defaultValue(true))
+         new Builder().name("restore-slot").description("Restore previous slot after releasing attack.").defaultValue(true)
             .build()
       );
    private int previousSlot = -1;

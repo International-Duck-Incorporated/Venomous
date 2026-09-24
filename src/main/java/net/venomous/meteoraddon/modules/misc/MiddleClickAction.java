@@ -17,37 +17,37 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class MiddleClickAction extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> addFriend = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("add-friend")).description("Add player as friend on middle click.")).defaultValue(true)).build());
+      .add(new Builder().name("add-friend").description("Add player as friend on middle click.").defaultValue(true).build());
    private final Setting<Boolean> removeFriend = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("remove-friend")).description("Remove player as friend on middle click if already friended."))
-               .defaultValue(true))
+         new Builder().name("remove-friend").description("Remove player as friend on middle click if already friended.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<MiddleClickAction.Technique> technique = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                     .name("technique"))
-                  .description("Click pattern for middle click (humanlike)."))
-               .defaultValue(MiddleClickAction.Technique.Stabilized))
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+            .name("technique")
+            .description("Click pattern for middle click (humanlike).")
+            .defaultValue(MiddleClickAction.Technique.Stabilized)
             .build()
       );
    private final Setting<Integer> minCps = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("min-cps"))
-                  .description("Minimum clicks per second."))
-               .defaultValue(6))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("min-cps")
+            .description("Minimum clicks per second.")
+            .defaultValue(6)
             .range(1, 20)
             .sliderMax(15)
             .build()
       );
    private final Setting<Integer> maxCps = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("max-cps"))
-                  .description("Maximum clicks per second."))
-               .defaultValue(8))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("max-cps")
+            .description("Maximum clicks per second.")
+            .defaultValue(8)
             .range(1, 20)
             .sliderMax(15)
             .build()

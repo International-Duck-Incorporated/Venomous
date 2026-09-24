@@ -12,15 +12,15 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class NameProtect extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> protectSelf = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("protect-self")).description("Replace your own username.")).defaultValue(true)).build());
+      .add(new Builder().name("protect-self").description("Replace your own username.").defaultValue(true).build());
    private final Setting<Boolean> protectOthers = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("protect-others")).description("Replace other player usernames.")).defaultValue(false)).build());
+      .add(new Builder().name("protect-others").description("Replace other player usernames.").defaultValue(false).build());
    private final Setting<String> replacement = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)new meteordevelopment.meteorclient.settings.StringSetting.Builder()
-                     .name("replacement"))
-                  .description("Text to replace usernames with."))
-               .defaultValue("Protected"))
+         new meteordevelopment.meteorclient.settings.StringSetting.Builder()
+            .name("replacement")
+            .description("Text to replace usernames with.")
+            .defaultValue("Protected")
             .build()
       );
 

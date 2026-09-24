@@ -11,7 +11,7 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class Twerk extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> delay = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("delay")).description("Sneak toggle speed.")).defaultValue(2)).min(1).max(20).build());
+      .add(new Builder().name("delay").description("Sneak toggle speed.").defaultValue(2).min(1).max(20).build());
 
    public Twerk() {
       super(VenomousAddon.CATEGORY, "twerk", "Automatically sneaks and unsneaks.");

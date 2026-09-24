@@ -32,65 +32,65 @@ public class VAirPlace extends Module {
 
     private final Setting<Double> range = this.sgGeneral.add(
         new DoubleSetting.Builder()
-            .name("range")
-            .description("Distance from crosshair to place blocks in mid-air.")
-            .defaultValue(4.0)
-            .min(1.0)
-            .sliderMax(6.0)
-            .build()
+           .name("range")
+           .description("Distance from crosshair to place blocks in mid-air.")
+           .defaultValue(4.0)
+           .min(1.0)
+           .sliderMax(6.0)
+           .build()
     );
 
     private final Setting<Integer> delay = this.sgGeneral.add(
         new IntSetting.Builder()
-            .name("delay")
-            .description("Tick delay between mid-air block placements.")
-            .defaultValue(2)
-            .min(0)
-            .sliderMax(10)
-            .build()
+           .name("delay")
+           .description("Tick delay between mid-air block placements.")
+           .defaultValue(2)
+           .min(0)
+           .sliderMax(10)
+           .build()
     );
 
     private final Setting<Boolean> swing = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("swing")
-            .description("Swing your hand when placing.")
-            .defaultValue(true)
-            .build()
+           .name("swing")
+           .description("Swing your hand when placing.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<Boolean> render = this.sgRender.add(
         new BoolSetting.Builder()
-            .name("render")
-            .description("Render the mid-air placement target.")
-            .defaultValue(true)
-            .build()
+           .name("render")
+           .description("Render the mid-air placement target.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<ShapeMode> shapeMode = this.sgRender.add(
         new EnumSetting.Builder<ShapeMode>()
-            .name("shape-mode")
-            .description("How the placement block is rendered.")
-            .defaultValue(ShapeMode.Both)
-            .visible(this.render::get)
-            .build()
+           .name("shape-mode")
+           .description("How the placement block is rendered.")
+           .defaultValue(ShapeMode.Both)
+           .visible(this.render::get)
+           .build()
     );
 
     private final Setting<SettingColor> sideColor = this.sgRender.add(
         new ColorSetting.Builder()
-            .name("side-color")
-            .description("Side color of the preview.")
-            .defaultValue(new SettingColor(80, 180, 255, 30))
-            .visible(() -> this.render.get() && this.shapeMode.get().sides())
-            .build()
+           .name("side-color")
+           .description("Side color of the preview.")
+           .defaultValue(new SettingColor(80, 180, 255, 30))
+           .visible(() -> this.render.get() && this.shapeMode.get().sides())
+           .build()
     );
 
     private final Setting<SettingColor> lineColor = this.sgRender.add(
         new ColorSetting.Builder()
-            .name("line-color")
-            .description("Line color of the preview.")
-            .defaultValue(new SettingColor(80, 180, 255, 200))
-            .visible(() -> this.render.get() && this.shapeMode.get().lines())
-            .build()
+           .name("line-color")
+           .description("Line color of the preview.")
+           .defaultValue(new SettingColor(80, 180, 255, 200))
+           .visible(() -> this.render.get() && this.shapeMode.get().lines())
+           .build()
     );
 
     private BlockPos targetPos;

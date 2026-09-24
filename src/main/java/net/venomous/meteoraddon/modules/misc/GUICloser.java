@@ -15,17 +15,17 @@ public class GUICloser extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<List<String>> filters = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("filters"))
-                  .description("List of title substrings. If a container screen title contains any of these, it gets auto-closed."))
-               .defaultValue(new ArrayList<>(List.of("Vote"))))
+         new Builder().name("filters")
+            .description("List of title substrings. If a container screen title contains any of these, it gets auto-closed.")
+            .defaultValue(new ArrayList<>(List.of("Vote")))
             .build()
       );
    private final Setting<Boolean> printTitles = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("print-titles"))
-                  .description("Print container screen titles to chat for debugging."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("print-titles")
+            .description("Print container screen titles to chat for debugging.")
+            .defaultValue(false)
             .build()
       );
 

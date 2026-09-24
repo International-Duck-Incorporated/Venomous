@@ -13,7 +13,7 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class Vomit extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> delay = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("delay")).description("Drop delay in ticks.")).defaultValue(2)).min(1).max(20).build());
+      .add(new Builder().name("delay").description("Drop delay in ticks.").defaultValue(2).min(1).max(20).build());
    private int tickCounter = 0;
 
    public Vomit() {

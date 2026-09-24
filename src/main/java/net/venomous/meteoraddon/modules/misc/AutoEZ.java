@@ -24,36 +24,36 @@ public class AutoEZ extends Module {
 
     private final Setting<String> message = this.sgGeneral.add(
         new StringSetting.Builder()
-            .name("message")
-            .description("Message to send upon killing an enemy. Placeholders: {player}, {kills}, {hp}.")
-            .defaultValue("GG {player}! Venomous V7 on top!")
-            .build()
+           .name("message")
+           .description("Message to send upon killing an enemy. Placeholders: {player}, {kills}, {hp}.")
+           .defaultValue("GG {player}! Venomous V7 on top!")
+           .build()
     );
 
     private final Setting<Boolean> killStreak = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("kill-streak")
-            .description("Track your kill streak count in the session.")
-            .defaultValue(true)
-            .build()
+           .name("kill-streak")
+           .description("Track your kill streak count in the session.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<Boolean> clientSide = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("client-side")
-            .description("Display the message only on your client screen.")
-            .defaultValue(false)
-            .build()
+           .name("client-side")
+           .description("Display the message only on your client screen.")
+           .defaultValue(false)
+           .build()
     );
 
     private final Setting<Double> targetRange = this.sgGeneral.add(
         new DoubleSetting.Builder()
-            .name("target-range")
-            .description("Maximum distance to register target kills.")
-            .defaultValue(15.0)
-            .min(1.0)
-            .sliderMax(30.0)
-            .build()
+           .name("target-range")
+           .description("Maximum distance to register target kills.")
+           .defaultValue(15.0)
+           .min(1.0)
+           .sliderMax(30.0)
+           .build()
     );
 
     private final Map<UUID, Long> attackedTargets = new HashMap<>();
@@ -126,9 +126,9 @@ public class AutoEZ extends Module {
         String formattedHp = String.format("%.1f", hp);
 
         String text = this.message.get()
-            .replace("{player}", targetName)
-            .replace("{kills}", String.valueOf(this.kills))
-            .replace("{hp}", formattedHp);
+           .replace("{player}", targetName)
+           .replace("{kills}", String.valueOf(this.kills))
+           .replace("{hp}", formattedHp);
 
         if (this.clientSide.get()) {
             this.info("§7[§aVenomous EZ§7] " + text, new Object[0]);

@@ -27,83 +27,83 @@ public class HoleSnap extends Module {
 
     private final Setting<Integer> range = this.sgGeneral.add(
         new IntSetting.Builder()
-            .name("range")
-            .description("Horizontal search radius for safe holes.")
-            .defaultValue(4)
-            .min(1)
-            .sliderMax(6)
-            .build()
+           .name("range")
+           .description("Horizontal search radius for safe holes.")
+           .defaultValue(4)
+           .min(1)
+           .sliderMax(6)
+           .build()
     );
 
     private final Setting<Integer> downRange = this.sgGeneral.add(
         new IntSetting.Builder()
-            .name("down-range")
-            .description("Vertical downwards search radius for holes.")
-            .defaultValue(3)
-            .min(0)
-            .sliderMax(5)
-            .build()
+           .name("down-range")
+           .description("Vertical downwards search radius for holes.")
+           .defaultValue(3)
+           .min(0)
+           .sliderMax(5)
+           .build()
     );
 
     private final Setting<Double> speed = this.sgGeneral.add(
         new DoubleSetting.Builder()
-            .name("speed")
-            .description("Speed at which you are pulled towards the hole center.")
-            .defaultValue(0.35)
-            .min(0.05)
-            .sliderMax(1.0)
-            .build()
+           .name("speed")
+           .description("Speed at which you are pulled towards the hole center.")
+           .defaultValue(0.35)
+           .min(0.05)
+           .sliderMax(1.0)
+           .build()
     );
 
     private final Setting<Boolean> autoDisable = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("auto-disable")
-            .description("Automatically disable the module once safely inside the hole.")
-            .defaultValue(true)
-            .build()
+           .name("auto-disable")
+           .description("Automatically disable the module once safely inside the hole.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<Boolean> jump = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("jump")
-            .description("Jump automatically when moving over obstacles to reach the hole.")
-            .defaultValue(false)
-            .build()
+           .name("jump")
+           .description("Jump automatically when moving over obstacles to reach the hole.")
+           .defaultValue(false)
+           .build()
     );
 
     private final Setting<Boolean> render = this.sgRender.add(
         new BoolSetting.Builder()
-            .name("render")
-            .description("Render the target hole in the world.")
-            .defaultValue(true)
-            .build()
+           .name("render")
+           .description("Render the target hole in the world.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<ShapeMode> shapeMode = this.sgRender.add(
         new EnumSetting.Builder<ShapeMode>()
-            .name("shape-mode")
-            .description("How the target hole is rendered.")
-            .defaultValue(ShapeMode.Both)
-            .visible(this.render::get)
-            .build()
+           .name("shape-mode")
+           .description("How the target hole is rendered.")
+           .defaultValue(ShapeMode.Both)
+           .visible(this.render::get)
+           .build()
     );
 
     private final Setting<SettingColor> sideColor = this.sgRender.add(
         new ColorSetting.Builder()
-            .name("side-color")
-            .description("Color of the sides.")
-            .defaultValue(new SettingColor(50, 220, 100, 35))
-            .visible(() -> this.render.get() && this.shapeMode.get().sides())
-            .build()
+           .name("side-color")
+           .description("Color of the sides.")
+           .defaultValue(new SettingColor(50, 220, 100, 35))
+           .visible(() -> this.render.get() && this.shapeMode.get().sides())
+           .build()
     );
 
     private final Setting<SettingColor> lineColor = this.sgRender.add(
         new ColorSetting.Builder()
-            .name("line-color")
-            .description("Color of the outline lines.")
-            .defaultValue(new SettingColor(50, 220, 100, 220))
-            .visible(() -> this.render.get() && this.shapeMode.get().lines())
-            .build()
+           .name("line-color")
+           .description("Color of the outline lines.")
+           .defaultValue(new SettingColor(50, 220, 100, 220))
+           .visible(() -> this.render.get() && this.shapeMode.get().lines())
+           .build()
     );
 
     private BlockPos targetHole;

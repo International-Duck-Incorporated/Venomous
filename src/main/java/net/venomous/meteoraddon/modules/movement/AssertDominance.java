@@ -25,16 +25,16 @@ public class AssertDominance extends Module {
    private final SettingGroup sgTargeting = this.settings.createGroup("Targeting");
    private final Setting<AssertDominance.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode"))
-                  .description("Orbit circles smoothly; Random teleports around; Velocity orbits smoothly using motion physics."))
-               .defaultValue(AssertDominance.Mode.Orbit))
+         new Builder().name("mode")
+            .description("Orbit circles smoothly; Random teleports around; Velocity orbits smoothly using motion physics.")
+            .defaultValue(AssertDominance.Mode.Orbit)
             .build()
       );
    private final Setting<Double> radius = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("radius"))
-               .description("Distance from the target."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("radius")
+            .description("Distance from the target.")
             .defaultValue(2.0)
             .range(0.5, 24.0)
             .sliderMax(16.0)
@@ -42,58 +42,58 @@ public class AssertDominance extends Module {
       );
    private final Setting<Double> speed = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("speed"))
-                  .description("Orbit speed per tick."))
-               .defaultValue(0.1)
-               .range(0.01, 3.0)
-               .sliderMax(2.0)
-               .visible(() -> this.mode.get() == AssertDominance.Mode.Orbit || this.mode.get() == AssertDominance.Mode.Velocity))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("speed")
+            .description("Orbit speed per tick.")
+            .defaultValue(0.1)
+            .range(0.01, 3.0)
+            .sliderMax(2.0)
+            .visible(() -> this.mode.get() == AssertDominance.Mode.Orbit || this.mode.get() == AssertDominance.Mode.Velocity)
             .build()
       );
    private final Setting<Integer> randomDelay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("random-delay"))
-                     .description("Ticks between random teleports around the target."))
-                  .defaultValue(5))
-               .range(1, 40)
-               .sliderMax(20)
-               .visible(() -> this.mode.get() == AssertDominance.Mode.Random))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("random-delay")
+            .description("Ticks between random teleports around the target.")
+            .defaultValue(5)
+            .range(1, 40)
+            .sliderMax(20)
+            .visible(() -> this.mode.get() == AssertDominance.Mode.Random)
             .build()
       );
    private final Setting<Double> randomY = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("random-y"))
-                  .description("Maximum vertical random offset in Random mode."))
-               .defaultValue(0.0)
-               .range(0.0, 6.0)
-               .sliderMax(3.0)
-               .visible(() -> this.mode.get() == AssertDominance.Mode.Random))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("random-y")
+            .description("Maximum vertical random offset in Random mode.")
+            .defaultValue(0.0)
+            .range(0.0, 6.0)
+            .sliderMax(3.0)
+            .visible(() -> this.mode.get() == AssertDominance.Mode.Random)
             .build()
       );
    private final Setting<Boolean> sendPackets = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("send-packets"))
-                  .description("Send movement packets after repositioning."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("send-packets")
+            .description("Send movement packets after repositioning.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Set<EntityType<?>>> entities = this.sgTargeting
       .add(
-         ((meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder)((meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder)new meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder()
-                  .name("entities"))
-               .description("Entity types to assert dominance over."))
+         new meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder()
+            .name("entities")
+            .description("Entity types to assert dominance over.")
             .defaultValue(new EntityType[]{EntityTypes.PLAYER})
             .build()
       );
    private final Setting<Double> range = this.sgTargeting
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("range"))
-               .description("Only target entities within this many blocks. 0 for unlimited."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("range")
+            .description("Only target entities within this many blocks. 0 for unlimited.")
             .defaultValue(0.0)
             .min(0.0)
             .sliderMax(64.0)
@@ -101,24 +101,24 @@ public class AssertDominance extends Module {
       );
    private final Setting<SortPriority> priority = this.sgTargeting
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("priority")).description("How the target is picked when several match."))
-               .defaultValue(SortPriority.LowestDistance))
+         new Builder().name("priority").description("How the target is picked when several match.")
+            .defaultValue(SortPriority.LowestDistance)
             .build()
       );
    private final Setting<Boolean> ignoreFriends = this.sgTargeting
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("ignore-friends"))
-                  .description("Never target your friends."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("ignore-friends")
+            .description("Never target your friends.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> ignoreNamed = this.sgTargeting
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("ignore-named"))
-                  .description("Skip mobs that have a name tag - handy for not harassing your own pets."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("ignore-named")
+            .description("Skip mobs that have a name tag - handy for not harassing your own pets.")
+            .defaultValue(false)
             .build()
       );
    private double angle;

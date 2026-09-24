@@ -25,42 +25,42 @@ public class BookBot extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<String> bookName = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("book-name")).description("Name template for signed books. Use %count% for book number."))
-               .defaultValue("Venom doesnt miss"))
+         new Builder().name("book-name").description("Name template for signed books. Use %count% for book number.")
+            .defaultValue("Venom doesnt miss")
             .build()
       );
    private final Setting<Boolean> signBooks = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("sign-books"))
-                  .description("Sign the books after writing."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("sign-books")
+            .description("Sign the books after writing.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> asciiOnly = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("ascii-only"))
-                  .description("Only use ASCII characters."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("ascii-only")
+            .description("Only use ASCII characters.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Integer> pages = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("pages"))
-                  .description("Number of pages per book."))
-               .defaultValue(50))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("pages")
+            .description("Number of pages per book.")
+            .defaultValue(50)
             .range(1, 100)
             .sliderMax(100)
             .build()
       );
    private final Setting<Integer> delay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("delay"))
-                  .description("Delay between books in ticks."))
-               .defaultValue(40))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("delay")
+            .description("Delay between books in ticks.")
+            .defaultValue(40)
             .min(1)
             .sliderMax(200)
             .build()

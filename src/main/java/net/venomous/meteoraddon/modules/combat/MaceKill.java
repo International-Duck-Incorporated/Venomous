@@ -79,17 +79,17 @@ public class MaceKill extends Module {
 
    private final Setting<Boolean> swingHand = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("swing-hand")).description("Send swing animation alongside the attack.")).defaultValue(true)).build()
+         new Builder().name("swing-hand").description("Send swing animation alongside the attack.").defaultValue(true).build()
       );
    private final Setting<Boolean> chatFlush = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("chat-feedback")).description("Log attack distance in chat on impact.")).defaultValue(false)).build()
+         new Builder().name("chat-feedback").description("Log attack distance in chat on impact.").defaultValue(false).build()
       );
    private final Setting<Double> maxRange = this.sgTarget
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("max-range"))
-               .description("Maximum targeting range in blocks."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("max-range")
+            .description("Maximum targeting range in blocks.")
             .defaultValue(256.0)
             .min(0.0)
             .sliderMax(512.0)
@@ -97,43 +97,43 @@ public class MaceKill extends Module {
       );
    private final Setting<MaceKill.TargetListMode> targetListMode = this.sgTarget
       .add(
-         ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                     .name("target-list-mode"))
-                  .description("Whitelist = only target these. Blacklist = never target these."))
-               .defaultValue(MaceKill.TargetListMode.Blacklist))
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+            .name("target-list-mode")
+            .description("Whitelist = only target these. Blacklist = never target these.")
+            .defaultValue(MaceKill.TargetListMode.Blacklist)
             .build()
       );
    private final Setting<Set<EntityType<?>>> targetEntities = this.sgTarget
       .add(
-         ((meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder)((meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder)new meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder()
-                  .name("target-entities"))
-               .description("Entities to whitelist or blacklist."))
+         new meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder()
+            .name("target-entities")
+            .description("Entities to whitelist or blacklist.")
             .onlyAttackable()
             .build()
       );
    private final Setting<Boolean> ignoreFriends = this.sgTarget
-      .add(((Builder)((Builder)((Builder)new Builder().name("ignore-friends")).description("Don't attack Meteor friends.")).defaultValue(true)).build());
+      .add(new Builder().name("ignore-friends").description("Don't attack Meteor friends.").defaultValue(true).build());
    private final Setting<Boolean> stopOnTarget = this.sgTarget
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("stop-on-target")).description("Kill velocity when you reach the target.")).defaultValue(true))
+         new Builder().name("stop-on-target").description("Kill velocity when you reach the target.").defaultValue(true)
             .build()
       );
    private final Setting<Double> stopDistance = this.sgTarget
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("stop-distance"))
-                  .description("Hitbox inflation for stop check."))
-               .defaultValue(2.0)
-               .min(0.0)
-               .sliderMax(10.0)
-               .visible(this.stopOnTarget::get))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("stop-distance")
+            .description("Hitbox inflation for stop check.")
+            .defaultValue(2.0)
+            .min(0.0)
+            .sliderMax(10.0)
+            .visible(this.stopOnTarget::get)
             .build()
       );
    private final Setting<Double> aboveHeight = this.sgVelocity
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("above-height"))
-               .description("How many blocks above the target to launch before slamming down."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("above-height")
+            .description("How many blocks above the target to launch before slamming down.")
             .defaultValue(22.0)
             .min(5.0)
             .sliderMax(100.0)
@@ -141,9 +141,9 @@ public class MaceKill extends Module {
       );
    private final Setting<Double> velocitySpeed = this.sgVelocity
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("velocity-speed"))
-               .description("Multiplier for all velocity."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("velocity-speed")
+            .description("Multiplier for all velocity.")
             .defaultValue(1.0)
             .min(0.25)
             .sliderMax(5.0)
@@ -151,9 +151,9 @@ public class MaceKill extends Module {
       );
    private final Setting<Double> upwardSpeed = this.sgVelocity
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("upward-speed"))
-               .description("Base upward velocity during launch phase."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("upward-speed")
+            .description("Base upward velocity during launch phase.")
             .defaultValue(2.5)
             .min(0.5)
             .sliderMax(10.0)
@@ -161,9 +161,9 @@ public class MaceKill extends Module {
       );
    private final Setting<Double> downwardSpeed = this.sgVelocity
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("downward-speed"))
-               .description("Base downward velocity during slam phase."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("downward-speed")
+            .description("Base downward velocity during slam phase.")
             .defaultValue(5.0)
             .min(1.0)
             .sliderMax(15.0)
@@ -171,9 +171,9 @@ public class MaceKill extends Module {
       );
    private final Setting<Double> nearTargetThreshold = this.sgVelocity
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("near-threshold"))
-               .description("Distance from above-target position at which the slam phase begins."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("near-threshold")
+            .description("Distance from above-target position at which the slam phase begins.")
             .defaultValue(3.0)
             .min(1.0)
             .sliderMax(15.0)
@@ -181,37 +181,37 @@ public class MaceKill extends Module {
       );
    private final Setting<Boolean> useOffset = this.sgSafety
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("safe-offset")).description("Apply a small safe offset after attacking to prevent fall damage."))
-               .defaultValue(true))
+         new Builder().name("safe-offset").description("Apply a small safe offset after attacking to prevent fall damage.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Double> offsetHorizontal = this.sgSafety
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("horizontal-offset"))
-                  .description("Horizontal nudge after attacking."))
-               .defaultValue(0.05)
-               .min(0.0)
-               .sliderMax(0.99)
-               .visible(this.useOffset::get))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("horizontal-offset")
+            .description("Horizontal nudge after attacking.")
+            .defaultValue(0.05)
+            .min(0.0)
+            .sliderMax(0.99)
+            .visible(this.useOffset::get)
             .build()
       );
    private final Setting<Double> offsetY = this.sgSafety
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("y-offset"))
-                  .description("Vertical nudge after attacking."))
-               .defaultValue(0.01)
-               .min(0.0)
-               .sliderMax(0.99)
-               .visible(this.useOffset::get))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("y-offset")
+            .description("Vertical nudge after attacking.")
+            .defaultValue(0.01)
+            .min(0.0)
+            .sliderMax(0.99)
+            .visible(this.useOffset::get)
             .build()
       );
    private final Setting<Boolean> checkPathInvalid = this.sgSafety
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("validate-above-path"))
-                  .description("Cancel the attack if the path or position above the target is obstructed."))
-               .defaultValue(true))
+         new Builder().name("validate-above-path")
+            .description("Cancel the attack if the path or position above the target is obstructed.")
+            .defaultValue(true)
             .build()
       );
    private MaceKill.Phase phase = MaceKill.Phase.IDLE;

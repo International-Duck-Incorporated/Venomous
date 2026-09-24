@@ -53,54 +53,54 @@ public class ItemOrganizer extends Module {
    private final SettingGroup sgCategory = this.settings.createGroup("Category Sorting");
    private final Setting<Keybind> sortKey = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("sort-key")).description("Key/button that sorts whichever grid your mouse is hovering."))
-               .defaultValue(Keybind.fromButton(2)))
+         new Builder().name("sort-key").description("Key/button that sorts whichever grid your mouse is hovering.")
+            .defaultValue(Keybind.fromButton(2))
             .build()
       );
    private final Setting<Integer> delay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("delay"))
-                  .description("Delay in ticks between each item move."))
-               .defaultValue(1))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("delay")
+            .description("Delay in ticks between each item move.")
+            .defaultValue(1)
             .min(0)
             .sliderMax(5)
             .build()
       );
    private final Setting<Boolean> disableInCreative = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("disable-in-creative"))
-                  .description("Disables sorting while in creative mode."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("disable-in-creative")
+            .description("Disables sorting while in creative mode.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> autoSortOnOpen = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("auto-sort-on-open"))
-                  .description("Automatically sorts a container's contents as soon as you open it."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("auto-sort-on-open")
+            .description("Automatically sorts a container's contents as soon as you open it.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Keybind> selectKey = this.sgBatch
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("select-key")).description("Looking at a container, adds/removes it from the batch selection."))
-               .defaultValue(Keybind.none()))
+         new Builder().name("select-key").description("Looking at a container, adds/removes it from the batch selection.")
+            .defaultValue(Keybind.none())
             .build()
       );
    private final Setting<Keybind> selectNearbyKey = this.sgBatch
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("select-nearby-key"))
-                  .description("Adds every supported container within range to the batch selection."))
-               .defaultValue(Keybind.none()))
+         new Builder().name("select-nearby-key")
+            .description("Adds every supported container within range to the batch selection.")
+            .defaultValue(Keybind.none())
             .build()
       );
    private final Setting<Double> selectRange = this.sgBatch
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("select-range"))
-               .description("Range used by select-nearby-key."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("select-range")
+            .description("Range used by select-nearby-key.")
             .defaultValue(24.0)
             .min(0.0)
             .sliderMax(128.0)
@@ -108,42 +108,42 @@ public class ItemOrganizer extends Module {
       );
    private final Setting<Keybind> startKey = this.sgBatch
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("start-key")).description("Starts walking to and internally sorting every selected container."))
-               .defaultValue(Keybind.none()))
+         new Builder().name("start-key").description("Starts walking to and internally sorting every selected container.")
+            .defaultValue(Keybind.none())
             .build()
       );
    private final Setting<Integer> categoryCount = this.sgCategory
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("category-count"))
-                  .description("How many categories to use."))
-               .defaultValue(3))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("category-count")
+            .description("How many categories to use.")
+            .defaultValue(3)
             .min(1)
             .sliderMax(8)
             .build()
       );
    private final Setting<Integer> activeCategory = this.sgCategory
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("active-category"))
-                  .description("Which category assign-chest-key currently assigns a chest to."))
-               .defaultValue(1))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("active-category")
+            .description("Which category assign-chest-key currently assigns a chest to.")
+            .defaultValue(1)
             .min(1)
             .sliderMax(8)
             .build()
       );
    private final Setting<Keybind> assignChestKey = this.sgCategory
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("assign-chest-key"))
-                  .description("Looking at a container, assigns it as the destination for the active category."))
-               .defaultValue(Keybind.none()))
+         new Builder().name("assign-chest-key")
+            .description("Looking at a container, assigns it as the destination for the active category.")
+            .defaultValue(Keybind.none())
             .build()
       );
    private final Setting<Keybind> startCategorySortKey = this.sgCategory
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("start-category-sort-key"))
-                  .description("Walks your inventory's matching items out to each category's assigned chest."))
-               .defaultValue(Keybind.none()))
+         new Builder().name("start-category-sort-key")
+            .description("Walks your inventory's matching items out to each category's assigned chest.")
+            .defaultValue(Keybind.none())
             .build()
       );
    private final Setting<String>[] categoryNames = new Setting[8];
@@ -225,19 +225,19 @@ public class ItemOrganizer extends Module {
          int var4 = var3;
          this.categoryNames[var3] = this.sgCategory
             .add(
-               ((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)new meteordevelopment.meteorclient.settings.StringSetting.Builder()
-                              .name("category-" + (var3 + 1) + "-name"))
-                           .description("Display name for category " + (var3 + 1) + "."))
-                        .visible(() -> var4 < (Integer)this.categoryCount.get()))
-                     .defaultValue(var1[var3]))
+               new meteordevelopment.meteorclient.settings.StringSetting.Builder()
+                  .name("category-" + (var3 + 1) + "-name")
+                  .description("Display name for category " + (var3 + 1) + ".")
+                  .visible(() -> var4 < (Integer)this.categoryCount.get())
+                  .defaultValue(var1[var3])
                   .build()
             );
          this.categoryItems[var3] = this.sgCategory
             .add(
-               ((meteordevelopment.meteorclient.settings.ItemListSetting.Builder)((meteordevelopment.meteorclient.settings.ItemListSetting.Builder)((meteordevelopment.meteorclient.settings.ItemListSetting.Builder)new meteordevelopment.meteorclient.settings.ItemListSetting.Builder()
-                           .name("category-" + (var3 + 1) + "-items"))
-                        .description("Items belonging to category " + (var3 + 1) + "."))
-                     .visible(() -> var4 < (Integer)this.categoryCount.get()))
+               new meteordevelopment.meteorclient.settings.ItemListSetting.Builder()
+                  .name("category-" + (var3 + 1) + "-items")
+                  .description("Items belonging to category " + (var3 + 1) + ".")
+                  .visible(() -> var4 < (Integer)this.categoryCount.get())
                   .defaultValue(var2[var3])
                   .build()
             );

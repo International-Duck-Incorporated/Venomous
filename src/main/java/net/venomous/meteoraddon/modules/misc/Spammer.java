@@ -11,13 +11,13 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class Spammer extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<String> message = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("message")).description("Message to spam.")).defaultValue("Venomous on top!")).build());
+      .add(new Builder().name("message").description("Message to spam.").defaultValue("Venomous on top!").build());
    private final Setting<Integer> delay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("delay"))
-                  .description("Delay in ticks between messages."))
-               .defaultValue(60))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("delay")
+            .description("Delay in ticks between messages.")
+            .defaultValue(60)
             .min(1)
             .max(6000)
             .build()

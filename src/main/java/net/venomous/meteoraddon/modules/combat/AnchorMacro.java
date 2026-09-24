@@ -22,12 +22,12 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class AnchorMacro extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> autoFind = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("auto-find")).description("Automatically find nearby anchors.")).defaultValue(true)).build());
+      .add(new Builder().name("auto-find").description("Automatically find nearby anchors.").defaultValue(true).build());
    private final Setting<Double> range = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("range"))
-               .description("Range for auto-finding anchors."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("range")
+            .description("Range for auto-finding anchors.")
             .defaultValue(5.0)
             .min(1.0)
             .sliderMax(6.0)

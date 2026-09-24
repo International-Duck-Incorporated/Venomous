@@ -27,7 +27,7 @@ public class AutoPotion extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> healthThreshold = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("health-threshold")).description("Throw healing potion when HP percent is below this value."))
+         new Builder().name("health-threshold").description("Throw healing potion when HP percent is below this value.")
             .defaultValue(60.0)
             .min(5.0)
             .sliderMax(100.0)
@@ -35,76 +35,76 @@ public class AutoPotion extends Module {
       );
    private final Setting<Boolean> instantHealth = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("instant-health"))
-                  .description("Use Instant Health splash potions."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("instant-health")
+            .description("Use Instant Health splash potions.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> regeneration = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("regeneration"))
-                  .description("Use Regeneration splash potions when healing or prebuffing."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("regeneration")
+            .description("Use Regeneration splash potions when healing or prebuffing.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> fireResistance = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("fire-resistance"))
-                  .description("Prebuff with Fire Resistance when missing."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("fire-resistance")
+            .description("Prebuff with Fire Resistance when missing.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Boolean> strength = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("strength"))
-                  .description("Prebuff with Strength when missing."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("strength")
+            .description("Prebuff with Strength when missing.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Boolean> speed = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("speed"))
-                  .description("Prebuff with Speed when missing."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("speed")
+            .description("Prebuff with Speed when missing.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Boolean> offhand = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("offhand"))
-                  .description("Use splash potions from offhand if they match the current priority."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("offhand")
+            .description("Use splash potions from offhand if they match the current priority.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<AutoPotion.RotateMode> rotate = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                     .name("rotate"))
-                  .description("Rotation behavior before throwing."))
-               .defaultValue(AutoPotion.RotateMode.Down))
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+            .name("rotate")
+            .description("Rotation behavior before throwing.")
+            .defaultValue(AutoPotion.RotateMode.Down)
             .build()
       );
    private final Setting<Integer> delay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("delay"))
-                  .description("Minimum ticks between throws."))
-               .defaultValue(10))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("delay")
+            .description("Minimum ticks between throws.")
+            .defaultValue(10)
             .min(1)
             .sliderMax(80)
             .build()
       );
    private final Setting<Boolean> smartSenses = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("smart-senses"))
-                  .description("Only use specific buffs when relevant (e.g. fire res near lava)."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("smart-senses")
+            .description("Only use specific buffs when relevant (e.g. fire res near lava).")
+            .defaultValue(true)
             .build()
       );
    private int cooldown;

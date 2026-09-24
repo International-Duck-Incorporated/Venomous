@@ -17,31 +17,31 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class CoordSnapper extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> chatFeedback = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("chat-feedback")).description("Show notification in chat.")).defaultValue(true)).build());
+      .add(new Builder().name("chat-feedback").description("Show notification in chat.").defaultValue(true).build());
    private final Setting<Boolean> webhook = this.sgGeneral
-      .add(((Builder)((Builder)((Builder)new Builder().name("webhook")).description("Enable webhook notifications.")).defaultValue(false)).build());
+      .add(new Builder().name("webhook").description("Enable webhook notifications.").defaultValue(false).build());
    private final Setting<String> webhookUrl = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)new meteordevelopment.meteorclient.settings.StringSetting.Builder()
-                        .name("webhook-url"))
-                     .description("Discord webhook URL for notifications."))
-                  .defaultValue(""))
-               .visible(this.webhook::get))
+         new meteordevelopment.meteorclient.settings.StringSetting.Builder()
+            .name("webhook-url")
+            .description("Discord webhook URL for notifications.")
+            .defaultValue("")
+            .visible(this.webhook::get)
             .build()
       );
    private final Setting<Boolean> selfPing = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)((Builder)new Builder().name("self-ping")).description("Ping yourself in the webhook message.")).defaultValue(false))
-               .visible(this.webhook::get))
+         new Builder().name("self-ping").description("Ping yourself in the webhook message.").defaultValue(false)
+            .visible(this.webhook::get)
             .build()
       );
    private final Setting<String> discordId = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)((meteordevelopment.meteorclient.settings.StringSetting.Builder)new meteordevelopment.meteorclient.settings.StringSetting.Builder()
-                        .name("discord-id"))
-                     .description("Your Discord user ID for pinging."))
-                  .defaultValue(""))
-               .visible(() -> (Boolean)this.webhook.get() && (Boolean)this.selfPing.get()))
+         new meteordevelopment.meteorclient.settings.StringSetting.Builder()
+            .name("discord-id")
+            .description("Your Discord user ID for pinging.")
+            .defaultValue("")
+            .visible(() -> (Boolean)this.webhook.get() && (Boolean)this.selfPing.get())
             .build()
       );
 

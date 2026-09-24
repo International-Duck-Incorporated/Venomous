@@ -24,7 +24,7 @@ public class AutoShield extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> meleeRange = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("melee-range")).description("Block when a non-friend player/living entity is this close and looking at you."))
+         new Builder().name("melee-range").description("Block when a non-friend player/living entity is this close and looking at you.")
             .defaultValue(4.0)
             .range(1.0, 8.0)
             .sliderMax(6.0)
@@ -32,45 +32,45 @@ public class AutoShield extends Module {
       );
    private final Setting<Boolean> blockProjectiles = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("block-projectiles"))
-                  .description("Also block when an incoming projectile is detected."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("block-projectiles")
+            .description("Also block when an incoming projectile is detected.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> packetPrediction = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("packet-prediction"))
-                  .description("Predict attacks by listening to server packets (swing, bow shots)."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("packet-prediction")
+            .description("Predict attacks by listening to server packets (swing, bow shots).")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Double> projectileRange = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("projectile-range")).description("Projectile detection range."))
-               .defaultValue(12.0)
-               .range(2.0, 64.0)
-               .sliderMax(32.0)
-               .visible(() -> (Boolean)this.blockProjectiles.get()))
+         new Builder().name("projectile-range").description("Projectile detection range.")
+            .defaultValue(12.0)
+            .range(2.0, 64.0)
+            .sliderMax(32.0)
+            .visible(() -> (Boolean)this.blockProjectiles.get())
             .build()
       );
    private final Setting<Integer> holdTicks = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("hold-ticks"))
-                  .description("Ticks to keep shield raised after the last threat."))
-               .defaultValue(4))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("hold-ticks")
+            .description("Ticks to keep shield raised after the last threat.")
+            .defaultValue(4)
             .range(0, 20)
             .sliderMax(10)
             .build()
       );
    private final Setting<Boolean> switchToShield = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("switch-to-shield"))
-                  .description("Switch to a hotbar shield if no shield is in either hand."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("switch-to-shield")
+            .description("Switch to a hotbar shield if no shield is in either hand.")
+            .defaultValue(true)
             .build()
       );
    private int blockTicks;

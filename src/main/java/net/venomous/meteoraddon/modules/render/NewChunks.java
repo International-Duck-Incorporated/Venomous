@@ -24,32 +24,32 @@ public class NewChunks extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> renderDistance = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("render-distance")).description("Render distance in chunks.")).defaultValue(32))
+         new Builder().name("render-distance").description("Render distance in chunks.").defaultValue(32)
             .min(4)
             .max(128)
             .build()
       );
    private final Setting<Boolean> persist = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("persist"))
-                  .description("Keep chunks when they are unloaded."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("persist")
+            .description("Keep chunks when they are unloaded.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<SettingColor> newColor = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                  .name("new-color"))
-               .description("Color for new chunks."))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("new-color")
+            .description("Color for new chunks.")
             .defaultValue(new SettingColor(0, 255, 0, 80))
             .build()
       );
    private final Setting<SettingColor> oldColor = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                  .name("old-color"))
-               .description("Color for old chunks."))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("old-color")
+            .description("Color for old chunks.")
             .defaultValue(new SettingColor(255, 0, 0, 80))
             .build()
       );

@@ -18,7 +18,7 @@ public class SafeLogout extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> health = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("health")).description("Disconnect at or below this health. 0 disables."))
+         new Builder().name("health").description("Disconnect at or below this health. 0 disables.")
             .defaultValue(6.0)
             .range(0.0, 36.0)
             .sliderMax(20.0)
@@ -26,7 +26,7 @@ public class SafeLogout extends Module {
       );
    private final Setting<Double> playerRange = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("player-range")).description("Disconnect if enemy player is within this range. 0 disables."))
+         new Builder().name("player-range").description("Disconnect if enemy player is within this range. 0 disables.")
             .defaultValue(0.0)
             .range(0.0, 128.0)
             .sliderMax(64.0)
@@ -34,30 +34,30 @@ public class SafeLogout extends Module {
       );
    private final Setting<Integer> armorDurability = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("armor-durability"))
-                  .description("Disconnect if armor durability is at or below this percent. 0 disables."))
-               .defaultValue(0))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("armor-durability")
+            .description("Disconnect if armor durability is at or below this percent. 0 disables.")
+            .defaultValue(0)
             .range(0, 100)
             .sliderMax(50)
             .build()
       );
    private final Setting<Integer> totemCount = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("totem-count"))
-                  .description("Disconnect if totem count is at or below this amount. -1 disables."))
-               .defaultValue(-1))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("totem-count")
+            .description("Disconnect if totem count is at or below this amount. -1 disables.")
+            .defaultValue(-1)
             .range(-1, 10)
             .sliderMax(5)
             .build()
       );
    private final Setting<Boolean> voidCheck = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("void-check"))
-                  .description("Disconnect if falling near the void."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("void-check")
+            .description("Disconnect if falling near the void.")
+            .defaultValue(true)
             .build()
       );
    private boolean disconnecting;

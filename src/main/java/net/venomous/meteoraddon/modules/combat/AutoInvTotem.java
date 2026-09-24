@@ -39,7 +39,7 @@ public class AutoInvTotem extends Module {
       super(VenomousAddon.CATEGORY, "auto-inv-totem", "Moves totems to offhand on totem pop or low health (merged with HoverTotem).");
       this.delay = this.sgGeneral
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("delay")).description("Delay in ticks before moving totem.")).defaultValue(3))
+            new Builder().name("delay").description("Delay in ticks before moving totem.").defaultValue(3)
                .min(1)
                .max(20)
                .sliderMin(1)
@@ -48,68 +48,68 @@ public class AutoInvTotem extends Module {
          );
       this.moveFromHotbar = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("move-from-hotbar"))
-                     .description("Also move totems from hotbar slots."))
-                  .defaultValue(true))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("move-from-hotbar")
+               .description("Also move totems from hotbar slots.")
+               .defaultValue(true)
                .build()
          );
       this.disableLogs = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("disable-logs"))
-                     .description("Disable chat messages about totem movements."))
-                  .defaultValue(true))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("disable-logs")
+               .description("Disable chat messages about totem movements.")
+               .defaultValue(true)
                .build()
          );
       this.openInv = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("open-inv"))
-                     .description("Automatically open inventory when totem pops."))
-                  .defaultValue(false))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("open-inv")
+               .description("Automatically open inventory when totem pops.")
+               .defaultValue(false)
                .build()
          );
       this.invOpenDelay = this.sgGeneral
          .add(
-            ((Builder)((Builder)((Builder)((Builder)new Builder().name("inv-open-delay"))
-                        .description("Ticks to wait before opening inventory after totem pop."))
-                     .defaultValue(2))
-                  .min(1)
-                  .max(10)
-                  .sliderMin(1)
-                  .sliderMax(10)
-                  .visible(this.openInv::get))
+            new Builder().name("inv-open-delay")
+               .description("Ticks to wait before opening inventory after totem pop.")
+               .defaultValue(2)
+               .min(1)
+               .max(10)
+               .sliderMin(1)
+               .sliderMax(10)
+               .visible(this.openInv::get)
                .build()
          );
       this.invCloseDelay = this.sgGeneral
          .add(
-            ((Builder)((Builder)((Builder)((Builder)new Builder().name("inv-close-delay")).description("Ticks to wait before closing inventory after opening."))
-                     .defaultValue(8))
-                  .min(5)
-                  .max(20)
-                  .sliderMin(5)
-                  .sliderMax(20)
-                  .visible(this.openInv::get))
+            new Builder().name("inv-close-delay").description("Ticks to wait before closing inventory after opening.")
+               .defaultValue(8)
+               .min(5)
+               .max(20)
+               .sliderMin(5)
+               .sliderMax(20)
+               .visible(this.openInv::get)
                .build()
          );
       this.hoverMode = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("hover-mode"))
-                     .description("Also move totem to offhand when health drops below threshold (from HoverTotem merge)."))
-                  .defaultValue(true))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("hover-mode")
+               .description("Also move totem to offhand when health drops below threshold (from HoverTotem merge).")
+               .defaultValue(true)
                .build()
          );
       this.hoverHealthThreshold = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                        .name("hover-health"))
-                     .description("Health threshold to trigger totem equip in hover mode."))
-                  .defaultValue(10.0)
-                  .range(0.0, 36.0)
-                  .sliderMax(36.0)
-                  .visible(this.hoverMode::get))
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+               .name("hover-health")
+               .description("Health threshold to trigger totem equip in hover mode.")
+               .defaultValue(10.0)
+               .range(0.0, 36.0)
+               .sliderMax(36.0)
+               .visible(this.hoverMode::get)
                .build()
          );
    }

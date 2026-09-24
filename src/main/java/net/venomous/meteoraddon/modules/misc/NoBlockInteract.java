@@ -14,8 +14,8 @@ public class NoBlockInteract extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> onlyWhenHoldingWeapon = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("only-when-holding-weapon")).description("Only prevent block interaction when holding a weapon."))
-               .defaultValue(true))
+         new Builder().name("only-when-holding-weapon").description("Only prevent block interaction when holding a weapon.")
+            .defaultValue(true)
             .build()
       );
 

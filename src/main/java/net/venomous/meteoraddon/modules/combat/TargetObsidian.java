@@ -28,7 +28,7 @@ public class TargetObsidian extends Module {
    private final SettingGroup sgRender = this.settings.createGroup("Render");
    private final Setting<Double> targetRange = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("target-range")).description("How far away to look for a target."))
+         new Builder().name("target-range").description("How far away to look for a target.")
             .defaultValue(7.0)
             .min(0.0)
             .sliderMax(10.0)
@@ -36,17 +36,17 @@ public class TargetObsidian extends Module {
       );
    private final Setting<Integer> searchRadius = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("search-radius"))
-                  .description("Radius around the target to check for existing obsidian."))
-               .defaultValue(3))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("search-radius")
+            .description("Radius around the target to check for existing obsidian.")
+            .defaultValue(3)
             .min(1)
             .sliderMax(6)
             .build()
       );
    private final Setting<Double> placeRange = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("place-range")).description("How far away from you a block can be placed."))
+         new Builder().name("place-range").description("How far away from you a block can be placed.")
             .defaultValue(4.5)
             .min(0.0)
             .sliderMax(6.0)
@@ -54,70 +54,70 @@ public class TargetObsidian extends Module {
       );
    private final Setting<Boolean> ignoreFriends = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("ignore-friends"))
-                  .description("Don't target friends."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("ignore-friends")
+            .description("Don't target friends.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> rotate = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("rotate"))
-                  .description("Rotates towards the placement spot."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("rotate")
+            .description("Rotates towards the placement spot.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Boolean> swing = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("swing"))
-                  .description("Swings your hand when placing."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("swing")
+            .description("Swings your hand when placing.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Integer> placeDelay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("place-delay"))
-                  .description("Ticks to wait between placements."))
-               .defaultValue(2))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("place-delay")
+            .description("Ticks to wait between placements.")
+            .defaultValue(2)
             .min(0)
             .build()
       );
    private final Setting<Boolean> render = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("render"))
-                  .description("Renders the block that's about to be placed."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("render")
+            .description("Renders the block that's about to be placed.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<ShapeMode> shapeMode = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                        .name("shape-mode"))
-                     .description("How the target block is rendered."))
-                  .defaultValue(ShapeMode.Both))
-               .visible(this.render::get))
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+            .name("shape-mode")
+            .description("How the target block is rendered.")
+            .defaultValue(ShapeMode.Both)
+            .visible(this.render::get)
             .build()
       );
    private final Setting<SettingColor> sideColor = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                     .name("side-color"))
-                  .description("Side color of the placement preview."))
-               .defaultValue(new SettingColor(197, 137, 232, 10))
-               .visible(() -> (Boolean)this.render.get() && ((ShapeMode)this.shapeMode.get()).sides()))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("side-color")
+            .description("Side color of the placement preview.")
+            .defaultValue(new SettingColor(197, 137, 232, 10))
+            .visible(() -> (Boolean)this.render.get() && ((ShapeMode)this.shapeMode.get()).sides())
             .build()
       );
    private final Setting<SettingColor> lineColor = this.sgRender
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                     .name("line-color"))
-                  .description("Line color of the placement preview."))
-               .defaultValue(new SettingColor(197, 137, 232))
-               .visible(() -> (Boolean)this.render.get() && ((ShapeMode)this.shapeMode.get()).lines()))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("line-color")
+            .description("Line color of the placement preview.")
+            .defaultValue(new SettingColor(197, 137, 232))
+            .visible(() -> (Boolean)this.render.get() && ((ShapeMode)this.shapeMode.get()).lines())
             .build()
       );
    private BlockPos placePos;

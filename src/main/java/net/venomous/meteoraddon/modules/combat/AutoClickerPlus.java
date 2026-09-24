@@ -16,103 +16,103 @@ public class AutoClickerPlus extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> minCps = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("min-cps")).description("Minimum clicks per second.")).defaultValue(7))
+         new Builder().name("min-cps").description("Minimum clicks per second.").defaultValue(7)
             .range(1, 50)
             .sliderMax(20)
             .build()
       );
    private final Setting<Integer> maxCps = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("max-cps")).description("Maximum clicks per second.")).defaultValue(10))
+         new Builder().name("max-cps").description("Maximum clicks per second.").defaultValue(10)
             .range(1, 50)
             .sliderMax(20)
             .build()
       );
    private final Setting<AutoClickerPlus.Technique> technique = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)((meteordevelopment.meteorclient.settings.EnumSetting.Builder)new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
-                     .name("technique"))
-                  .description("Click technique / pattern."))
-               .defaultValue(AutoClickerPlus.Technique.Stabilized))
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+            .name("technique")
+            .description("Click technique / pattern.")
+            .defaultValue(AutoClickerPlus.Technique.Stabilized)
             .build()
       );
    private final Setting<Boolean> leftClick = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("left-click"))
-                  .description("Simulate left clicks (attack)."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("left-click")
+            .description("Simulate left clicks (attack).")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> rightClick = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("right-click"))
-                  .description("Simulate right clicks (use)."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("right-click")
+            .description("Simulate right clicks (use).")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Boolean> onlyWhileHolding = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("only-while-holding"))
-                  .description("Only click while holding the attack key."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("only-while-holding")
+            .description("Only click while holding the attack key.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> jitter = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("jitter"))
-                  .description("Add random jitter to click timing (humanlike)."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("jitter")
+            .description("Add random jitter to click timing (humanlike).")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Double> jitterAmount = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("jitter-amount"))
-                  .description("How much jitter to add (0-1)."))
-               .defaultValue(0.3)
-               .range(0.0, 1.0)
-               .sliderMax(1.0)
-               .visible(this.jitter::get))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("jitter-amount")
+            .description("How much jitter to add (0-1).")
+            .defaultValue(0.3)
+            .range(0.0, 1.0)
+            .sliderMax(1.0)
+            .visible(this.jitter::get)
             .build()
       );
    private final Setting<Boolean> respectCooldown = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("respect-cooldown"))
-                  .description("Respect attack cooldown (humanlike)."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("respect-cooldown")
+            .description("Respect attack cooldown (humanlike).")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> vulcanSpeedRandomization = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("vulcan-speed-randomization"))
-                  .description("Add ±100ms randomization to bypass Vulcan AutoClicker checks."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("vulcan-speed-randomization")
+            .description("Add ±100ms randomization to bypass Vulcan AutoClicker checks.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Integer> vulcanRandomizationMs = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)((Builder)new Builder().name("vulcan-randomization-ms"))
-                     .description("±Milliseconds of randomization for Vulcan bypass."))
-                  .defaultValue(100))
-               .range(20, 300)
-               .visible(this.vulcanSpeedRandomization::get))
+         new Builder().name("vulcan-randomization-ms")
+            .description("±Milliseconds of randomization for Vulcan bypass.")
+            .defaultValue(100)
+            .range(20, 300)
+            .visible(this.vulcanSpeedRandomization::get)
             .build()
       );
    private final Setting<Double> doubleClickChance = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("double-click-chance"))
-                  .description("Chance to double-click (0-1). Only for DoubleClick technique."))
-               .defaultValue(0.15)
-               .range(0.0, 1.0)
-               .sliderMax(0.5)
-               .visible(() -> this.technique.get() == AutoClickerPlus.Technique.DoubleClick))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("double-click-chance")
+            .description("Chance to double-click (0-1). Only for DoubleClick technique.")
+            .defaultValue(0.15)
+            .range(0.0, 1.0)
+            .sliderMax(0.5)
+            .visible(() -> this.technique.get() == AutoClickerPlus.Technique.DoubleClick)
             .build()
       );
    private final Random random = new Random();

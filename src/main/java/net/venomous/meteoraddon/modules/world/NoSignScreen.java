@@ -26,26 +26,26 @@ public class NoSignScreen extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> always = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("always"))
-                  .description("Also skip the screen when opening an existing sign, not just freshly placed ones."))
-               .defaultValue(false))
+         new Builder().name("always")
+            .description("Also skip the screen when opening an existing sign, not just freshly placed ones.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Integer> delay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("delay"))
-                  .description("Tick delay before sending each sign update packet. Some servers (2b2t) dislike it arriving too soon after the place packet."))
-               .defaultValue(0))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("delay")
+            .description("Tick delay before sending each sign update packet. Some servers (2b2t) dislike it arriving too soon after the place packet.")
+            .defaultValue(0)
             .range(0, 100)
             .sliderRange(0, 20)
             .build()
       );
    private final Setting<Boolean> skipWaxed = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("skip-waxed"))
-                  .description("Leave waxed signs alone - they can't be edited anyway, so let the screen open normally."))
-               .defaultValue(true))
+         new Builder().name("skip-waxed")
+            .description("Leave waxed signs alone - they can't be edited anyway, so let the screen open normally.")
+            .defaultValue(true)
             .build()
       );
    private final Map<BlockPos, Integer> placed = new HashMap<>();

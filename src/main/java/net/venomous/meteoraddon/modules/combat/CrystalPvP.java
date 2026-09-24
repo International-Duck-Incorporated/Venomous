@@ -42,17 +42,17 @@ public class CrystalPvP extends Module {
       super(VenomousAddon.CATEGORY, "crystal-pvp", "Automatically places and breaks end crystals quickly.");
       this.activateKey = this.sgGeneral
          .add(
-            ((Builder)((Builder)((Builder)new Builder().name("activate-key")).description("Mouse button that triggers the macro (-1 = always active)."))
-                  .defaultValue(1))
+            new Builder().name("activate-key").description("Mouse button that triggers the macro (-1 = always active).")
+               .defaultValue(1)
                .min(-1)
                .max(400)
                .build()
          );
       this.placeDelay = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("place-delay"))
-                  .description("Delay in ticks between placing crystals."))
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+               .name("place-delay")
+               .description("Delay in ticks between placing crystals.")
                .defaultValue(0.0)
                .min(0.0)
                .max(20.0)
@@ -61,9 +61,9 @@ public class CrystalPvP extends Module {
          );
       this.breakDelay = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("break-delay"))
-                  .description("Delay in ticks between breaking crystals."))
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+               .name("break-delay")
+               .description("Delay in ticks between breaking crystals.")
                .defaultValue(0.0)
                .min(0.0)
                .max(20.0)
@@ -72,37 +72,37 @@ public class CrystalPvP extends Module {
          );
       this.stopOnKill = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("stop-on-kill"))
-                     .description("Pauses the macro when a nearby player dies, then resumes after 5 seconds."))
-                  .defaultValue(true))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("stop-on-kill")
+               .description("Pauses the macro when a nearby player dies, then resumes after 5 seconds.")
+               .defaultValue(true)
                .build()
          );
       this.placeObsidianIfMissing = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("place-obsidian-if-missing"))
-                     .description("Places obsidian if the target block isn't obsidian or bedrock."))
-                  .defaultValue(true))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("place-obsidian-if-missing")
+               .description("Places obsidian if the target block isn't obsidian or bedrock.")
+               .defaultValue(true)
                .build()
          );
       this.antiSuicide = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("anti-suicide"))
-                     .description("Prevents placing/breaking if it would kill you."))
-                  .defaultValue(true))
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+               .name("anti-suicide")
+               .description("Prevents placing/breaking if it would kill you.")
+               .defaultValue(true)
                .build()
          );
       this.minHealth = this.sgGeneral
          .add(
-            ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                        .name("min-health"))
-                     .description("Minimum health to stay active."))
-                  .defaultValue(10.0)
-                  .min(0.0)
-                  .sliderMax(20.0)
-                  .visible(this.antiSuicide::get))
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+               .name("min-health")
+               .description("Minimum health to stay active.")
+               .defaultValue(10.0)
+               .min(0.0)
+               .sliderMax(20.0)
+               .visible(this.antiSuicide::get)
                .build()
          );
    }

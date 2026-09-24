@@ -14,38 +14,38 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class Derp extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Derp.YawMode> yawMode = this.sgGeneral
-      .add(((Builder)((Builder)new Builder().name("yaw-mode")).defaultValue(Derp.YawMode.RANDOM)).build());
+      .add(new Builder().name("yaw-mode").defaultValue(Derp.YawMode.RANDOM).build());
    private final Setting<Derp.PitchMode> pitchMode = this.sgGeneral
-      .add(((Builder)((Builder)new Builder().name("pitch-mode")).defaultValue(Derp.PitchMode.RANDOM)).build());
+      .add(new Builder().name("pitch-mode").defaultValue(Derp.PitchMode.RANDOM).build());
    private final Setting<Boolean> handDerp = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                  .name("hand-derp"))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("hand-derp")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> serverSide = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                  .name("server-side-only"))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("server-side-only")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> safePitch = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                  .name("safe-pitch"))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("safe-pitch")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Double> spinSpeed = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("spin-speed"))
-               .defaultValue(50.0)
-               .min(-70.0)
-               .max(70.0)
-               .visible(() -> this.yawMode.get() == Derp.YawMode.SPIN))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("spin-speed")
+            .defaultValue(50.0)
+            .min(-70.0)
+            .max(70.0)
+            .visible(() -> this.yawMode.get() == Derp.YawMode.SPIN)
             .build()
       );
    private float spinYaw = 0.0F;

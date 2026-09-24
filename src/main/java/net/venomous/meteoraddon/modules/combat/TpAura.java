@@ -18,14 +18,14 @@ public class TpAura extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<TpAura.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("TP mode. NONE work on Grim/Vulcan/Intave!")).defaultValue(TpAura.Mode.WeakAC))
+         new Builder().name("mode").description("TP mode. NONE work on Grim/Vulcan/Intave!").defaultValue(TpAura.Mode.WeakAC)
             .build()
       );
    private final Setting<Double> range = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("range"))
-               .description("Teleport range."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("range")
+            .description("Teleport range.")
             .defaultValue(6.0)
             .min(1.0)
             .max(20.0)
@@ -33,46 +33,46 @@ public class TpAura extends Module {
       );
    private final Setting<Integer> delay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("delay"))
-                  .description("Delay between attacks."))
-               .defaultValue(10))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("delay")
+            .description("Delay between attacks.")
+            .defaultValue(10)
             .min(1)
             .sliderMax(40)
             .build()
       );
    private final Setting<Boolean> rotate = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("rotate"))
-                  .description("Rotate to target."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("rotate")
+            .description("Rotate to target.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> players = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("players"))
-                  .description("Target players."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("players")
+            .description("Target players.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> mobs = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("mobs"))
-                  .description("Target mobs."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("mobs")
+            .description("Target mobs.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Integer> weakACInterval = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("weak-ac-interval"))
-                     .description("Attack interval for WeakAC mode (must be > Oxa's 5-tick check window)."))
-                  .defaultValue(6))
-               .range(5, 20)
-               .visible(() -> this.mode.get() == TpAura.Mode.WeakAC))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("weak-ac-interval")
+            .description("Attack interval for WeakAC mode (must be > Oxa's 5-tick check window).")
+            .defaultValue(6)
+            .range(5, 20)
+            .visible(() -> this.mode.get() == TpAura.Mode.WeakAC)
             .build()
       );
    private int tickCounter = 0;

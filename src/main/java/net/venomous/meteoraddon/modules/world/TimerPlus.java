@@ -14,61 +14,61 @@ public class TimerPlus extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<TimerPlus.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode"))
-                  .description("Timer pattern. Custom uses your exact values, NCP/Intave/Grim pulse timer boosts."))
-               .defaultValue(TimerPlus.Mode.Custom))
+         new Builder().name("mode")
+            .description("Timer pattern. Custom uses your exact values, NCP/Intave/Grim pulse timer boosts.")
+            .defaultValue(TimerPlus.Mode.Custom)
             .build()
       );
    private final Setting<Boolean> onlyMoving = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("only-moving"))
-                  .description("Only boost timer while movement keys are pressed."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("only-moving")
+            .description("Only boost timer while movement keys are pressed.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Double> boost = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("boost"))
-               .description("Boost timer multiplier."))
-               .defaultValue(1.0)
-               .range(0.1, 10.0)
-               .sliderMax(5.0)
-               .visible(() -> this.mode.get() == TimerPlus.Mode.Custom))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("boost")
+            .description("Boost timer multiplier.")
+            .defaultValue(1.0)
+            .range(0.1, 10.0)
+            .sliderMax(5.0)
+            .visible(() -> this.mode.get() == TimerPlus.Mode.Custom)
             .build()
       );
    private final Setting<Double> recharge = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("recharge"))
-                  .description("Recharge/idle timer multiplier."))
-               .defaultValue(1.0)
-               .range(0.05, 2.0)
-               .sliderMax(2.0)
-               .visible(() -> this.mode.get() == TimerPlus.Mode.Custom))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("recharge")
+            .description("Recharge/idle timer multiplier.")
+            .defaultValue(1.0)
+            .range(0.05, 2.0)
+            .sliderMax(2.0)
+            .visible(() -> this.mode.get() == TimerPlus.Mode.Custom)
             .build()
       );
    private final Setting<Integer> boostTicks = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("boost-ticks"))
-                     .description("Ticks to boost before recharging."))
-                  .defaultValue(27))
-               .range(1, 200)
-               .sliderMax(80)
-               .visible(() -> this.mode.get() == TimerPlus.Mode.Custom))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("boost-ticks")
+            .description("Ticks to boost before recharging.")
+            .defaultValue(27)
+            .range(1, 200)
+            .sliderMax(80)
+            .visible(() -> this.mode.get() == TimerPlus.Mode.Custom)
             .build()
       );
    private final Setting<Integer> rechargeTicks = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("recharge-ticks"))
-                     .description("Ticks to recharge before boosting again."))
-                  .defaultValue(352))
-               .range(1, 1000)
-               .sliderMax(500)
-               .visible(() -> this.mode.get() == TimerPlus.Mode.Custom))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("recharge-ticks")
+            .description("Ticks to recharge before boosting again.")
+            .defaultValue(352)
+            .range(1, 1000)
+            .sliderMax(500)
+            .visible(() -> this.mode.get() == TimerPlus.Mode.Custom)
             .build()
       );
    private Timer timer;

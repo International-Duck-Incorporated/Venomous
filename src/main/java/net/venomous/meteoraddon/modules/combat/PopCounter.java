@@ -26,42 +26,42 @@ public class PopCounter extends Module {
 
     private final Setting<Boolean> ignoreSelf = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("ignore-self")
-            .description("Ignore your own totem pops.")
-            .defaultValue(false)
-            .build()
+           .name("ignore-self")
+           .description("Ignore your own totem pops.")
+           .defaultValue(false)
+           .build()
     );
 
     private final Setting<Boolean> ignoreFriends = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("ignore-friends")
-            .description("Ignore friends totem pops.")
-            .defaultValue(false)
-            .build()
+           .name("ignore-friends")
+           .description("Ignore friends totem pops.")
+           .defaultValue(false)
+           .build()
     );
 
     private final Setting<Boolean> announcePops = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("announce-pops")
-            .description("Notify in chat when an enemy pops a totem.")
-            .defaultValue(true)
-            .build()
+           .name("announce-pops")
+           .description("Notify in chat when an enemy pops a totem.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<Boolean> announceKills = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("announce-kills")
-            .description("Notify in chat when an enemy dies.")
-            .defaultValue(true)
-            .build()
+           .name("announce-kills")
+           .description("Notify in chat when an enemy dies.")
+           .defaultValue(true)
+           .build()
     );
 
     private final Setting<Boolean> publicChat = this.sgGeneral.add(
         new BoolSetting.Builder()
-            .name("public-chat")
-            .description("Send announcements to public chat instead of client chat.")
-            .defaultValue(false)
-            .build()
+           .name("public-chat")
+           .description("Send announcements to public chat instead of client chat.")
+           .defaultValue(false)
+           .build()
     );
 
     private final Object2IntMap<UUID> popMap = new Object2IntOpenHashMap<>();

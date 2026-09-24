@@ -15,15 +15,15 @@ public class AntiProjectile extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<AntiProjectile.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("Walk dodges by moving WASD, Velocity flings you out of the way."))
-               .defaultValue(AntiProjectile.Mode.Walk))
+         new Builder().name("mode").description("Walk dodges by moving WASD, Velocity flings you out of the way.")
+            .defaultValue(AntiProjectile.Mode.Walk)
             .build()
       );
    private final Setting<Double> range = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("range"))
-               .description("Projectile detection range."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("range")
+            .description("Projectile detection range.")
             .defaultValue(14.0)
             .min(2.0)
             .max(64.0)
@@ -31,9 +31,9 @@ public class AntiProjectile extends Module {
       );
    private final Setting<Double> dodgePower = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("dodge-power"))
-               .description("Dodge strength."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("dodge-power")
+            .description("Dodge strength.")
             .defaultValue(0.45)
             .min(0.05)
             .max(5.0)

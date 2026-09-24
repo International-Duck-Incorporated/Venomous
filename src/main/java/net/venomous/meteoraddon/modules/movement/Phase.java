@@ -18,16 +18,16 @@ public class Phase extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Phase.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode"))
-                  .description("Normal sets no-physics, Blink queues movement packets, Clip pulses through nearby collision."))
-               .defaultValue(Phase.Mode.Normal))
+         new Builder().name("mode")
+            .description("Normal sets no-physics, Blink queues movement packets, Clip pulses through nearby collision.")
+            .defaultValue(Phase.Mode.Normal)
             .build()
       );
    private final Setting<Double> speed = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("speed"))
-               .description("Movement speed while phasing."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("speed")
+            .description("Movement speed while phasing.")
             .defaultValue(0.35)
             .range(0.05, 3.0)
             .sliderMax(1.5)
@@ -35,13 +35,13 @@ public class Phase extends Module {
       );
    private final Setting<Integer> blinkLimit = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("blink-limit"))
-                     .description("Maximum queued move packets in Blink mode before flushing."))
-                  .defaultValue(60))
-               .range(10, 300)
-               .sliderMax(150)
-               .visible(() -> this.mode.get() == Phase.Mode.Blink))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("blink-limit")
+            .description("Maximum queued move packets in Blink mode before flushing.")
+            .defaultValue(60)
+            .range(10, 300)
+            .sliderMax(150)
+            .visible(() -> this.mode.get() == Phase.Mode.Blink)
             .build()
       );
    private final Queue<Packet<?>> blinkQueue = new ArrayDeque<>();

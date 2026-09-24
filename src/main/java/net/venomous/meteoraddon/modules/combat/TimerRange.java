@@ -19,13 +19,13 @@ public class TimerRange extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> chance = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("chance")).description("Chance of activating (0-100%).")).defaultValue(100)).min(0).max(100).build()
+         new Builder().name("chance").description("Chance of activating (0-100%).").defaultValue(100).min(0).max(100).build()
       );
    private final Setting<Double> normalSpeed = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("normal-speed"))
-               .description("Timer speed when not near enemy."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("normal-speed")
+            .description("Timer speed when not near enemy.")
             .defaultValue(0.9)
             .min(0.1)
             .max(10.0)
@@ -33,9 +33,9 @@ public class TimerRange extends Module {
       );
    private final Setting<Double> inRangeSpeed = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("in-range-speed"))
-               .description("Timer speed when in range of enemy."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("in-range-speed")
+            .description("Timer speed when in range of enemy.")
             .defaultValue(0.95)
             .min(0.1)
             .max(10.0)
@@ -43,9 +43,9 @@ public class TimerRange extends Module {
       );
    private final Setting<Double> boostSpeed = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("boost-speed"))
-               .description("Timer speed boost when approaching enemy."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("boost-speed")
+            .description("Timer speed boost when approaching enemy.")
             .defaultValue(2.0)
             .min(0.1)
             .max(10.0)
@@ -53,9 +53,9 @@ public class TimerRange extends Module {
       );
    private final Setting<Double> distanceToSpeedUp = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("distance-to-speed-up"))
-               .description("Distance at which to speed up."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("distance-to-speed-up")
+            .description("Distance at which to speed up.")
             .defaultValue(3.5)
             .min(0.0)
             .max(10.0)
@@ -63,9 +63,9 @@ public class TimerRange extends Module {
       );
    private final Setting<Double> distanceToPause = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("distance-to-pause"))
-               .description("Distance at which to pause (reset timer)."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("distance-to-pause")
+            .description("Distance at which to pause (reset timer).")
             .defaultValue(3.0)
             .min(0.0)
             .max(10.0)
@@ -73,9 +73,9 @@ public class TimerRange extends Module {
       );
    private final Setting<Double> distanceToStartWorking = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("distance-to-start-working"))
-               .description("Max distance to start working."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("distance-to-start-working")
+            .description("Max distance to start working.")
             .defaultValue(100.0)
             .min(0.0)
             .max(500.0)
@@ -83,9 +83,9 @@ public class TimerRange extends Module {
       );
    private final Setting<Double> timerBalanceLimit = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("timer-balance-limit"))
-               .description("Timer balance limit."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("timer-balance-limit")
+            .description("Timer balance limit.")
             .defaultValue(20.0)
             .min(0.0)
             .max(50.0)
@@ -93,18 +93,18 @@ public class TimerRange extends Module {
       );
    private final Setting<Boolean> pauseOnFlag = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("pause-on-flag"))
-                  .description("Pause when you get flagged by the server."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("pause-on-flag")
+            .description("Pause when you get flagged by the server.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> onlyOnGround = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("only-on-ground"))
-                  .description("Only activate when on ground."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("only-on-ground")
+            .description("Only activate when on ground.")
+            .defaultValue(false)
             .build()
       );
    private boolean reachedTheLimit = false;

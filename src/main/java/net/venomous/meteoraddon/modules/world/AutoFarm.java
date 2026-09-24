@@ -27,7 +27,7 @@ public class AutoFarm extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> range = this.sgGeneral
       .add(
-         ((Builder)((Builder)new Builder().name("range")).description("Range to harvest/plant crops."))
+         new Builder().name("range").description("Range to harvest/plant crops.")
             .defaultValue(4.5)
             .range(1.0, 6.0)
             .sliderMax(6.0)
@@ -35,42 +35,42 @@ public class AutoFarm extends Module {
       );
    private final Setting<Boolean> harvest = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("harvest"))
-                  .description("Harvest mature crops."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("harvest")
+            .description("Harvest mature crops.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> plant = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("plant"))
-                  .description("Plant seeds on farmland."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("plant")
+            .description("Plant seeds on farmland.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> rotate = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("rotate"))
-                  .description("Smoothly rotate to crops."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("rotate")
+            .description("Smoothly rotate to crops.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> autoSwitch = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("auto-switch"))
-                  .description("Auto switch to seeds in hotbar."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("auto-switch")
+            .description("Auto switch to seeds in hotbar.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Integer> actionDelay = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                     .name("action-delay"))
-                  .description("Delay between actions in ticks (humanlike)."))
-               .defaultValue(2))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("action-delay")
+            .description("Delay between actions in ticks (humanlike).")
+            .defaultValue(2)
             .range(0, 10)
             .build()
       );

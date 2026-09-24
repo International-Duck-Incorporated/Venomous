@@ -26,148 +26,148 @@ public class VelocityPlus extends Module {
    private final SettingGroup sgVulcan = this.settings.createGroup("Vulcan");
    private final Setting<VelocityPlus.Mode> mode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("mode")).description("Velocity mode — select your anticheat."))
-               .defaultValue(VelocityPlus.Mode.GrimBoat))
+         new Builder().name("mode").description("Velocity mode — select your anticheat.")
+            .defaultValue(VelocityPlus.Mode.GrimBoat)
             .build()
       );
    private final Setting<Double> horizontal = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("horizontal"))
-                  .description("Horizontal velocity % (non-exploit modes)."))
-               .defaultValue(0.0)
-               .range(0.0, 100.0)
-               .sliderMax(100.0)
-               .visible(() -> !this.isGrimMode() && !this.isVulcanMode()))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("horizontal")
+            .description("Horizontal velocity % (non-exploit modes).")
+            .defaultValue(0.0)
+            .range(0.0, 100.0)
+            .sliderMax(100.0)
+            .visible(() -> !this.isGrimMode() && !this.isVulcanMode())
             .build()
       );
    private final Setting<Double> vertical = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("vertical"))
-                  .description("Vertical velocity % (non-exploit modes)."))
-               .defaultValue(0.0)
-               .range(0.0, 100.0)
-               .sliderMax(100.0)
-               .visible(() -> !this.isGrimMode() && !this.isVulcanMode()))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("vertical")
+            .description("Vertical velocity % (non-exploit modes).")
+            .defaultValue(0.0)
+            .range(0.0, 100.0)
+            .sliderMax(100.0)
+            .visible(() -> !this.isGrimMode() && !this.isVulcanMode())
             .build()
       );
    private final Setting<Boolean> onlyOnGround = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("only-on-ground"))
-                  .description("Only reduce velocity when on ground."))
-               .defaultValue(false))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("only-on-ground")
+            .description("Only reduce velocity when on ground.")
+            .defaultValue(false)
             .build()
       );
    private final Setting<Double> grimBoatKBReduction = this.sgGrim
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("grim-boat-kb-reduction"))
-                  .description("How much to move AGAINST the knockback (up to ~1.0 safe with boat nearby)."))
-               .defaultValue(0.6)
-               .range(0.0, 1.2)
-               .sliderMax(1.2)
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimBoat))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("grim-boat-kb-reduction")
+            .description("How much to move AGAINST the knockback (up to ~1.0 safe with boat nearby).")
+            .defaultValue(0.6)
+            .range(0.0, 1.2)
+            .sliderMax(1.2)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimBoat)
             .build()
       );
    private final Setting<Boolean> grimAutoBoat = this.sgGrim
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("grim-auto-boat"))
-                     .description("Auto-place boat if none nearby (GrimBoat mode)."))
-                  .defaultValue(true))
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimBoat))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("grim-auto-boat")
+            .description("Auto-place boat if none nearby (GrimBoat mode).")
+            .defaultValue(true)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimBoat)
             .build()
       );
    private final Setting<Double> grimJumpChance = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("grim-jump-chance"))
-                  .description("Chance to jump when receiving KB (GrimJumpReset)."))
-               .defaultValue(0.8)
-               .range(0.0, 1.0)
-               .sliderMax(1.0)
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimJumpReset))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("grim-jump-chance")
+            .description("Chance to jump when receiving KB (GrimJumpReset).")
+            .defaultValue(0.8)
+            .range(0.0, 1.0)
+            .sliderMax(1.0)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimJumpReset)
             .build()
       );
    private final Setting<Boolean> grimWTap = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("grim-w-tap"))
-                     .description("W-tap after KB (GrimSprintReset)."))
-                  .defaultValue(true))
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimSprintReset))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("grim-w-tap")
+            .description("W-tap after KB (GrimSprintReset).")
+            .defaultValue(true)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimSprintReset)
             .build()
       );
    private final Setting<Integer> grimWTapDuration = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("grim-w-tap-duration"))
-                     .description("Ticks to release W (GrimSprintReset)."))
-                  .defaultValue(3))
-               .range(1, 10)
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimSprintReset && (Boolean)this.grimWTap.get()))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("grim-w-tap-duration")
+            .description("Ticks to release W (GrimSprintReset).")
+            .defaultValue(3)
+            .range(1, 10)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.GrimSprintReset && (Boolean)this.grimWTap.get())
             .build()
       );
    private final Setting<Boolean> vulcanCancelTransaction = this.sgVulcan
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("vulcan-cancel-transaction"))
-                     .description("Cancel Vulcan velocity transaction packets (IDs -30767 to -28767 range)."))
-                  .defaultValue(true))
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanTransaction))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("vulcan-cancel-transaction")
+            .description("Cancel Vulcan velocity transaction packets (IDs -30767 to -28767 range).")
+            .defaultValue(true)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanTransaction)
             .build()
       );
    private final Setting<Integer> vulcanMinTransactionId = this.sgVulcan
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("vulcan-min-transaction-id"))
-                     .description("Min transaction ID for Vulcan velocity packets (-30767)."))
-                  .defaultValue(-30767))
-               .range(-40000, -20000)
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanTransaction && (Boolean)this.vulcanCancelTransaction.get()))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("vulcan-min-transaction-id")
+            .description("Min transaction ID for Vulcan velocity packets (-30767).")
+            .defaultValue(-30767)
+            .range(-40000, -20000)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanTransaction && (Boolean)this.vulcanCancelTransaction.get())
             .build()
       );
    private final Setting<Integer> vulcanMaxTransactionId = this.sgVulcan
       .add(
-         ((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)((meteordevelopment.meteorclient.settings.IntSetting.Builder)new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-                        .name("vulcan-max-transaction-id"))
-                     .description("Max transaction ID for Vulcan velocity packets (-28767)."))
-                  .defaultValue(-28767))
-               .range(-40000, -20000)
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanTransaction && (Boolean)this.vulcanCancelTransaction.get()))
+         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+            .name("vulcan-max-transaction-id")
+            .description("Max transaction ID for Vulcan velocity packets (-28767).")
+            .defaultValue(-28767)
+            .range(-40000, -20000)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanTransaction && (Boolean)this.vulcanCancelTransaction.get())
             .build()
       );
    private final Setting<Boolean> vulcanCancelVelocity = this.sgVulcan
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("vulcan-cancel-velocity"))
-                     .description("Also cancel the velocity packet itself (VulcanTransaction mode)."))
-                  .defaultValue(true))
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanTransaction))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("vulcan-cancel-velocity")
+            .description("Also cancel the velocity packet itself (VulcanTransaction mode).")
+            .defaultValue(true)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanTransaction)
             .build()
       );
    private final Setting<Double> vulcanHReduce = this.sgVulcan
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("vulcan-h-reduce"))
-                  .description("Horizontal KB % for VulcanReduce mode."))
-               .defaultValue(20.0)
-               .range(0.0, 100.0)
-               .sliderMax(100.0)
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanReduce))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("vulcan-h-reduce")
+            .description("Horizontal KB % for VulcanReduce mode.")
+            .defaultValue(20.0)
+            .range(0.0, 100.0)
+            .sliderMax(100.0)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanReduce)
             .build()
       );
    private final Setting<Double> vulcanVReduce = this.sgVulcan
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("vulcan-v-reduce"))
-                  .description("Vertical KB % for VulcanReduce mode."))
-               .defaultValue(50.0)
-               .range(0.0, 100.0)
-               .sliderMax(100.0)
-               .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanReduce))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("vulcan-v-reduce")
+            .description("Vertical KB % for VulcanReduce mode.")
+            .defaultValue(50.0)
+            .range(0.0, 100.0)
+            .sliderMax(100.0)
+            .visible(() -> this.mode.get() == VelocityPlus.Mode.VulcanReduce)
             .build()
       );
    private boolean shouldJump = false;

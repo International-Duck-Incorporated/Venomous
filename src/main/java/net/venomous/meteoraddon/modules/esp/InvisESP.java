@@ -22,25 +22,25 @@ public class InvisESP extends Module {
    private final SettingGroup sgMobs = this.settings.createGroup("Mobs");
    private final Setting<ShapeMode> shapeMode = this.sgGeneral
       .add(
-         ((Builder)((Builder)((Builder)new Builder().name("shape-mode")).description("How the box should be rendered.")).defaultValue(ShapeMode.Both)).build()
+         new Builder().name("shape-mode").description("How the box should be rendered.").defaultValue(ShapeMode.Both).build()
       );
    private final Setting<Double> lineWidth = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                     .name("line-width"))
-                  .description("Thickness of the box lines."))
-               .defaultValue(2.0)
-               .min(0.1)
-               .max(10.0)
-               .sliderMax(5.0)
-               .visible(() -> this.shapeMode.get() != ShapeMode.Sides))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("line-width")
+            .description("Thickness of the box lines.")
+            .defaultValue(2.0)
+            .min(0.1)
+            .max(10.0)
+            .sliderMax(5.0)
+            .visible(() -> this.shapeMode.get() != ShapeMode.Sides)
             .build()
       );
    private final Setting<Double> fadeDistance = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                  .name("fade-distance"))
-               .description("Distance at which boxes start to fade (0 = no fade)."))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+            .name("fade-distance")
+            .description("Distance at which boxes start to fade (0 = no fade).")
             .defaultValue(0.0)
             .min(0.0)
             .max(100.0)
@@ -49,10 +49,10 @@ public class InvisESP extends Module {
       );
    private final Setting<Boolean> onlyInvis = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("only-invisible"))
-                  .description("Only show hitboxes for invisible entities."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("only-invisible")
+            .description("Only show hitboxes for invisible entities.")
+            .defaultValue(true)
             .build()
       );
    /**
@@ -72,89 +72,89 @@ public class InvisESP extends Module {
 
    private final Setting<Boolean> notifications = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("notifications"))
-                  .description("Show chat feedback."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("notifications")
+            .description("Show chat feedback.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> showPlayers = this.sgPlayers
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("show-players"))
-                  .description("Show hitboxes for players."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("show-players")
+            .description("Show hitboxes for players.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<SettingColor> playerColor = this.sgPlayers
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                     .name("player-color"))
-                  .description("Color of player hitboxes."))
-               .defaultValue(new SettingColor(255, 0, 0, 100))
-               .visible(this.showPlayers::get))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("player-color")
+            .description("Color of player hitboxes.")
+            .defaultValue(new SettingColor(255, 0, 0, 100))
+            .visible(this.showPlayers::get)
             .build()
       );
    private final Setting<SettingColor> playerLineColor = this.sgPlayers
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                     .name("player-line-color"))
-                  .description("Color of player hitbox lines."))
-               .defaultValue(new SettingColor(255, 0, 0, 255))
-               .visible(() -> (Boolean)this.showPlayers.get() && this.shapeMode.get() != ShapeMode.Sides))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("player-line-color")
+            .description("Color of player hitbox lines.")
+            .defaultValue(new SettingColor(255, 0, 0, 255))
+            .visible(() -> (Boolean)this.showPlayers.get() && this.shapeMode.get() != ShapeMode.Sides)
             .build()
       );
    private final Setting<Boolean> showSelf = this.sgPlayers
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("show-self"))
-                     .description("Show your own hitbox when invisible."))
-                  .defaultValue(false))
-               .visible(this.showPlayers::get))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("show-self")
+            .description("Show your own hitbox when invisible.")
+            .defaultValue(false)
+            .visible(this.showPlayers::get)
             .build()
       );
    private final Setting<Boolean> showMobs = this.sgMobs
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                     .name("show-mobs"))
-                  .description("Show hitboxes for mobs."))
-               .defaultValue(true))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("show-mobs")
+            .description("Show hitboxes for mobs.")
+            .defaultValue(true)
             .build()
       );
    private final Setting<SettingColor> mobColor = this.sgMobs
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                     .name("mob-color"))
-                  .description("Color of mob hitboxes."))
-               .defaultValue(new SettingColor(0, 255, 0, 100))
-               .visible(this.showMobs::get))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("mob-color")
+            .description("Color of mob hitboxes.")
+            .defaultValue(new SettingColor(0, 255, 0, 100))
+            .visible(this.showMobs::get)
             .build()
       );
    private final Setting<SettingColor> mobLineColor = this.sgMobs
       .add(
-         ((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)((meteordevelopment.meteorclient.settings.ColorSetting.Builder)new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-                     .name("mob-line-color"))
-                  .description("Color of mob hitbox lines."))
-               .defaultValue(new SettingColor(0, 255, 0, 255))
-               .visible(() -> (Boolean)this.showMobs.get() && this.shapeMode.get() != ShapeMode.Sides))
+         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+            .name("mob-line-color")
+            .description("Color of mob hitbox lines.")
+            .defaultValue(new SettingColor(0, 255, 0, 255))
+            .visible(() -> (Boolean)this.showMobs.get() && this.shapeMode.get() != ShapeMode.Sides)
             .build()
       );
    private final Setting<Boolean> showPassive = this.sgMobs
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("show-passive"))
-                     .description("Show hitboxes for passive mobs (animals)."))
-                  .defaultValue(false))
-               .visible(this.showMobs::get))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("show-passive")
+            .description("Show hitboxes for passive mobs (animals).")
+            .defaultValue(false)
+            .visible(this.showMobs::get)
             .build()
       );
    private final Setting<Boolean> showHostile = this.sgMobs
       .add(
-         ((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)((meteordevelopment.meteorclient.settings.BoolSetting.Builder)new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-                        .name("show-hostile"))
-                     .description("Show hitboxes for hostile mobs."))
-                  .defaultValue(true))
-               .visible(this.showMobs::get))
+         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+            .name("show-hostile")
+            .description("Show hitboxes for hostile mobs.")
+            .defaultValue(true)
+            .visible(this.showMobs::get)
             .build()
       );
 

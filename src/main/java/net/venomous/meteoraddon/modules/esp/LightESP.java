@@ -18,10 +18,10 @@ import net.venomous.meteoraddon.VenomousAddon;
 public class LightESP extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> range = this.sgGeneral
-      .add(((Builder)((Builder)new Builder().name("range")).defaultValue(8)).min(2).max(16).sliderMax(16).build());
+      .add(new Builder().name("range").defaultValue(8).min(2).max(16).sliderMax(16).build());
    private final Setting<Double> minLight = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder().name("min-light"))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder().name("min-light")
             .defaultValue(0.0)
             .min(0.0)
             .max(15.0)
@@ -30,7 +30,7 @@ public class LightESP extends Module {
       );
    private final Setting<Double> maxLight = this.sgGeneral
       .add(
-         ((meteordevelopment.meteorclient.settings.DoubleSetting.Builder)new meteordevelopment.meteorclient.settings.DoubleSetting.Builder().name("max-light"))
+         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder().name("max-light")
             .defaultValue(7.0)
             .min(0.0)
             .max(15.0)
