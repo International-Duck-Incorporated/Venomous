@@ -15,7 +15,7 @@
 
 Venomous is an open-source Fabric addon that extends [Meteor Client](https://github.com/MeteorDevelopment/meteor-client) with combat, movement, rendering, detection, automation, exploit, and utility modules.
 
-> Venomous is a work in progress. Expect bugs and test features only where you have permission.
+Venomous is a work in progress. Expect bugs and test features only where you have permission.
 
 ## Highlights
 
