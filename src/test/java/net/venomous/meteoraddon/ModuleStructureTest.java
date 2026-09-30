@@ -128,7 +128,8 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.world.Scaffold",
             "net.venomous.meteoraddon.modules.world.TimerPlus",
             "net.venomous.meteoraddon.modules.world.VAirPlace",
-            "net.venomous.meteoraddon.modules.world.AutoFarm"
+            "net.venomous.meteoraddon.modules.world.AutoFarm",
+            "net.venomous.meteoraddon.modules.world.BambooPlanter"
     );
 
     /**

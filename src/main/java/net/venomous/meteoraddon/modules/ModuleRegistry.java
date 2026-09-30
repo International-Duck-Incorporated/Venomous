@@ -117,6 +117,7 @@ import net.venomous.meteoraddon.modules.world.Scaffold;
 import net.venomous.meteoraddon.modules.world.TimerPlus;
 import net.venomous.meteoraddon.modules.world.VAirPlace;
 import net.venomous.meteoraddon.modules.world.AutoFarm;
+import net.venomous.meteoraddon.modules.world.BambooPlanter;
 
 public class ModuleRegistry {
    public static void register() {
@@ -236,5 +237,6 @@ public class ModuleRegistry {
       Modules.get().add(new TimerPlus());
       Modules.get().add(new VAirPlace());
       Modules.get().add(new AutoFarm());
+      Modules.get().add(new BambooPlanter());
    }
 }
