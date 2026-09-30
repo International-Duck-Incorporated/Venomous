@@ -1,7 +1,7 @@
 package net.venomous.meteoraddon.modules.misc;
 
 import meteordevelopment.meteorclient.events.entity.player.AttackEntityEvent;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -86,7 +86,7 @@ public class AutoEZ extends Module {
     }
 
     @EventHandler
-    private void onTick(Post event) {
+    private void onTick(Pre event) {
         if (this.mc.player == null || this.mc.level == null) return;
 
         if (!this.mc.player.isAlive() || this.mc.player.getHealth() <= 0.0f) {

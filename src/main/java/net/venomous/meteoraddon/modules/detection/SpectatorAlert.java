@@ -3,7 +3,7 @@ package net.venomous.meteoraddon.modules.detection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
@@ -65,7 +65,7 @@ public class SpectatorAlert extends Module {
    }
 
    @EventHandler
-   private void onTick(Post event) {
+   private void onTick(Pre event) {
       if (this.mc.player == null || this.mc.level == null) {
          return;
       }

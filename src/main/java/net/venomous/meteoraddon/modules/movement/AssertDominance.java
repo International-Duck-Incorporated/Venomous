@@ -2,7 +2,7 @@ package net.venomous.meteoraddon.modules.movement;
 
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.friends.Friends;
@@ -141,7 +141,7 @@ public class AssertDominance extends Module {
    }
 
    @EventHandler
-   private void onTick(Post var1) {
+   private void onTick(Pre var1) {
       if (this.mc.player != null && this.mc.level != null) {
          Entity var2 = TargetUtils.get(this::isGoodTarget, (SortPriority)this.priority.get());
          if (var2 != null) {

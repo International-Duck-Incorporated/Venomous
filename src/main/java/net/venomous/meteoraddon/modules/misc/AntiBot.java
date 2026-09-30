@@ -2,7 +2,7 @@ package net.venomous.meteoraddon.modules.misc;
 
 import java.util.HashSet;
 import java.util.Set;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -73,7 +73,7 @@ public class AntiBot extends Module {
    }
 
    @EventHandler
-   private void onTick(Post event) {
+   private void onTick(Pre event) {
       if (this.mc.level == null || this.mc.player == null) {
          return;
       }

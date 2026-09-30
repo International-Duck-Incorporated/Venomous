@@ -3,7 +3,7 @@ package net.venomous.meteoraddon.modules.combat;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -116,7 +116,7 @@ public class PopCounter extends Module {
     }
 
     @EventHandler
-    private void onTick(Post event) {
+    private void onTick(Pre event) {
         if (this.mc.level == null || this.popMap.isEmpty()) return;
 
         List<UUID> deadPlayers = new ArrayList<>();

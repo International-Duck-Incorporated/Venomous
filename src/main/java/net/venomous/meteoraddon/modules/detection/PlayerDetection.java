@@ -15,7 +15,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -126,7 +126,7 @@ public class PlayerDetection extends Module {
    }
 
    @EventHandler
-   private void onTick(Post event) {
+   private void onTick(Pre event) {
       if (this.mc.player == null || this.mc.level == null) {
          this.detectedPlayers.clear();
          return;

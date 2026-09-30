@@ -3,7 +3,7 @@ package net.venomous.meteoraddon.modules.misc;
 import java.util.HashSet;
 import java.util.Set;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -83,7 +83,7 @@ public class TNTTimer extends Module {
    }
 
    @EventHandler
-   private void onTick(Post event) {
+   private void onTick(Pre event) {
       if ((Boolean)this.warn.get() && this.mc.level != null) {
          HashSet<Integer> present = new HashSet<>();
 

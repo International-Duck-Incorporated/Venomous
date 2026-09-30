@@ -14,7 +14,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
@@ -176,7 +176,7 @@ public class AntiVanish extends Module {
    }
 
    @EventHandler
-   private void onTick(Post event) {
+   private void onTick(Pre event) {
       if (this.mc.player == null || this.mc.getConnection() == null) {
          return;
       }

@@ -1,6 +1,6 @@
 package net.venomous.meteoraddon.modules.misc;
 
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -70,7 +70,7 @@ public class ArmorWarning extends Module {
    }
 
    @EventHandler
-   private void onTick(Post event) {
+   private void onTick(Pre event) {
       if (this.mc.player != null) {
          try {
             if (this.timer-- <= 0) {

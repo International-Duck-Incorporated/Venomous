@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.combat;
 import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -234,7 +233,7 @@ public class AutoInvTotem extends Module {
    }
 
    @EventHandler
-   private void onTickDelayed(Post event) {
+   private void onTickDelayed(Pre event) {
       if (this.delayTicks > 0 && this.mc.player != null) {
          this.delayTicks--;
          if (this.delayTicks == 0) {

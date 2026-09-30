@@ -2,7 +2,7 @@ package net.venomous.meteoraddon.modules.combat;
 
 import java.util.Random;
 import java.util.Set;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
@@ -134,7 +134,7 @@ public class Aimbot extends Module {
    }
 
    @EventHandler
-   private void onTick(Post event) {
+   private void onTick(Pre event) {
       if (this.mc.player == null || this.mc.level == null) {
          return;
       }

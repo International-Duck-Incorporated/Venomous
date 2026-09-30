@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.widgets.WWidget;
 import meteordevelopment.meteorclient.gui.widgets.containers.WVerticalList;
@@ -159,7 +159,7 @@ public class Choir extends Module {
    }
 
    @EventHandler
-   private void onTick(Post var1) {
+   private void onTick(Pre var1) {
       if (!this.failed && this.mc.player != null && !this.script.isEmpty()) {
          if (this.timer > 0) {
             this.timer--;

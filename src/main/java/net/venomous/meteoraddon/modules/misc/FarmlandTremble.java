@@ -1,6 +1,6 @@
 package net.venomous.meteoraddon.modules.misc;
 
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -26,7 +26,7 @@ public class FarmlandTremble extends Module {
    }
 
    @EventHandler
-   private void onTick(Post var1) {
+   private void onTick(Pre var1) {
       if (this.mc.level != null && this.mc.player != null) {
          BlockPos var2 = this.mc.player.blockPosition();
          int var3 = (Integer)this.radius.get();

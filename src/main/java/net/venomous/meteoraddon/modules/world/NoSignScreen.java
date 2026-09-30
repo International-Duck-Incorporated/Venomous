@@ -7,7 +7,7 @@ import java.util.Queue;
 import meteordevelopment.meteorclient.events.entity.player.PlaceBlockEvent;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
-import meteordevelopment.meteorclient.events.world.TickEvent.Post;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.mixin.AbstractSignEditScreenAccessor;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -104,7 +104,7 @@ public class NoSignScreen extends Module {
    }
 
    @EventHandler
-   private void onTick(Post var1) {
+   private void onTick(Pre var1) {
       this.tick++;
       this.placed.entrySet().removeIf(var1x -> this.tick - var1x.getValue() > 40);
       if (this.mc.player != null && this.mc.getConnection() != null && !this.queue.isEmpty()) {
