@@ -207,13 +207,6 @@ public class MaceKill extends Module {
             .visible(this.useOffset::get)
             .build()
       );
-   private final Setting<Boolean> checkPathInvalid = this.sgSafety
-      .add(
-         new BoolSetting.Builder().name("validate-above-path")
-            .description("Cancel the attack if the path or position above the target is obstructed.")
-            .defaultValue(true)
-            .build()
-      );
    private MaceKill.Phase phase = MaceKill.Phase.IDLE;
    private LivingEntity killTarget;
    private Vec3 aboveTargetPos;
@@ -342,12 +335,6 @@ public class MaceKill extends Module {
 
                      Vec3 targetCenter = this.killTarget.getBoundingBox().getCenter();
                      this.aboveTargetPos = new Vec3(targetCenter.x, targetCenter.y + (Double)this.aboveHeight.get(), targetCenter.z);
-                     if ((Boolean)this.checkPathInvalid.get() && !this.isAbovePathValid(this.aboveTargetPos, this.killTarget)) {
-                        this.killTarget = null;
-                        this.aboveTargetPos = null;
-                        return;
-                     }
-
                      double ceiling = this.mc.level.getMaxY() - 1;
                      if (this.aboveTargetPos.y > ceiling) {
                         this.aboveTargetPos = new Vec3(this.aboveTargetPos.x, ceiling, this.aboveTargetPos.z);
@@ -610,43 +597,6 @@ public class MaceKill extends Module {
          float pitch = (float)(-Math.toDegrees(Math.asin(toTarget.y)));
          this.mc.player.setYRot(yaw);
          this.mc.player.setXRot(pitch);
-      }
-   }
-
-   private boolean isAbovePathValid(Vec3 abovePos, Entity target) {
-      if (this.mc.level != null && abovePos != null) {
-         Vec3 targetCenter = target.getBoundingBox().getCenter();
-         if (this.isUnsafe(abovePos)) {
-            return false;
-         }
-
-         double radius = (Double)this.nearTargetThreshold.get();
-         int r = (int)radius;
-
-         for (int x = -r; x <= r; x++) {
-            for (int y = -r; y <= r; y++) {
-               for (int z = -r; z <= r; z++) {
-                  Vec3 testPos = abovePos.add(x, y, z);
-                  if (testPos.distanceTo(abovePos) <= radius && this.isUnsafe(testPos)) {
-                     return false;
-                  }
-               }
-            }
-         }
-
-         int pathSteps = Math.max(10, (int)(abovePos.distanceTo(targetCenter) * 2.5));
-
-         for (int i = 1; i < pathSteps; i++) {
-            double t = (double)i / pathSteps;
-            Vec3 sample = abovePos.lerp(targetCenter, t);
-            if (this.isUnsafe(sample)) {
-               return false;
-            }
-         }
-
-         return true;
-      } else {
-         return false;
       }
    }
 
