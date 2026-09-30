@@ -139,8 +139,8 @@ public class Scaffold extends Module {
    private final Setting<Boolean> grimUseScaffolding = this.sgGrim.add(
       new BoolSetting.Builder()
          .name("grim-use-scaffolding")
-         .description("Use scaffolding blocks — Grim EXEMPTS them from RotationPlace!")
-         .defaultValue(true)
+         .description("Prefer scaffolding blocks when available. The humanized Grim profile works with normal blocks too.")
+         .defaultValue(false)
          .visible(() -> this.technique.get() == Scaffold.Technique.GrimScaffold)
          .build()
    );
@@ -213,6 +213,13 @@ public class Scaffold extends Module {
    private boolean managedSneak = false;
    private boolean previousSneakDown = false;
    private int targetY = -1;
+   private Scaffold.Technique lastTechnique = null;
+   private Vec3 bridgeHeading = Vec3.ZERO;
+   private float restoreYaw;
+   private float restorePitch;
+   private int godBridgePhase = 0;
+   private int godBridgeTicks = 0;
+   private int breezilySide = 1;
 
    public Scaffold() {
       super(VenomousAddon.CATEGORY, "v-scaffold", "Scaffold & Bridge bypasses for Grim, Vulcan, NCP, and fast bridging.");
@@ -228,6 +235,11 @@ public class Scaffold extends Module {
       this.repeatedAttempts = 0;
       this.managedSneak = false;
       this.previousSneakDown = false;
+      this.lastTechnique = null;
+      this.bridgeHeading = Vec3.ZERO;
+      this.godBridgePhase = 0;
+      this.godBridgeTicks = 0;
+      this.breezilySide = 1;
       this.targetY = this.mc.player != null ? (int)Math.floor(this.mc.player.getY() - 1.0) : -1;
    }
 
@@ -241,6 +253,10 @@ public class Scaffold extends Module {
       this.placeCooldown = 0;
       this.lastAttemptPos = null;
       this.repeatedAttempts = 0;
+      this.lastTechnique = null;
+      this.bridgeHeading = Vec3.ZERO;
+      this.godBridgePhase = 0;
+      this.godBridgeTicks = 0;
       this.targetY = -1;
    }
 
@@ -265,20 +281,27 @@ public class Scaffold extends Module {
 
    @EventHandler
    private void onTick(Pre event) {
-      if (this.mc.player == null || this.mc.level == null) {
-         return;
-      }
+      if (this.mc.player == null || this.mc.level == null) return;
 
       this.scaffoldCount++;
-      if (this.placeCooldown > 0) {
-         this.placeCooldown--;
+      if (this.placeCooldown > 0) this.placeCooldown--;
+
+      Scaffold.Technique selected = this.technique.get();
+      if (selected != this.lastTechnique) {
+         this.releaseManagedSneak();
+         this.bridgeHeading = Vec3.ZERO;
+         this.godBridgePhase = 0;
+         this.godBridgeTicks = 0;
+         this.lastAttemptPos = null;
+         this.repeatedAttempts = 0;
+         this.lastTechnique = selected;
       }
 
       if (this.mc.options.keyJump.isDown() || (int)Math.floor(this.mc.player.getY() - 1.0) > this.targetY) {
          this.targetY = (int)Math.floor(this.mc.player.getY() - 1.0);
       }
 
-      if ((this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
+      if ((selected == Scaffold.Technique.VulcanExpand || selected == Scaffold.Technique.VulcanSprint)
          && this.vulcanSprintDisabler.get()
          && this.scaffoldCount % this.vulcanSprintInterval.get() == 0
          && this.mc.getConnection() != null) {
@@ -286,46 +309,150 @@ public class Scaffold extends Module {
          this.mc.getConnection().send(new ServerboundPlayerCommandPacket(this.mc.player, Action.STOP_SPRINTING));
       }
 
-      if (!isBridgeMode()) {
-         FindItemResult block = this.findBlock();
-         if (block.found()) {
-            if (this.tower.get() && this.mc.player.getXRot() < -75.0F) {
-               this.doTower();
-            } else {
-               BlockPos placePos = this.getPlacePos();
-               if (placePos != null) {
-                  if (this.autoSneak.get()) {
-                     if (this.isOverEdge()) {
-                        this.pressManagedSneak();
-                     } else {
-                        this.releaseManagedSneak();
-                     }
-                  }
+      switch (selected) {
+         case GrimScaffold -> this.tickGrim();
+         case GodBridge -> this.tickGodBridge();
+         case Breezily -> this.tickBreezily();
+         case AutoSneak, BridgeMacro, VapeBridge, VulcanSprint -> this.tickBridgeMode();
+         case VulcanExpand, Expand, NCPNormal, Normal -> this.tickStandardMode();
+      }
+   }
 
-                  if (this.technique.get() == Scaffold.Technique.VulcanExpand && this.vulcanExpand.get() > 0) {
-                     for (int i = 0; i <= this.vulcanExpand.get(); i++) {
-                        BlockPos ep = this.getExpandPos(i);
-                        if (ep != null && this.place(ep)) {
-                           break;
-                        }
-                     }
-                  } else if (this.technique.get() == Scaffold.Technique.Expand && this.expand.get() > 0) {
-                     for (int i = 0; i <= this.expand.get(); i++) {
-                        BlockPos ep = this.getExpandPos(i);
-                        if (ep != null && this.place(ep)) {
-                           break;
-                        }
-                     }
-                  } else {
-                     this.place(placePos);
-                  }
-               } else if (this.autoSneak.get()) {
-                  this.releaseManagedSneak();
-               }
-            }
+   private void tickStandardMode() {
+      FindItemResult block = this.findBlock();
+      if (!block.found()) return;
+
+      if (this.tower.get() && this.mc.player.getXRot() < -75.0F) {
+         this.doTower();
+         return;
+      }
+
+      BlockPos placePos = this.getPlacePos();
+      if (placePos == null) {
+         this.releaseManagedSneak();
+         return;
+      }
+
+      // NCP is deliberately conservative: crouch before the edge and visibly aim steeply.
+      if (this.technique.get() == Scaffold.Technique.NCPNormal) {
+         if (this.isOverEdge() || this.edgeDistance(this.movementDirection()) < 0.32) this.pressManagedSneak();
+         else this.releaseManagedSneak();
+         if (!this.smoothAimAt(placePos, 9.0F, 5.0F)) return;
+         this.place(placePos, false);
+         return;
+      }
+
+      if (this.autoSneak.get() && this.isOverEdge()) this.pressManagedSneak();
+      else this.releaseManagedSneak();
+
+      if (this.technique.get() == Scaffold.Technique.VulcanExpand && this.vulcanExpand.get() > 0) {
+         for (int i = this.vulcanExpand.get(); i >= 0; i--) {
+            BlockPos expanded = this.getExpandPos(i);
+            if (expanded != null && this.place(expanded)) break;
+         }
+      } else if (this.technique.get() == Scaffold.Technique.Expand && this.expand.get() > 0) {
+         for (int i = this.expand.get(); i >= 0; i--) {
+            BlockPos expanded = this.getExpandPos(i);
+            if (expanded != null && this.place(expanded)) break;
          }
       } else {
-         this.tickBridgeMode();
+         this.place(placePos);
+      }
+   }
+
+   /** Human-looking Grim profile: edge crouch, visible eased aim, then an unspoofed interaction. */
+   private void tickGrim() {
+      BlockPos target = this.getPlacePos();
+      if (target == null || !this.findBlock().found()) {
+         this.releaseManagedSneak();
+         return;
+      }
+
+      Vec3 direction = this.movementDirection();
+      boolean nearEdge = this.isOverEdge() || (direction.lengthSqr() > 1.0E-4 && this.edgeDistance(direction) < 0.38);
+      if (nearEdge) this.pressManagedSneak();
+      else this.releaseManagedSneak();
+
+      // A low acceleration curve is intentional: no one-frame 180/90 degree snap.
+      if (this.smoothAimAt(target, 7.0F, 3.5F)) {
+         this.place(target, false);
+      }
+   }
+
+   /** Jump forward, look back/down, place beneath the jump, and ease the view forward again. */
+   private void tickGodBridge() {
+      if (this.godBridgePhase == 0) {
+         Vec3 input = this.movementDirection();
+         if (input.lengthSqr() < 1.0E-4) return;
+         this.bridgeHeading = input.normalize();
+
+         if (this.edgeDistance(this.bridgeHeading) < 0.30 && this.mc.player.onGround()) {
+            this.restoreYaw = this.mc.player.getYRot();
+            this.restorePitch = this.mc.player.getXRot();
+            this.mc.player.jumpFromGround();
+            this.godBridgePhase = 1;
+            this.godBridgeTicks = 0;
+         }
+         return;
+      }
+
+      this.godBridgeTicks++;
+      Vec3 velocity = this.mc.player.getDeltaMovement();
+      double horizontalSpeed = Math.max(0.18, Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z));
+      this.mc.player.setDeltaMovement(
+         this.bridgeHeading.x * horizontalSpeed,
+         velocity.y,
+         this.bridgeHeading.z * horizontalSpeed
+      );
+
+      BlockPos target = BlockPos.containing(
+         this.mc.player.getX() - this.bridgeHeading.x * 0.35,
+         this.blockY(),
+         this.mc.player.getZ() - this.bridgeHeading.z * 0.35
+      );
+      if (!this.mc.level.getBlockState(target).isAir()) {
+         target = BlockPos.containing(
+            this.mc.player.getX() + this.bridgeHeading.x * 0.55,
+            this.blockY(),
+            this.mc.player.getZ() + this.bridgeHeading.z * 0.55
+         );
+      }
+
+      if (this.godBridgePhase == 1) {
+         if (this.smoothAimAt(target, 28.0F, 11.0F) && this.place(target, false)) {
+            this.godBridgePhase = 2;
+            this.godBridgeTicks = 0;
+         } else if (this.godBridgeTicks > 8) {
+            this.godBridgePhase = 2;
+            this.godBridgeTicks = 0;
+         }
+      } else {
+         boolean yawReady = this.smoothViewTo(this.restoreYaw, this.restorePitch, 22.0F, 9.0F);
+         if (yawReady || this.godBridgeTicks > 8 || this.mc.player.onGround()) {
+            this.godBridgePhase = 0;
+            this.godBridgeTicks = 0;
+         }
+      }
+   }
+
+   /** Breezily profile: alternating lateral pulses and rapid placement without edge crouching. */
+   private void tickBreezily() {
+      Vec3 forward = this.movementDirection();
+      if (forward.lengthSqr() < 1.0E-4) return;
+      forward = forward.normalize();
+      this.releaseManagedSneak();
+
+      if (this.edgeDistance(forward) < 0.34) {
+         Vec3 velocity = this.mc.player.getDeltaMovement();
+         Vec3 side = new Vec3(-forward.z, 0.0, forward.x).scale(0.055 * this.breezilySide);
+         this.mc.player.setDeltaMovement(velocity.x + side.x, velocity.y, velocity.z + side.z);
+
+         BlockPos target = BlockPos.containing(
+            this.mc.player.getX() + forward.x * 0.70,
+            this.blockY(),
+            this.mc.player.getZ() + forward.z * 0.70
+         );
+         if (this.place(target)) this.breezilySide = -this.breezilySide;
       }
    }
 
@@ -402,6 +529,38 @@ public class Scaffold extends Module {
       return Math.min(dx, dz);
    }
 
+   private boolean smoothAimAt(BlockPos pos, float maxYawStep, float maxPitchStep) {
+      Vec3 eyes = this.mc.player.getEyePosition();
+      double dx = pos.getX() + 0.5 - eyes.x;
+      double dy = pos.getY() + 0.5 - eyes.y;
+      double dz = pos.getZ() + 0.5 - eyes.z;
+      double horizontal = Math.sqrt(dx * dx + dz * dz);
+      float yaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
+      float pitch = (float)-Math.toDegrees(Math.atan2(dy, horizontal));
+      return this.smoothViewTo(yaw, pitch, maxYawStep, maxPitchStep);
+   }
+
+   private boolean smoothViewTo(float targetYaw, float targetPitch, float maxYawStep, float maxPitchStep) {
+      float yawDelta = wrapDegrees(targetYaw - this.mc.player.getYRot());
+      float pitchDelta = targetPitch - this.mc.player.getXRot();
+      float yawStep = clamp(yawDelta, -maxYawStep, maxYawStep);
+      float pitchStep = clamp(pitchDelta, -maxPitchStep, maxPitchStep);
+      this.mc.player.setYRot(this.mc.player.getYRot() + yawStep);
+      this.mc.player.setXRot(clamp(this.mc.player.getXRot() + pitchStep, -90.0F, 90.0F));
+      return Math.abs(yawDelta) <= 4.0F && Math.abs(pitchDelta) <= 4.0F;
+   }
+
+   private static float wrapDegrees(float angle) {
+      angle %= 360.0F;
+      if (angle >= 180.0F) angle -= 360.0F;
+      if (angle < -180.0F) angle += 360.0F;
+      return angle;
+   }
+
+   private static float clamp(float value, float min, float max) {
+      return Math.max(min, Math.min(max, value));
+   }
+
    private int blockY() {
       return (this.sameY.get() && this.targetY != -1) ? this.targetY : (int)Math.floor(this.mc.player.getY() - 1.0);
    }
@@ -465,6 +624,10 @@ public class Scaffold extends Module {
     * desyncs between client camera state and server rotation state.
     */
    private boolean place(BlockPos pos) {
+      return this.place(pos, this.rotate.get());
+   }
+
+   private boolean place(BlockPos pos, boolean shouldRotate) {
       if (this.mc.player == null || this.mc.level == null || this.placeCooldown > 0) {
          return false;
       }
@@ -487,7 +650,7 @@ public class Scaffold extends Module {
       }
 
       if (BlockUtils.canPlace(pos)) {
-         if (BlockUtils.place(pos, block, this.rotate.get(), 10, this.swing.get(), true)) {
+         if (BlockUtils.place(pos, block, shouldRotate, 10, this.swing.get(), true)) {
             this.placeCooldown = delay;
             return true;
          }
