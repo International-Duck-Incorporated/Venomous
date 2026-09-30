@@ -3,19 +3,19 @@ package net.venomous.meteoraddon.modules.combat;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class AntiProjectile extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<AntiProjectile.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode").description("Walk dodges by moving WASD, Velocity flings you out of the way.")
+         new EnumSetting.Builder<AntiProjectile.Mode>().name("mode").description("Walk dodges by moving WASD, Velocity flings you out of the way.")
             .defaultValue(AntiProjectile.Mode.Walk)
             .build()
       );
@@ -40,6 +40,9 @@ public class AntiProjectile extends Module {
             .build()
       );
    private int walkTimer;
+   private boolean managedKeys;
+   private boolean previousLeftDown;
+   private boolean previousRightDown;
 
    public AntiProjectile() {
       super(VenomousAddon.CATEGORY, "anti-projectile", "Detects incoming projectiles and dodges them.");
@@ -77,6 +80,12 @@ public class AntiProjectile extends Module {
    }
 
    private void startWalkDodge(Entity projectile) {
+      if (!this.managedKeys) {
+         this.previousLeftDown = this.mc.options.keyLeft.isDown();
+         this.previousRightDown = this.mc.options.keyRight.isDown();
+         this.managedKeys = true;
+      }
+
       Vec3 velocity = projectile.getDeltaMovement();
       Vec3 toPlayer = this.mc.player.position().subtract(projectile.position());
       double dot = -velocity.z * toPlayer.x + velocity.x * toPlayer.z;
@@ -90,8 +99,13 @@ public class AntiProjectile extends Module {
    }
 
    private void stopDodge() {
-      this.mc.options.keyLeft.setDown(false);
-      this.mc.options.keyRight.setDown(false);
+      if (this.managedKeys && this.mc.options != null) {
+         this.mc.options.keyLeft.setDown(this.previousLeftDown);
+         this.mc.options.keyRight.setDown(this.previousRightDown);
+      }
+      this.managedKeys = false;
+      this.previousLeftDown = false;
+      this.previousRightDown = false;
       this.walkTimer = 0;
    }
 

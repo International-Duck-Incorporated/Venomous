@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.combat;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.InteractionHand;
@@ -11,12 +10,13 @@ import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class AutoDoubleHand extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> healthThreshold = this.sgGeneral
       .add(
-         new Builder().name("health-threshold").description("Only activate when health is below this value.")
+         new DoubleSetting.Builder().name("health-threshold").description("Only activate when health is below this value.")
             .defaultValue(20.0)
             .min(0.0)
             .max(36.0)

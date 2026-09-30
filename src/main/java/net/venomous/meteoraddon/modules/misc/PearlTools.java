@@ -7,7 +7,6 @@ import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
@@ -19,13 +18,14 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class PearlTools extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final SettingGroup sgRender = this.settings.createGroup("Render");
    private final Setting<Boolean> landingWarning = this.sgGeneral
       .add(
-         new Builder().name("landing-warning").description("Warn when a non-owned pearl is predicted to land near you.")
+         new BoolSetting.Builder().name("landing-warning").description("Warn when a non-owned pearl is predicted to land near you.")
             .defaultValue(true)
             .build()
       );
@@ -50,7 +50,7 @@ public class PearlTools extends Module {
             .build()
       );
    private final Setting<Boolean> render = this.sgRender
-      .add(new Builder().name("render").description("Render pearl trajectory and landing boxes.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("render").description("Render pearl trajectory and landing boxes.").defaultValue(true).build());
    private final Setting<SettingColor> color = this.sgRender
       .add(
          new meteordevelopment.meteorclient.settings.ColorSetting.Builder()

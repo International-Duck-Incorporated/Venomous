@@ -54,7 +54,6 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.exploit.ClickTp",
             "net.venomous.meteoraddon.modules.exploit.Damage",
             "net.venomous.meteoraddon.modules.exploit.Disabler",
-            "net.venomous.meteoraddon.modules.exploit.Dupe",
             "net.venomous.meteoraddon.modules.exploit.ExtendedFirework",
             "net.venomous.meteoraddon.modules.exploit.Kick",
             "net.venomous.meteoraddon.modules.exploit.MoreCarry",

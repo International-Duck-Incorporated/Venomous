@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.combat;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
@@ -13,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.PreRotate;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class WindPearlMacro extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -24,7 +24,7 @@ public class WindPearlMacro extends Module {
       super(VenomousAddon.CATEGORY, "pearl-wind-macro", "Throws pearl first, then uses wind charge at 90 degrees up.");
       this.delayTicks = this.sgGeneral
          .add(
-            new Builder().name("delay").description("Delay between pearl throw and wind charge.").defaultValue(1)
+            new IntSetting.Builder().name("delay").description("Delay between pearl throw and wind charge.").defaultValue(1)
                .min(1)
                .max(10)
                .build()

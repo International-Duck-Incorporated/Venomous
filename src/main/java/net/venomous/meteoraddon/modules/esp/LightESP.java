@@ -8,17 +8,17 @@ import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class LightESP extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> range = this.sgGeneral
-      .add(new Builder().name("range").defaultValue(8).min(2).max(16).sliderMax(16).build());
+      .add(new IntSetting.Builder().name("range").defaultValue(8).min(2).max(16).sliderMax(16).build());
    private final Setting<Double> minLight = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.DoubleSetting.Builder().name("min-light")

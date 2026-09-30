@@ -4,19 +4,19 @@ import java.util.Random;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class ProjectilePuncher extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> range = this.sgGeneral
       .add(
-         new Builder().name("range").description("Range to punch projectiles.").defaultValue(4.0).range(1.0, 6.0).sliderMax(6.0).build()
+         new DoubleSetting.Builder().name("range").description("Range to punch projectiles.").defaultValue(4.0).range(1.0, 6.0).sliderMax(6.0).build()
       );
    private final Setting<Integer> minCps = this.sgGeneral
       .add(
@@ -48,7 +48,7 @@ public class ProjectilePuncher extends Module {
       );
    private final Setting<Double> rotationSpeed = this.sgGeneral
       .add(
-         new Builder().name("rotation-speed").description("Rotation speed (degrees per tick).")
+         new DoubleSetting.Builder().name("rotation-speed").description("Rotation speed (degrees per tick).")
             .defaultValue(180.0)
             .range(30.0, 360.0)
             .sliderMax(360.0)

@@ -3,16 +3,16 @@ package net.venomous.meteoraddon.modules.utility;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class AntiVoid extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<AntiVoid.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode").description("Motion boosts you up, Back teleports you to your last safe position.")
+         new EnumSetting.Builder<AntiVoid.Mode>().name("mode").description("Motion boosts you up, Back teleports you to your last safe position.")
             .defaultValue(AntiVoid.Mode.Motion)
             .build()
       );

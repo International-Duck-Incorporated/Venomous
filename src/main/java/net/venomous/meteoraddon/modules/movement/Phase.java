@@ -6,19 +6,19 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent.Send;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class Phase extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Phase.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode")
+         new EnumSetting.Builder<Phase.Mode>().name("mode")
             .description("Normal sets no-physics, Blink queues movement packets, Clip pulses through nearby collision.")
             .defaultValue(Phase.Mode.Normal)
             .build()

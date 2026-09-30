@@ -3,16 +3,16 @@ package net.venomous.meteoraddon.modules.combat;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class TickBase extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> onlyOnAttack = this.sgGeneral
-      .add(new Builder().name("only-on-attack").description("Only delay ticks when attacking.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("only-on-attack").description("Only delay ticks when attacking.").defaultValue(true).build());
    private final Setting<Integer> maxDelay = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.IntSetting.Builder()

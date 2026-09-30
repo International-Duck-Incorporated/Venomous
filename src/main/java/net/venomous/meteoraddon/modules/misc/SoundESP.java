@@ -8,7 +8,6 @@ import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
@@ -18,12 +17,13 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class SoundESP extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final SettingGroup sgRender = this.settings.createGroup("Render");
    private final Setting<Boolean> useFilter = this.sgGeneral
-      .add(new Builder().name("use-filter").description("Only show sounds in the filter list.").defaultValue(false).build());
+      .add(new BoolSetting.Builder().name("use-filter").description("Only show sounds in the filter list.").defaultValue(false).build());
    private final Setting<List<SoundEvent>> filter = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.SoundEventListSetting.Builder()
@@ -54,10 +54,10 @@ public class SoundESP extends Module {
             .build()
       );
    private final Setting<Boolean> logChat = this.sgGeneral
-      .add(new Builder().name("log-to-chat").description("Print each sound position to chat.").defaultValue(false).build());
+      .add(new BoolSetting.Builder().name("log-to-chat").description("Print each sound position to chat.").defaultValue(false).build());
    private final Setting<ShapeMode> shapeMode = this.sgRender
       .add(
-         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder<ShapeMode>()
             .name("shape-mode")
             .defaultValue(ShapeMode.Both)
             .build()

@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.combat;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
@@ -18,11 +17,12 @@ import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class AnchorMacro extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> autoFind = this.sgGeneral
-      .add(new Builder().name("auto-find").description("Automatically find nearby anchors.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("auto-find").description("Automatically find nearby anchors.").defaultValue(true).build());
    private final Setting<Double> range = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()

@@ -5,7 +5,6 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent.Send;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.Packet;
@@ -19,6 +18,7 @@ import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class VelocityPlus extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -26,7 +26,7 @@ public class VelocityPlus extends Module {
    private final SettingGroup sgVulcan = this.settings.createGroup("Vulcan");
    private final Setting<VelocityPlus.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode").description("Velocity mode — select your anticheat.")
+         new EnumSetting.Builder<VelocityPlus.Mode>().name("mode").description("Velocity mode — select your anticheat.")
             .defaultValue(VelocityPlus.Mode.GrimBoat)
             .build()
       );

@@ -7,7 +7,6 @@ import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -16,6 +15,7 @@ import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class AutoInvTotem extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -39,7 +39,7 @@ public class AutoInvTotem extends Module {
       super(VenomousAddon.CATEGORY, "auto-inv-totem", "Moves totems to offhand on totem pop or low health (merged with HoverTotem).");
       this.delay = this.sgGeneral
          .add(
-            new Builder().name("delay").description("Delay in ticks before moving totem.").defaultValue(3)
+            new IntSetting.Builder().name("delay").description("Delay in ticks before moving totem.").defaultValue(3)
                .min(1)
                .max(20)
                .sliderMin(1)
@@ -72,7 +72,7 @@ public class AutoInvTotem extends Module {
          );
       this.invOpenDelay = this.sgGeneral
          .add(
-            new Builder().name("inv-open-delay")
+            new IntSetting.Builder().name("inv-open-delay")
                .description("Ticks to wait before opening inventory after totem pop.")
                .defaultValue(2)
                .min(1)
@@ -84,7 +84,7 @@ public class AutoInvTotem extends Module {
          );
       this.invCloseDelay = this.sgGeneral
          .add(
-            new Builder().name("inv-close-delay").description("Ticks to wait before closing inventory after opening.")
+            new IntSetting.Builder().name("inv-close-delay").description("Ticks to wait before closing inventory after opening.")
                .defaultValue(8)
                .min(5)
                .max(20)

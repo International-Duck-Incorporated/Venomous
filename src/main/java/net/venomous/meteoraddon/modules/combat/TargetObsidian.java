@@ -5,7 +5,6 @@ import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
@@ -22,13 +21,14 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class TargetObsidian extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final SettingGroup sgRender = this.settings.createGroup("Render");
    private final Setting<Double> targetRange = this.sgGeneral
       .add(
-         new Builder().name("target-range").description("How far away to look for a target.")
+         new DoubleSetting.Builder().name("target-range").description("How far away to look for a target.")
             .defaultValue(7.0)
             .min(0.0)
             .sliderMax(10.0)
@@ -46,7 +46,7 @@ public class TargetObsidian extends Module {
       );
    private final Setting<Double> placeRange = this.sgGeneral
       .add(
-         new Builder().name("place-range").description("How far away from you a block can be placed.")
+         new DoubleSetting.Builder().name("place-range").description("How far away from you a block can be placed.")
             .defaultValue(4.5)
             .min(0.0)
             .sliderMax(6.0)
@@ -95,7 +95,7 @@ public class TargetObsidian extends Module {
       );
    private final Setting<ShapeMode> shapeMode = this.sgRender
       .add(
-         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder<ShapeMode>()
             .name("shape-mode")
             .description("How the target block is rendered.")
             .defaultValue(ShapeMode.Both)

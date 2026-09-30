@@ -20,7 +20,6 @@ import meteordevelopment.meteorclient.mixin.AbstractContainerScreenAccessor;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.KeybindSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.misc.Keybind;
@@ -45,6 +44,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.ContainerAutomator;
+import meteordevelopment.meteorclient.settings.KeybindSetting;
 
 public class ItemOrganizer extends Module {
    private static final int MAX_CATEGORIES = 8;
@@ -53,7 +53,7 @@ public class ItemOrganizer extends Module {
    private final SettingGroup sgCategory = this.settings.createGroup("Category Sorting");
    private final Setting<Keybind> sortKey = this.sgGeneral
       .add(
-         new Builder().name("sort-key").description("Key/button that sorts whichever grid your mouse is hovering.")
+         new KeybindSetting.Builder().name("sort-key").description("Key/button that sorts whichever grid your mouse is hovering.")
             .defaultValue(Keybind.fromButton(2))
             .build()
       );
@@ -85,13 +85,13 @@ public class ItemOrganizer extends Module {
       );
    private final Setting<Keybind> selectKey = this.sgBatch
       .add(
-         new Builder().name("select-key").description("Looking at a container, adds/removes it from the batch selection.")
+         new KeybindSetting.Builder().name("select-key").description("Looking at a container, adds/removes it from the batch selection.")
             .defaultValue(Keybind.none())
             .build()
       );
    private final Setting<Keybind> selectNearbyKey = this.sgBatch
       .add(
-         new Builder().name("select-nearby-key")
+         new KeybindSetting.Builder().name("select-nearby-key")
             .description("Adds every supported container within range to the batch selection.")
             .defaultValue(Keybind.none())
             .build()
@@ -108,7 +108,7 @@ public class ItemOrganizer extends Module {
       );
    private final Setting<Keybind> startKey = this.sgBatch
       .add(
-         new Builder().name("start-key").description("Starts walking to and internally sorting every selected container.")
+         new KeybindSetting.Builder().name("start-key").description("Starts walking to and internally sorting every selected container.")
             .defaultValue(Keybind.none())
             .build()
       );
@@ -134,14 +134,14 @@ public class ItemOrganizer extends Module {
       );
    private final Setting<Keybind> assignChestKey = this.sgCategory
       .add(
-         new Builder().name("assign-chest-key")
+         new KeybindSetting.Builder().name("assign-chest-key")
             .description("Looking at a container, assigns it as the destination for the active category.")
             .defaultValue(Keybind.none())
             .build()
       );
    private final Setting<Keybind> startCategorySortKey = this.sgCategory
       .add(
-         new Builder().name("start-category-sort-key")
+         new KeybindSetting.Builder().name("start-category-sort-key")
             .description("Walks your inventory's matching items out to each category's assigned chest.")
             .defaultValue(Keybind.none())
             .build()

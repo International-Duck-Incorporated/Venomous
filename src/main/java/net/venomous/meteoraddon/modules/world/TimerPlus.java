@@ -3,18 +3,18 @@ package net.venomous.meteoraddon.modules.world;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.world.Timer;
 import meteordevelopment.orbit.EventHandler;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class TimerPlus extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<TimerPlus.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode")
+         new EnumSetting.Builder<TimerPlus.Mode>().name("mode")
             .description("Timer pattern. Custom uses your exact values, NCP/Intave/Grim pulse timer boosts.")
             .defaultValue(TimerPlus.Mode.Custom)
             .build()

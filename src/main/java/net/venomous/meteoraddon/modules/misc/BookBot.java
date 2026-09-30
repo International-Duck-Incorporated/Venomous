@@ -7,7 +7,6 @@ import java.util.Random;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.StringSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.component.DataComponents;
@@ -18,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.StringSetting;
 
 public class BookBot extends Module {
    private static final int MAX_LINES_PER_PAGE = 14;
@@ -25,7 +25,7 @@ public class BookBot extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<String> bookName = this.sgGeneral
       .add(
-         new Builder().name("book-name").description("Name template for signed books. Use %count% for book number.")
+         new StringSetting.Builder().name("book-name").description("Name template for signed books. Use %count% for book number.")
             .defaultValue("Venom doesnt miss")
             .build()
       );

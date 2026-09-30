@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.misc;
 import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.sounds.SoundEvent;
@@ -12,12 +11,13 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class ArmorWarning extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> durability = this.sgGeneral
       .add(
-         new Builder().name("durability").description("Warn when armor/elytra durability is at or below this percent.")
+         new IntSetting.Builder().name("durability").description("Warn when armor/elytra durability is at or below this percent.")
             .defaultValue(20)
             .range(1, 100)
             .sliderMax(50)
@@ -25,7 +25,7 @@ public class ArmorWarning extends Module {
       );
    private final Setting<Integer> totems = this.sgGeneral
       .add(
-         new Builder().name("totems").description("Warn when totem count is at or below this value.").defaultValue(1)
+         new IntSetting.Builder().name("totems").description("Warn when totem count is at or below this value.").defaultValue(1)
             .range(0, 10)
             .sliderMax(5)
             .build()
@@ -48,7 +48,7 @@ public class ArmorWarning extends Module {
       );
    private final Setting<Integer> cooldown = this.sgGeneral
       .add(
-         new Builder().name("cooldown").description("Ticks between repeated warnings.").defaultValue(100)
+         new IntSetting.Builder().name("cooldown").description("Ticks between repeated warnings.").defaultValue(100)
             .range(20, 600)
             .sliderMax(200)
             .build()

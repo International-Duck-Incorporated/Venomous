@@ -3,19 +3,19 @@ package net.venomous.meteoraddon.modules.movement;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Send;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.PosRot;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class RoboWalk extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> playerPackets = this.sgGeneral
       .add(
-         new Builder().name("player-packets").description("Round outgoing player movement X/Z coordinates to two decimals.")
+         new BoolSetting.Builder().name("player-packets").description("Round outgoing player movement X/Z coordinates to two decimals.")
             .defaultValue(true)
             .build()
       );

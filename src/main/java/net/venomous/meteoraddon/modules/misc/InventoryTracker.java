@@ -6,7 +6,6 @@ import java.util.UUID;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.Packet;
@@ -15,12 +14,13 @@ import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class InventoryTracker extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> range = this.sgGeneral
       .add(
-         new Builder().name("range").description("Range to track player inventory changes.").defaultValue(8.0).min(1.0).max(64.0).build()
+         new DoubleSetting.Builder().name("range").description("Range to track player inventory changes.").defaultValue(8.0).min(1.0).max(64.0).build()
       );
    private final Map<UUID, Map<Integer, ItemStack>> trackedInventories = new HashMap<>();
 

@@ -3,20 +3,20 @@ package net.venomous.meteoraddon.modules.render;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.effect.MobEffects;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class AntiBlind extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> blockNausea = this.sgGeneral
-      .add(new Builder().name("block-nausea").description("Block nausea effect.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("block-nausea").description("Block nausea effect.").defaultValue(true).build());
    private final Setting<Boolean> blockBlindness = this.sgGeneral
-      .add(new Builder().name("block-blindness").description("Block blindness effect.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("block-blindness").description("Block blindness effect.").defaultValue(true).build());
    private final Setting<Boolean> blockDarkness = this.sgGeneral
-      .add(new Builder().name("block-darkness").description("Block darkness effect.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("block-darkness").description("Block darkness effect.").defaultValue(true).build());
 
    public AntiBlind() {
       super(VenomousAddon.CATEGORY, "anti-blind", "Blocks annoying screen effects like blindness, nausea, etc.");

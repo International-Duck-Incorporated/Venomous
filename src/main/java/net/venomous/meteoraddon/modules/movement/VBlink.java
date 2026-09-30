@@ -7,7 +7,6 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent.Send;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.Packet;
@@ -16,11 +15,12 @@ import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class VBlink extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> cancelOutgoing = this.sgGeneral
-      .add(new Builder().name("cancel-outgoing").description("Cancel outgoing movement packets.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("cancel-outgoing").description("Cancel outgoing movement packets.").defaultValue(true).build());
    private final Setting<Integer> autoDisable = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.IntSetting.Builder()
@@ -33,7 +33,7 @@ public class VBlink extends Module {
       );
    private final Setting<Boolean> dummy = this.sgGeneral
       .add(
-         new Builder().name("dummy").description("Show a fake player at your original position.").defaultValue(false).build()
+         new BoolSetting.Builder().name("dummy").description("Show a fake player at your original position.").defaultValue(false).build()
       );
    private final List<Packet<?>> outgoingPackets = new ArrayList<>();
    private Vec3 startPos = null;

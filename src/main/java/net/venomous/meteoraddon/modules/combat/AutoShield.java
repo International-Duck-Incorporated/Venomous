@@ -4,7 +4,6 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
@@ -19,12 +18,13 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class AutoShield extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> meleeRange = this.sgGeneral
       .add(
-         new Builder().name("melee-range").description("Block when a non-friend player/living entity is this close and looking at you.")
+         new DoubleSetting.Builder().name("melee-range").description("Block when a non-friend player/living entity is this close and looking at you.")
             .defaultValue(4.0)
             .range(1.0, 8.0)
             .sliderMax(6.0)
@@ -48,7 +48,7 @@ public class AutoShield extends Module {
       );
    private final Setting<Double> projectileRange = this.sgGeneral
       .add(
-         new Builder().name("projectile-range").description("Projectile detection range.")
+         new DoubleSetting.Builder().name("projectile-range").description("Projectile detection range.")
             .defaultValue(12.0)
             .range(2.0, 64.0)
             .sliderMax(32.0)

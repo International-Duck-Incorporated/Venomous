@@ -5,7 +5,6 @@ import java.util.Set;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
@@ -22,6 +21,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class CrystalPvP extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -42,7 +42,7 @@ public class CrystalPvP extends Module {
       super(VenomousAddon.CATEGORY, "crystal-pvp", "Automatically places and breaks end crystals quickly.");
       this.activateKey = this.sgGeneral
          .add(
-            new Builder().name("activate-key").description("Mouse button that triggers the macro (-1 = always active).")
+            new IntSetting.Builder().name("activate-key").description("Mouse button that triggers the macro (-1 = always active).")
                .defaultValue(1)
                .min(-1)
                .max(400)

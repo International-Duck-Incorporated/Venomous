@@ -3,15 +3,15 @@ package net.venomous.meteoraddon.modules.misc;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.StringSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.StringSetting;
 
 public class Spammer extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<String> message = this.sgGeneral
-      .add(new Builder().name("message").description("Message to spam.").defaultValue("Venomous on top!").build());
+      .add(new StringSetting.Builder().name("message").description("Message to spam.").defaultValue("Venomous on top!").build());
    private final Setting<Integer> delay = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.IntSetting.Builder()

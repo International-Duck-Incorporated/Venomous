@@ -8,7 +8,6 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
@@ -19,12 +18,13 @@ import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.material.FluidState;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class NewChunks extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> renderDistance = this.sgGeneral
       .add(
-         new Builder().name("render-distance").description("Render distance in chunks.").defaultValue(32)
+         new IntSetting.Builder().name("render-distance").description("Render distance in chunks.").defaultValue(32)
             .min(4)
             .max(128)
             .build()

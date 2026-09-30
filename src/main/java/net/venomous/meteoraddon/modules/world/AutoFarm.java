@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.world;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
@@ -22,12 +21,13 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.PreRotate;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class AutoFarm extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> range = this.sgGeneral
       .add(
-         new Builder().name("range").description("Range to harvest/plant crops.")
+         new DoubleSetting.Builder().name("range").description("Range to harvest/plant crops.")
             .defaultValue(4.5)
             .range(1.0, 6.0)
             .sliderMax(6.0)

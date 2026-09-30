@@ -42,7 +42,6 @@ import net.venomous.meteoraddon.modules.exploit.AntiReducedDebugInfo;
 import net.venomous.meteoraddon.modules.exploit.ClickTp;
 import net.venomous.meteoraddon.modules.exploit.Damage;
 import net.venomous.meteoraddon.modules.exploit.Disabler;
-import net.venomous.meteoraddon.modules.exploit.Dupe;
 import net.venomous.meteoraddon.modules.exploit.ExtendedFirework;
 import net.venomous.meteoraddon.modules.exploit.Kick;
 import net.venomous.meteoraddon.modules.exploit.MoreCarry;
@@ -162,7 +161,6 @@ public class ModuleRegistry {
       Modules.get().add(new ClickTp());
       Modules.get().add(new Damage());
       Modules.get().add(new Disabler());
-      Modules.get().add(new Dupe());
       Modules.get().add(new ExtendedFirework());
       Modules.get().add(new Kick());
       Modules.get().add(new MoreCarry());

@@ -3,18 +3,18 @@ package net.venomous.meteoraddon.modules.misc;
 import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.player.Player;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class NameProtect extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> protectSelf = this.sgGeneral
-      .add(new Builder().name("protect-self").description("Replace your own username.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("protect-self").description("Replace your own username.").defaultValue(true).build());
    private final Setting<Boolean> protectOthers = this.sgGeneral
-      .add(new Builder().name("protect-others").description("Replace other player usernames.").defaultValue(false).build());
+      .add(new BoolSetting.Builder().name("protect-others").description("Replace other player usernames.").defaultValue(false).build());
    private final Setting<String> replacement = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.StringSetting.Builder()

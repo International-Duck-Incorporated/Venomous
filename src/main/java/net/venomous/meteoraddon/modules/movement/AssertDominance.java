@@ -5,7 +5,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.entity.SortPriority;
@@ -19,13 +18,14 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class AssertDominance extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final SettingGroup sgTargeting = this.settings.createGroup("Targeting");
    private final Setting<AssertDominance.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode")
+         new EnumSetting.Builder<AssertDominance.Mode>().name("mode")
             .description("Orbit circles smoothly; Random teleports around; Velocity orbits smoothly using motion physics.")
             .defaultValue(AssertDominance.Mode.Orbit)
             .build()
@@ -101,7 +101,7 @@ public class AssertDominance extends Module {
       );
    private final Setting<SortPriority> priority = this.sgTargeting
       .add(
-         new Builder().name("priority").description("How the target is picked when several match.")
+         new EnumSetting.Builder<SortPriority>().name("priority").description("How the target is picked when several match.")
             .defaultValue(SortPriority.LowestDistance)
             .build()
       );

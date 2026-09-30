@@ -7,7 +7,6 @@ import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
@@ -15,13 +14,14 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.phys.AABB;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class TNTTimer extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final SettingGroup sgRender = this.settings.createGroup("Render");
    private final Setting<Boolean> warn = this.sgGeneral
       .add(
-         new Builder().name("warn").description("Warn in chat when nearby TNT is about to explode.").defaultValue(true)
+         new BoolSetting.Builder().name("warn").description("Warn in chat when nearby TNT is about to explode.").defaultValue(true)
             .build()
       );
    private final Setting<Integer> warnFuse = this.sgGeneral
@@ -36,7 +36,7 @@ public class TNTTimer extends Module {
             .build()
       );
    private final Setting<Boolean> render = this.sgRender
-      .add(new Builder().name("render").description("Render boxes around primed TNT.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("render").description("Render boxes around primed TNT.").defaultValue(true).build());
    private final Setting<SettingColor> safeColor = this.sgRender
       .add(
          new meteordevelopment.meteorclient.settings.ColorSetting.Builder()

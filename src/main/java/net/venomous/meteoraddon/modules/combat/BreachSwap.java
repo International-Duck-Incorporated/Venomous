@@ -4,41 +4,41 @@ import meteordevelopment.meteorclient.events.entity.player.AttackEntityEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class BreachSwap extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> autoSwap = this.sgGeneral
       .add(
-         new Builder().name("auto-swap-breach-mace").description("Automatically finds and swaps to a breach mace.")
+         new BoolSetting.Builder().name("auto-swap-breach-mace").description("Automatically finds and swaps to a breach mace.")
             .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> checkWeapon = this.sgGeneral
       .add(
-         new Builder().name("check-weapon").description("Only activate when holding a sword or axe.").defaultValue(true)
+         new BoolSetting.Builder().name("check-weapon").description("Only activate when holding a sword or axe.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> allowSword = this.sgGeneral
       .add(
-         new Builder().name("allow-sword").description("Allow activation when holding a sword.").defaultValue(true)
+         new BoolSetting.Builder().name("allow-sword").description("Allow activation when holding a sword.").defaultValue(true)
             .visible(this.checkWeapon::get)
             .build()
       );
    private final Setting<Boolean> allowAxe = this.sgGeneral
       .add(
-         new Builder().name("allow-axe").description("Allow activation when holding an axe.").defaultValue(true)
+         new BoolSetting.Builder().name("allow-axe").description("Allow activation when holding an axe.").defaultValue(true)
             .visible(this.checkWeapon::get)
             .build()
       );
    private final Setting<Boolean> swapBack = this.sgGeneral
-      .add(new Builder().name("swap-back").description("Swap back after delay.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("swap-back").description("Swap back after delay.").defaultValue(true).build());
    private final Setting<Integer> delay = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.IntSetting.Builder()

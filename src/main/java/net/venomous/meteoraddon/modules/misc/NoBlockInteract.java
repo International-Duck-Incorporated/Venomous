@@ -3,18 +3,18 @@ package net.venomous.meteoraddon.modules.misc;
 import meteordevelopment.meteorclient.events.entity.player.InteractBlockEvent;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.item.Item;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.McCompat;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class NoBlockInteract extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> onlyWhenHoldingWeapon = this.sgGeneral
       .add(
-         new Builder().name("only-when-holding-weapon").description("Only prevent block interaction when holding a weapon.")
+         new BoolSetting.Builder().name("only-when-holding-weapon").description("Only prevent block interaction when holding a weapon.")
             .defaultValue(true)
             .build()
       );

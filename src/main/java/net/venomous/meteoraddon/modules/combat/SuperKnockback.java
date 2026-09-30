@@ -4,7 +4,6 @@ import meteordevelopment.meteorclient.events.entity.player.AttackEntityEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.game.ServerboundInteractPacket;
@@ -14,12 +13,13 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class SuperKnockback extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<SuperKnockback.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode").description("The method to increase knockback.").defaultValue(SuperKnockback.Mode.W_TAP)
+         new EnumSetting.Builder<SuperKnockback.Mode>().name("mode").description("The method to increase knockback.").defaultValue(SuperKnockback.Mode.W_TAP)
             .build()
       );
    private final Setting<Integer> hitDelay = this.sgGeneral

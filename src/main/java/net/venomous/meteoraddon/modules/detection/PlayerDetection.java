@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.meteorclient.utils.render.MeteorToast;
@@ -26,6 +25,7 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class PlayerDetection extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -48,7 +48,7 @@ public class PlayerDetection extends Module {
    public PlayerDetection() {
       super(VenomousAddon.CATEGORY, "player-detection", "Detects when players are in the world and reacts.");
       this.notifications = this.sgGeneral
-         .add(new Builder().name("notifications").description("Show player detection notifications.").defaultValue(true).build());
+         .add(new BoolSetting.Builder().name("notifications").description("Show player detection notifications.").defaultValue(true).build());
       this.userWhitelist = this.sgWhitelist
          .add(
             new meteordevelopment.meteorclient.settings.StringListSetting.Builder()
@@ -67,13 +67,13 @@ public class PlayerDetection extends Module {
          );
       this.enableDisconnect = this.sgGeneral
          .add(
-            new Builder().name("disconnect").description("Automatically disconnect when players are detected.")
+            new BoolSetting.Builder().name("disconnect").description("Automatically disconnect when players are detected.")
                .defaultValue(true)
                .build()
          );
       this.notificationMode = this.sgGeneral
          .add(
-            new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+            new meteordevelopment.meteorclient.settings.EnumSetting.Builder<PlayerDetection.Mode>()
                .name("notification-mode")
                .description("How to notify when players are detected.")
                .defaultValue(PlayerDetection.Mode.Both)
@@ -81,13 +81,13 @@ public class PlayerDetection extends Module {
          );
       this.toggleOnPlayer = this.sgGeneral
          .add(
-            new Builder().name("toggle-on-player").description("Automatically toggles this module when a player is detected.")
+            new BoolSetting.Builder().name("toggle-on-player").description("Automatically toggles this module when a player is detected.")
                .defaultValue(true)
                .build()
          );
       this.enableWebhook = this.sgWebhook
          .add(
-            new Builder().name("webhook").description("Send webhook notifications when players are detected.")
+            new BoolSetting.Builder().name("webhook").description("Send webhook notifications when players are detected.")
                .defaultValue(false)
                .build()
          );
@@ -102,7 +102,7 @@ public class PlayerDetection extends Module {
          );
       this.selfPing = this.sgWebhook
          .add(
-            new Builder().name("self-ping").description("Ping yourself in the webhook message.").defaultValue(false)
+            new BoolSetting.Builder().name("self-ping").description("Ping yourself in the webhook message.").defaultValue(false)
                .visible(this.enableWebhook::get)
                .build()
          );

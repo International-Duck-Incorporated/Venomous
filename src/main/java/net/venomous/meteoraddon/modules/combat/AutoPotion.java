@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.combat;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.Rotations;
@@ -22,12 +21,13 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.PreRotate;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class AutoPotion extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> healthThreshold = this.sgGeneral
       .add(
-         new Builder().name("health-threshold").description("Throw healing potion when HP percent is below this value.")
+         new DoubleSetting.Builder().name("health-threshold").description("Throw healing potion when HP percent is below this value.")
             .defaultValue(60.0)
             .min(5.0)
             .sliderMax(100.0)
@@ -83,7 +83,7 @@ public class AutoPotion extends Module {
       );
    private final Setting<AutoPotion.RotateMode> rotate = this.sgGeneral
       .add(
-         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder<AutoPotion.RotateMode>()
             .name("rotate")
             .description("Rotation behavior before throwing.")
             .defaultValue(AutoPotion.RotateMode.Down)

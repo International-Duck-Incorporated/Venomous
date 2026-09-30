@@ -4,7 +4,6 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
@@ -12,13 +11,14 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class TrueSight extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final SettingGroup sgRender = this.settings.createGroup("Render");
    private final Setting<Boolean> invisibleEntities = this.sgGeneral
       .add(
-         new Builder().name("invisible-entities")
+         new BoolSetting.Builder().name("invisible-entities")
             .description("Highlight invisible living entities that the client knows about.")
             .defaultValue(true)
             .build()
@@ -35,7 +35,7 @@ public class TrueSight extends Module {
       );
    private final Setting<ShapeMode> shapeMode = this.sgRender
       .add(
-         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder<ShapeMode>()
             .name("shape-mode")
             .description("How boxes are rendered.")
             .defaultValue(ShapeMode.Both)

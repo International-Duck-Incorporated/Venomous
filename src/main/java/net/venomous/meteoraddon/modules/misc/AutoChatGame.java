@@ -10,35 +10,35 @@ import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class AutoChatGame extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> math = this.sgGeneral
       .add(
-         new Builder().name("math").description("Solve simple math questions in chat (ChatGames + generic).")
+         new BoolSetting.Builder().name("math").description("Solve simple math questions in chat (ChatGames + generic).")
             .defaultValue(true)
             .build()
       );
    private final Setting<Boolean> scramble = this.sgGeneral
-      .add(new Builder().name("scramble").description("Unscramble words from a word list.").defaultValue(false).build());
+      .add(new BoolSetting.Builder().name("scramble").description("Unscramble words from a word list.").defaultValue(false).build());
    private final Setting<Boolean> unreverse = this.sgGeneral
       .add(
-         new Builder().name("unreverse").description("Answer ChatGames 'unreverse the word' games.").defaultValue(true)
+         new BoolSetting.Builder().name("unreverse").description("Answer ChatGames 'unreverse the word' games.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> random = this.sgGeneral
       .add(
-         new Builder().name("random").description("Answer ChatGames 'write out' random-string games.").defaultValue(true)
+         new BoolSetting.Builder().name("random").description("Answer ChatGames 'write out' random-string games.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> variable = this.sgGeneral
       .add(
-         new Builder().name("variable")
+         new BoolSetting.Builder().name("variable")
             .description("Solve ChatGames 'solve for <symbol>' variable games (needs the 3 equation lines).")
             .defaultValue(true)
             .build()

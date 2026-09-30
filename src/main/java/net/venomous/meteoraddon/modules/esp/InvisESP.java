@@ -4,7 +4,6 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
@@ -15,6 +14,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class InvisESP extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -22,7 +22,7 @@ public class InvisESP extends Module {
    private final SettingGroup sgMobs = this.settings.createGroup("Mobs");
    private final Setting<ShapeMode> shapeMode = this.sgGeneral
       .add(
-         new Builder().name("shape-mode").description("How the box should be rendered.").defaultValue(ShapeMode.Both).build()
+         new EnumSetting.Builder<ShapeMode>().name("shape-mode").description("How the box should be rendered.").defaultValue(ShapeMode.Both).build()
       );
    private final Setting<Double> lineWidth = this.sgGeneral
       .add(

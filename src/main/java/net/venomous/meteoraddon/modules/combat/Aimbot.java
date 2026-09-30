@@ -110,9 +110,27 @@ public class Aimbot extends Module {
 
    private final Random random = new Random();
    private Entity target;
+   private boolean managedUse;
+   private boolean previousUseDown;
+   private int crossbowClickTicks;
 
    public Aimbot() {
       super(VenomousAddon.CATEGORY, "aimbot", "Smooth, human-like aimbot with projectile prediction and GCD rotation bypass.");
+   }
+
+   @Override
+   public void onActivate() {
+      this.target = null;
+      this.managedUse = false;
+      this.previousUseDown = false;
+      this.crossbowClickTicks = 0;
+   }
+
+   @Override
+   public void onDeactivate() {
+      this.releaseUse();
+      this.target = null;
+      this.crossbowClickTicks = 0;
    }
 
    @EventHandler
@@ -137,7 +155,12 @@ public class Aimbot extends Module {
          this.aim(this.target);
          if (this.autoShoot.get()) {
             this.handleAutoShoot();
+         } else {
+            this.releaseUse();
          }
+      } else {
+         this.releaseUse();
+         this.crossbowClickTicks = 0;
       }
    }
 
@@ -232,13 +255,38 @@ public class Aimbot extends Module {
       if (item == Items.BOW) {
          float charge = (this.mc.player.getUseItem().getUseDuration(this.mc.player) - this.mc.player.getUseItemRemainingTicks()) / 20.0F;
          if (!this.mc.player.isUsingItem()) {
-            this.mc.options.keyUse.setDown(true);
-         } else if (charge >= 0.9) {
-            this.mc.options.keyUse.setDown(false);
+            this.pressUse();
+         } else if (charge >= 0.9F) {
+            this.releaseUse();
          }
-      } else if (item == Items.CROSSBOW && !this.mc.player.isUsingItem()) {
-         this.mc.options.keyUse.setDown(true);
-         this.mc.options.keyUse.setDown(false);
+      } else if (item == Items.CROSSBOW) {
+         // Keep the input down for a complete client tick. A same-method true/false pulse is
+         // never observed by Minecraft's input processing and therefore cannot fire reliably.
+         if (!this.managedUse && !this.mc.player.isUsingItem()) {
+            this.pressUse();
+            this.crossbowClickTicks = 1;
+         } else if (this.crossbowClickTicks > 0 && --this.crossbowClickTicks == 0) {
+            this.releaseUse();
+         }
+      } else {
+         this.releaseUse();
+         this.crossbowClickTicks = 0;
       }
+   }
+
+   private void pressUse() {
+      if (!this.managedUse) {
+         this.previousUseDown = this.mc.options.keyUse.isDown();
+         this.managedUse = true;
+      }
+      this.mc.options.keyUse.setDown(true);
+   }
+
+   private void releaseUse() {
+      if (this.managedUse && this.mc.options != null) {
+         this.mc.options.keyUse.setDown(this.previousUseDown);
+      }
+      this.managedUse = false;
+      this.previousUseDown = false;
    }
 }

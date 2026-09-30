@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.misc;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
@@ -13,12 +12,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class SafeLogout extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> health = this.sgGeneral
       .add(
-         new Builder().name("health").description("Disconnect at or below this health. 0 disables.")
+         new DoubleSetting.Builder().name("health").description("Disconnect at or below this health. 0 disables.")
             .defaultValue(6.0)
             .range(0.0, 36.0)
             .sliderMax(20.0)
@@ -26,7 +26,7 @@ public class SafeLogout extends Module {
       );
    private final Setting<Double> playerRange = this.sgGeneral
       .add(
-         new Builder().name("player-range").description("Disconnect if enemy player is within this range. 0 disables.")
+         new DoubleSetting.Builder().name("player-range").description("Disconnect if enemy player is within this range. 0 disables.")
             .defaultValue(0.0)
             .range(0.0, 128.0)
             .sliderMax(64.0)

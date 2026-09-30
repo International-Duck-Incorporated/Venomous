@@ -3,18 +3,18 @@ package net.venomous.meteoraddon.modules.movement;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.player.Input;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class SnapTap extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> horizontal = this.sgGeneral
-      .add(new Builder().name("horizontal").description("Apply SnapTap to left/right keys.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("horizontal").description("Apply SnapTap to left/right keys.").defaultValue(true).build());
    private final Setting<Boolean> vertical = this.sgGeneral
-      .add(new Builder().name("vertical").description("Apply SnapTap to forward/back keys.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("vertical").description("Apply SnapTap to forward/back keys.").defaultValue(true).build());
    private long lastLeftPressTime = 0L;
    private long lastRightPressTime = 0L;
    private long lastForwardPressTime = 0L;

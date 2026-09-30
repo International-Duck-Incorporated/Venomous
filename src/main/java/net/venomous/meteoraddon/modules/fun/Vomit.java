@@ -3,17 +3,17 @@ package net.venomous.meteoraddon.modules.fun;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.item.ItemStack;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class Vomit extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> delay = this.sgGeneral
-      .add(new Builder().name("delay").description("Drop delay in ticks.").defaultValue(2).min(1).max(20).build());
+      .add(new IntSetting.Builder().name("delay").description("Drop delay in ticks.").defaultValue(2).min(1).max(20).build());
    private int tickCounter = 0;
 
    public Vomit() {

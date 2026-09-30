@@ -3,18 +3,18 @@ package net.venomous.meteoraddon.modules.misc;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.render.Freecam;
 import meteordevelopment.orbit.EventHandler;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class FreecamMining extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> range = this.sgGeneral
       .add(
-         new Builder().name("range").description("Maximum range to mine blocks from freecam position.")
+         new DoubleSetting.Builder().name("range").description("Maximum range to mine blocks from freecam position.")
             .defaultValue(64.0)
             .min(4.0)
             .max(256.0)

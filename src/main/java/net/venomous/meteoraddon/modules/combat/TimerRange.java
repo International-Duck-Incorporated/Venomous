@@ -5,7 +5,6 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
@@ -14,12 +13,13 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.world.entity.player.Player;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class TimerRange extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> chance = this.sgGeneral
       .add(
-         new Builder().name("chance").description("Chance of activating (0-100%).").defaultValue(100).min(0).max(100).build()
+         new IntSetting.Builder().name("chance").description("Chance of activating (0-100%).").defaultValue(100).min(0).max(100).build()
       );
    private final Setting<Double> normalSpeed = this.sgGeneral
       .add(

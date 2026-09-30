@@ -12,19 +12,19 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Send;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class PacketLogger extends Module {
    private static final int MAX_LOG_ENTRIES = 100_000;
 
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> incoming = this.sgGeneral
-      .add(new Builder().name("incoming").description("Log incoming packets.").defaultValue(false).build());
+      .add(new BoolSetting.Builder().name("incoming").description("Log incoming packets.").defaultValue(false).build());
    private final Setting<Boolean> outgoing = this.sgGeneral
-      .add(new Builder().name("outgoing").description("Log outgoing packets.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("outgoing").description("Log outgoing packets.").defaultValue(true).build());
    private final Deque<String> log = new ArrayDeque<>();
    private int droppedEntries;
 

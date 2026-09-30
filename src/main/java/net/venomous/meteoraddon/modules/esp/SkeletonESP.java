@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.esp;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.DoubleSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
@@ -11,12 +10,13 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class SkeletonESP extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Double> lineWidth = this.sgGeneral
       .add(
-         new Builder().name("line-width").description("Width of the skeleton lines.")
+         new DoubleSetting.Builder().name("line-width").description("Width of the skeleton lines.")
             .defaultValue(2.0)
             .min(0.5)
             .max(5.0)

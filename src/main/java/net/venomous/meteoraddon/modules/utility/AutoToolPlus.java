@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.utility;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.item.AxeItem;
@@ -17,19 +16,20 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class AutoToolPlus extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> mining = this.sgGeneral
-      .add(new Builder().name("mining").description("Switch to the best tool while mining.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("mining").description("Switch to the best tool while mining.").defaultValue(true).build());
    private final Setting<Boolean> weaponFallback = this.sgGeneral
       .add(
-         new Builder().name("weapon-fallback").description("Switch to a weapon when attacking an entity.").defaultValue(true)
+         new BoolSetting.Builder().name("weapon-fallback").description("Switch to a weapon when attacking an entity.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> durabilitySafety = this.sgGeneral
       .add(
-         new Builder().name("durability-safety").description("Avoid tools below the durability threshold.").defaultValue(true)
+         new BoolSetting.Builder().name("durability-safety").description("Avoid tools below the durability threshold.").defaultValue(true)
             .build()
       );
    private final Setting<Integer> minDurability = this.sgGeneral
@@ -45,7 +45,7 @@ public class AutoToolPlus extends Module {
       );
    private final Setting<AutoToolPlus.EnchantPreference> enchantPreference = this.sgGeneral
       .add(
-         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder<AutoToolPlus.EnchantPreference>()
             .name("enchant-preference")
             .description("Prefer Silk Touch or Fortune when tool speeds are close.")
             .defaultValue(AutoToolPlus.EnchantPreference.None)
@@ -53,7 +53,7 @@ public class AutoToolPlus extends Module {
       );
    private final Setting<Boolean> restore = this.sgGeneral
       .add(
-         new Builder().name("restore-slot").description("Restore previous slot after releasing attack.").defaultValue(true)
+         new BoolSetting.Builder().name("restore-slot").description("Restore previous slot after releasing attack.").defaultValue(true)
             .build()
       );
    private int previousSlot = -1;

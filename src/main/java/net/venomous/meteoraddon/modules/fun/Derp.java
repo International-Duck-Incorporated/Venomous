@@ -4,19 +4,19 @@ import java.util.concurrent.ThreadLocalRandom;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.InteractionHand;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class Derp extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Derp.YawMode> yawMode = this.sgGeneral
-      .add(new Builder().name("yaw-mode").defaultValue(Derp.YawMode.RANDOM).build());
+      .add(new EnumSetting.Builder<Derp.YawMode>().name("yaw-mode").defaultValue(Derp.YawMode.RANDOM).build());
    private final Setting<Derp.PitchMode> pitchMode = this.sgGeneral
-      .add(new Builder().name("pitch-mode").defaultValue(Derp.PitchMode.RANDOM).build());
+      .add(new EnumSetting.Builder<Derp.PitchMode>().name("pitch-mode").defaultValue(Derp.PitchMode.RANDOM).build());
    private final Setting<Boolean> handDerp = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.BoolSetting.Builder()

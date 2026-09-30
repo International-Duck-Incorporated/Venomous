@@ -2,33 +2,33 @@ package net.venomous.meteoraddon.modules.misc;
 
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.entity.player.Player;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class Teams extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> scoreboardTeam = this.sgGeneral
       .add(
-         new Builder().name("scoreboard-team").description("Check if player is on your scoreboard team.").defaultValue(true)
+         new BoolSetting.Builder().name("scoreboard-team").description("Check if player is on your scoreboard team.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> nameColor = this.sgGeneral
       .add(
-         new Builder().name("name-color").description("Check if player has the same name color as you.").defaultValue(true)
+         new BoolSetting.Builder().name("name-color").description("Check if player has the same name color as you.").defaultValue(true)
             .build()
       );
    private final Setting<Boolean> prefix = this.sgGeneral
       .add(
-         new Builder().name("prefix").description("Check if player has the same name prefix as you (e.g. [Team]).")
+         new BoolSetting.Builder().name("prefix").description("Check if player has the same name prefix as you (e.g. [Team]).")
             .defaultValue(false)
             .build()
       );
    private final Setting<Boolean> armorColor = this.sgGeneral
       .add(
-         new Builder().name("armor-color").description("Check if player has the same leather armor color as you.")
+         new BoolSetting.Builder().name("armor-color").description("Check if player has the same leather armor color as you.")
             .defaultValue(false)
             .build()
       );

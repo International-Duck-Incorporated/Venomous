@@ -4,33 +4,33 @@ import java.util.Random;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class AutoClickerPlus extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> minCps = this.sgGeneral
       .add(
-         new Builder().name("min-cps").description("Minimum clicks per second.").defaultValue(7)
+         new IntSetting.Builder().name("min-cps").description("Minimum clicks per second.").defaultValue(7)
             .range(1, 50)
             .sliderMax(20)
             .build()
       );
    private final Setting<Integer> maxCps = this.sgGeneral
       .add(
-         new Builder().name("max-cps").description("Maximum clicks per second.").defaultValue(10)
+         new IntSetting.Builder().name("max-cps").description("Maximum clicks per second.").defaultValue(10)
             .range(1, 50)
             .sliderMax(20)
             .build()
       );
    private final Setting<AutoClickerPlus.Technique> technique = this.sgGeneral
       .add(
-         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder<AutoClickerPlus.Technique>()
             .name("technique")
             .description("Click technique / pattern.")
             .defaultValue(AutoClickerPlus.Technique.Stabilized)
@@ -97,7 +97,7 @@ public class AutoClickerPlus extends Module {
       );
    private final Setting<Integer> vulcanRandomizationMs = this.sgGeneral
       .add(
-         new Builder().name("vulcan-randomization-ms")
+         new IntSetting.Builder().name("vulcan-randomization-ms")
             .description("±Milliseconds of randomization for Vulcan bypass.")
             .defaultValue(100)
             .range(20, 300)

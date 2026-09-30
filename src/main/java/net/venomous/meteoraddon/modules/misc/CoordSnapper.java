@@ -9,17 +9,17 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import net.minecraft.core.BlockPos;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class CoordSnapper extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> chatFeedback = this.sgGeneral
-      .add(new Builder().name("chat-feedback").description("Show notification in chat.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("chat-feedback").description("Show notification in chat.").defaultValue(true).build());
    private final Setting<Boolean> webhook = this.sgGeneral
-      .add(new Builder().name("webhook").description("Enable webhook notifications.").defaultValue(false).build());
+      .add(new BoolSetting.Builder().name("webhook").description("Enable webhook notifications.").defaultValue(false).build());
    private final Setting<String> webhookUrl = this.sgGeneral
       .add(
          new meteordevelopment.meteorclient.settings.StringSetting.Builder()
@@ -31,7 +31,7 @@ public class CoordSnapper extends Module {
       );
    private final Setting<Boolean> selfPing = this.sgGeneral
       .add(
-         new Builder().name("self-ping").description("Ping yourself in the webhook message.").defaultValue(false)
+         new BoolSetting.Builder().name("self-ping").description("Ping yourself in the webhook message.").defaultValue(false)
             .visible(this.webhook::get)
             .build()
       );

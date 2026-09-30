@@ -3,19 +3,19 @@ package net.venomous.meteoraddon.modules.misc;
 import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.IntSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FarmlandBlock;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class FarmlandTremble extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Integer> radius = this.sgGeneral
       .add(
-         new Builder().name("radius").description("Radius in blocks to tremble farmland.").defaultValue(5)
+         new IntSetting.Builder().name("radius").description("Radius in blocks to tremble farmland.").defaultValue(5)
             .min(1)
             .max(16)
             .build()

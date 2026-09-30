@@ -4,7 +4,6 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.world.Timer;
@@ -15,12 +14,13 @@ import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class Clip extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Clip.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode").description("Clip mode: HClip, VClip, Combined, NoClip, or VulcanClip.")
+         new EnumSetting.Builder<Clip.Mode>().name("mode").description("Clip mode: HClip, VClip, Combined, NoClip, or VulcanClip.")
             .defaultValue(Clip.Mode.HClip)
             .build()
       );
@@ -59,7 +59,7 @@ public class Clip extends Module {
       );
    private final Setting<Clip.DirectionMode> direction = this.sgGeneral
       .add(
-         new Builder().name("direction").description("Auto VClip search direction.")
+         new EnumSetting.Builder<Clip.DirectionMode>().name("direction").description("Auto VClip search direction.")
             .defaultValue(Clip.DirectionMode.Up)
             .visible(() -> this.mode.get() == Clip.Mode.VClip && (Boolean)this.autoVClip.get())
             .build()

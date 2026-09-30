@@ -3,7 +3,6 @@ package net.venomous.meteoraddon.modules.combat;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
@@ -13,12 +12,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class TpAura extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<TpAura.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode").description("TP mode. NONE work on Grim/Vulcan/Intave!").defaultValue(TpAura.Mode.WeakAC)
+         new EnumSetting.Builder<TpAura.Mode>().name("mode").description("TP mode. NONE work on Grim/Vulcan/Intave!").defaultValue(TpAura.Mode.WeakAC)
             .build()
       );
    private final Setting<Double> range = this.sgGeneral

@@ -11,7 +11,6 @@ import meteordevelopment.meteorclient.events.world.TickEvent.Post;
 import meteordevelopment.meteorclient.mixin.AbstractSignEditScreenAccessor;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen;
@@ -21,12 +20,13 @@ import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
 import net.minecraft.world.level.block.SignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class NoSignScreen extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> always = this.sgGeneral
       .add(
-         new Builder().name("always")
+         new BoolSetting.Builder().name("always")
             .description("Also skip the screen when opening an existing sign, not just freshly placed ones.")
             .defaultValue(false)
             .build()
@@ -43,7 +43,7 @@ public class NoSignScreen extends Module {
       );
    private final Setting<Boolean> skipWaxed = this.sgGeneral
       .add(
-         new Builder().name("skip-waxed")
+         new BoolSetting.Builder().name("skip-waxed")
             .description("Leave waxed signs alone - they can't be edited anyway, so let the screen open normally.")
             .defaultValue(true)
             .build()

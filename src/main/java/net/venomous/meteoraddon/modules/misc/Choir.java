@@ -16,7 +16,6 @@ import meteordevelopment.meteorclient.gui.widgets.containers.WVerticalList;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.FileSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.orbit.EventHandler;
@@ -24,6 +23,7 @@ import net.venomous.meteoraddon.VenomousAddon;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
+import meteordevelopment.meteorclient.settings.FileSetting;
 
 public class Choir extends Module {
    private static final int MS_PER_TICK = 50;
@@ -52,7 +52,7 @@ public class Choir extends Module {
       this.filters.rewind();
       this.file = this.sgGeneral
          .add(
-            new Builder().name("file").description("The .txt file to read lines from.").defaultValue(this.DEFAULT_FILE)
+            new FileSetting.Builder().name("file").description("The .txt file to read lines from.").defaultValue(this.DEFAULT_FILE)
                .filter(this.filters)
                .build()
          );

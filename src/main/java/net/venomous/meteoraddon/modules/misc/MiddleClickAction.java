@@ -4,7 +4,6 @@ import java.util.Random;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friend;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -13,20 +12,21 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class MiddleClickAction extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<Boolean> addFriend = this.sgGeneral
-      .add(new Builder().name("add-friend").description("Add player as friend on middle click.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("add-friend").description("Add player as friend on middle click.").defaultValue(true).build());
    private final Setting<Boolean> removeFriend = this.sgGeneral
       .add(
-         new Builder().name("remove-friend").description("Remove player as friend on middle click if already friended.")
+         new BoolSetting.Builder().name("remove-friend").description("Remove player as friend on middle click if already friended.")
             .defaultValue(true)
             .build()
       );
    private final Setting<MiddleClickAction.Technique> technique = this.sgGeneral
       .add(
-         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder<MiddleClickAction.Technique>()
             .name("technique")
             .description("Click pattern for middle click (humanlike).")
             .defaultValue(MiddleClickAction.Technique.Stabilized)

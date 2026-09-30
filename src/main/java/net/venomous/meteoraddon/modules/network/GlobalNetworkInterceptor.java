@@ -4,7 +4,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Send;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -20,6 +19,7 @@ import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Rot;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.StatusOnly;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.modules.movement.AssertDominance;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class GlobalNetworkInterceptor extends Module {
    private final SettingGroup sgKinematics;
@@ -53,7 +53,7 @@ public class GlobalNetworkInterceptor extends Module {
 
       this.enforceKinematics = this.sgKinematics
          .add(
-            new Builder().name("smooth-movement")
+            new BoolSetting.Builder().name("smooth-movement")
                .description("Limits movement packet distance per tick for legacy anticheats (disable on Grim/modern simulation).")
                .defaultValue(false)
                .build()
@@ -82,20 +82,20 @@ public class GlobalNetworkInterceptor extends Module {
          );
       this.interpolateViolations = this.sgKinematics
          .add(
-            new Builder().name("interpolate").description("Split fast movements into smaller steps.")
+            new BoolSetting.Builder().name("interpolate").description("Split fast movements into smaller steps.")
                .defaultValue(false)
                .visible(this.enforceKinematics::get)
                .build()
          );
       this.quantizeRotations = this.sgRotation
          .add(
-            new Builder().name("snap-to-grid").description("Snap rotation deltas to the vanilla sensitivity GCD grid.")
+            new BoolSetting.Builder().name("snap-to-grid").description("Snap rotation deltas to the vanilla sensitivity GCD grid.")
                .defaultValue(true)
                .build()
          );
       this.enforceTickOrder = this.sgSerializer
          .add(
-            new Builder().name("limit-to-one-packet")
+            new BoolSetting.Builder().name("limit-to-one-packet")
                .description("Only allow one movement packet per tick (legacy anticheat option).")
                .defaultValue(false)
                .build()

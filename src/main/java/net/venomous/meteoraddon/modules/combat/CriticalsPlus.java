@@ -4,7 +4,6 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent.Send;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.EnumSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
@@ -14,12 +13,13 @@ import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class CriticalsPlus extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
    private final Setting<CriticalsPlus.Mode> mode = this.sgGeneral
       .add(
-         new Builder().name("mode").description("Criticals mode — select your anticheat.")
+         new EnumSetting.Builder<CriticalsPlus.Mode>().name("mode").description("Criticals mode — select your anticheat.")
             .defaultValue(CriticalsPlus.Mode.GrimLegit)
             .build()
       );

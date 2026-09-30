@@ -16,7 +16,6 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
@@ -43,6 +42,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class MaceKill extends Module {
    private final SettingGroup sgGeneral = this.settings.createGroup("General");
@@ -79,11 +79,11 @@ public class MaceKill extends Module {
 
    private final Setting<Boolean> swingHand = this.sgGeneral
       .add(
-         new Builder().name("swing-hand").description("Send swing animation alongside the attack.").defaultValue(true).build()
+         new BoolSetting.Builder().name("swing-hand").description("Send swing animation alongside the attack.").defaultValue(true).build()
       );
    private final Setting<Boolean> chatFlush = this.sgGeneral
       .add(
-         new Builder().name("chat-feedback").description("Log attack distance in chat on impact.").defaultValue(false).build()
+         new BoolSetting.Builder().name("chat-feedback").description("Log attack distance in chat on impact.").defaultValue(false).build()
       );
    private final Setting<Double> maxRange = this.sgTarget
       .add(
@@ -97,7 +97,7 @@ public class MaceKill extends Module {
       );
    private final Setting<MaceKill.TargetListMode> targetListMode = this.sgTarget
       .add(
-         new meteordevelopment.meteorclient.settings.EnumSetting.Builder()
+         new meteordevelopment.meteorclient.settings.EnumSetting.Builder<MaceKill.TargetListMode>()
             .name("target-list-mode")
             .description("Whitelist = only target these. Blacklist = never target these.")
             .defaultValue(MaceKill.TargetListMode.Blacklist)
@@ -112,10 +112,10 @@ public class MaceKill extends Module {
             .build()
       );
    private final Setting<Boolean> ignoreFriends = this.sgTarget
-      .add(new Builder().name("ignore-friends").description("Don't attack Meteor friends.").defaultValue(true).build());
+      .add(new BoolSetting.Builder().name("ignore-friends").description("Don't attack Meteor friends.").defaultValue(true).build());
    private final Setting<Boolean> stopOnTarget = this.sgTarget
       .add(
-         new Builder().name("stop-on-target").description("Kill velocity when you reach the target.").defaultValue(true)
+         new BoolSetting.Builder().name("stop-on-target").description("Kill velocity when you reach the target.").defaultValue(true)
             .build()
       );
    private final Setting<Double> stopDistance = this.sgTarget
@@ -181,7 +181,7 @@ public class MaceKill extends Module {
       );
    private final Setting<Boolean> useOffset = this.sgSafety
       .add(
-         new Builder().name("safe-offset").description("Apply a small safe offset after attacking to prevent fall damage.")
+         new BoolSetting.Builder().name("safe-offset").description("Apply a small safe offset after attacking to prevent fall damage.")
             .defaultValue(true)
             .build()
       );
@@ -209,7 +209,7 @@ public class MaceKill extends Module {
       );
    private final Setting<Boolean> checkPathInvalid = this.sgSafety
       .add(
-         new Builder().name("validate-above-path")
+         new BoolSetting.Builder().name("validate-above-path")
             .description("Cancel the attack if the path or position above the target is obstructed.")
             .defaultValue(true)
             .build()

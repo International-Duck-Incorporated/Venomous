@@ -6,7 +6,6 @@ import meteordevelopment.meteorclient.events.entity.EntityAddedEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.BoolSetting.Builder;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.Entity;
@@ -15,6 +14,7 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
 import net.minecraft.world.entity.vehicle.minecart.MinecartHopper;
 import net.venomous.meteoraddon.VenomousAddon;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class AntiTrap extends Module {
    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -27,13 +27,13 @@ public class AntiTrap extends Module {
       super(VenomousAddon.CATEGORY, "anti-trap", "Hides armor stands and chest minecarts that trap you.");
       this.notifications = this.sgGeneral
          .add(
-            new Builder().name("notifications").description("Notify in chat when a trap entity is hidden.").defaultValue(true)
+            new BoolSetting.Builder().name("notifications").description("Notify in chat when a trap entity is hidden.").defaultValue(true)
                .build()
          );
       this.armorStands = this.sgGeneral
-         .add(new Builder().name("armor-stands").description("Hide armor stands near you.").defaultValue(true).build());
+         .add(new BoolSetting.Builder().name("armor-stands").description("Hide armor stands near you.").defaultValue(true).build());
       this.chestMinecarts = this.sgGeneral
-         .add(new Builder().name("chest-minecarts").description("Hide chest minecarts near you.").defaultValue(true).build());
+         .add(new BoolSetting.Builder().name("chest-minecarts").description("Hide chest minecarts near you.").defaultValue(true).build());
    }
 
    public void onDeactivate() {
