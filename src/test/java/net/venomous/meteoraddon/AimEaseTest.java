@@ -202,4 +202,36 @@ public class AimEaseTest {
         assertTrue(v1 > v0, "velocity must build across ticks, " + v0 + " -> " + v1);
         assertTrue(v2 > v1, "velocity must keep building, " + v1 + " -> " + v2);
     }
+
+    @Test
+    void aSweepToTheLeftRunsAsFastAsOneToTheRight() {
+        // The bug this guards: nextVelocity returned the signed step while step() consumed a
+        // magnitude, so a leftward velocity was compared against a positive target and the ramp
+        // collapsed toward zero. Sweeping left crawled while sweeping right moved normally.
+        List<Float> right = slew(0.0F, 80.0F, 0.0F);
+        List<Float> left = slew(0.0F, -80.0F, 0.0F);
+
+        assertEquals(right.size(), left.size(),
+            "a mirror-image sweep must take the same number of ticks, took "
+                + right.size() + " right vs " + left.size() + " left");
+        assertEquals(sum(right), Math.abs(sum(left)), 1e-3,
+            "mirror sweeps must cover the same distance");
+    }
+
+    @Test
+    void velocityNeverExceedsTheCeiling() {
+        // A magnitude carried across ticks must not be able to compound past maxStep.
+        float velocity = 0.0F;
+        for (int tick = 0; tick < 30; tick++) {
+            velocity = AimEase.nextVelocity(90.0F, MAX_STEP, velocity, CAPTURE, 0.0F);
+            assertTrue(velocity <= MAX_STEP + 1e-4,
+                "carried velocity " + velocity + " exceeded the ceiling " + MAX_STEP);
+        }
+    }
+
+    private static float sum(List<Float> values) {
+        float total = 0.0F;
+        for (float value : values) total += value;
+        return total;
+    }
 }

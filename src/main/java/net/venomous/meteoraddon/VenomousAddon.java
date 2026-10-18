@@ -10,7 +10,15 @@ import net.venomous.meteoraddon.utils.PreRotate;
 import org.slf4j.Logger;
 
 public class VenomousAddon extends MeteorAddon {
-    public static final String VERSION = "7.0.0";
+    /**
+     * Reported at runtime and shown in the startup banner.
+     *
+     * <p>This used to be hardcoded independently of the build, and drifted: the jar shipped as
+     * 7.0.1 while this constant still said 7.0.0, so the banner advertised the wrong version.
+     * {@code AddonMetadataTest} now asserts it matches {@code libs.versions.toml}, which is the
+     * single source of truth the build itself uses.</p>
+     */
+    public static final String VERSION = "7.1.0";
     public static final Logger LOG = LogUtils.getLogger();
 
     public static final Category CATEGORY = new Category("Venomous");
@@ -18,7 +26,7 @@ public class VenomousAddon extends MeteorAddon {
 
     @Override
     public void onInitialize() {
-        LOG.info("Initializing Venomous V7.0.0 - Optimized & Refined.");
+        LOG.info("Initializing Venomous V" + VERSION + " - Optimized & Refined.");
         PreRotate.init();
         ModuleRegistry.register();
     }

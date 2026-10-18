@@ -24,6 +24,7 @@ import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.AimEase;
 import net.venomous.meteoraddon.utils.MovementMath;
+import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.RotationGcd;
 
 public class Scaffold extends Module {
@@ -353,8 +354,11 @@ public class Scaffold extends Module {
         if (this.technique.get() == Scaffold.Technique.NCPNormal) {
             if (this.isOverEdge() || this.edgeDistance(this.movementDirection()) < this.jittered(0.32)) this.pressManagedSneak();
             else this.releaseManagedSneak();
-            if (!this.smoothAimAt(placePos, 9.0F, 5.0F)) return;
-            this.place(placePos, false);
+            if (!this.rotate.get()) {
+                this.place(placePos, false);
+            } else {
+                this.aimAndPlace(placePos);
+            }
             return;
         }
 
@@ -390,8 +394,10 @@ public class Scaffold extends Module {
         else this.releaseManagedSneak();
 
         // A low acceleration curve is intentional: no one-frame 180/90 degree snap.
-        if (this.smoothAimAt(target, 7.0F, 3.5F)) {
+        if (!this.rotate.get()) {
             this.place(target, false);
+        } else {
+            this.aimAndPlace(target);
         }
     }
 
@@ -543,6 +549,37 @@ public class Scaffold extends Module {
         double dx = dir.x > 0.01 ? 1.0 - fx : (dir.x < -0.01 ? fx : 1.0);
         double dz = dir.z > 0.01 ? 1.0 - fz : (dir.z < -0.01 ? fz : 1.0);
         return Math.min(dx, dz);
+    }
+
+    /**
+     * Aims at {@code pos} without moving the camera, then places once the rotation has landed.
+     *
+     * <p>PreRotate hands the aim to Meteor's server-side rotation handling and defers the
+     * placement to {@code SendMovementPacketsEvent.Pre}, which runs after that rotation has been
+     * sent - so the interaction still leaves from a correct angle.</p>
+     *
+     * <p>The camera is deliberately left alone. It used to be driven toward the target and the
+     * placement sent with that same angle and no server rotation at all, which forced the two to
+     * be identical and hijacked the player's view to achieve it. Now they are independent: look
+     * wherever you like, the server angle is spoofed underneath.</p>
+     */
+    private void aimAndPlace(BlockPos pos) {
+        float[] aim = this.aimAt(pos);
+        PreRotate.rotateThen(this, aim[0], aim[1], () -> this.place(pos, false));
+    }
+
+    /** Yaw and pitch that would look at {@code pos}, without touching the camera. */
+    private float[] aimAt(BlockPos pos) {
+        Vec3 eyes = this.mc.player.getEyePosition();
+        double dx = pos.getX() + 0.5 - eyes.x;
+        double dy = pos.getY() + 0.5 - eyes.y;
+        double dz = pos.getZ() + 0.5 - eyes.z;
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+
+        return new float[] {
+            (float)Math.toDegrees(Math.atan2(-dx, dz)),
+            (float)-Math.toDegrees(Math.atan2(dy, horizontal))
+        };
     }
 
     private boolean smoothAimAt(BlockPos pos, float maxYawStep, float maxPitchStep) {

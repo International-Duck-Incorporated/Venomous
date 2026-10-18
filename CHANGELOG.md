@@ -4,6 +4,26 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.1.0] - 2026-10-18
+
+- `v-scaffold` no longer drags the player's view onto the server's rotation. Both the GrimScaffold
+  and the NCP placement paths snapped the camera to whatever the block needed, so bridging overrode
+  where you were looking and the mouse fought the client. They now hand the rotation to Meteor and
+  defer the placement to `SendMovementPacketsEvent.Pre` through `PreRotate`, so the server is
+  aimed correctly while your camera stays exactly where you put it. The `rotate` setting gates both
+  paths; with it off, placement happens immediately as before. GodBridge still drives the camera
+  deliberately — looking back and down is the whole point of that mode.
+- Fixed `v-scaffold` sweeping absurdly slowly, and only in one direction. `AimEase.step` treats
+  velocity as a magnitude, but `nextVelocity` handed back the *signed* step. A leftward sweep
+  therefore compared a negative velocity against a positive target and the acceleration ramp
+  collapsed, crawling toward the ceiling instead of reaching it. Rightward sweeps looked correct,
+  which is why this read as a general sluggishness rather than a sign bug. `nextVelocity` now
+  returns `Math.abs(step(...))`.
+- Fixed the startup banner advertising the wrong version. `VenomousAddon.VERSION` was maintained
+  by hand while the build numbered the jar from `libs.versions.toml`, so 7.0.1 shipped printing
+  `V7.0.0`. The two are now asserted equal, the version may be written down exactly once in the
+  addon class, and the banner reads the constant. `AddonMetadataTest` fails the build otherwise.
+
 - Continued development and maintenance following the migration from GitHub to GitLab.
 - Improved project documentation and clarified the project's work-in-progress status.
 - Reindented the recovered sources from 3-space to 4-space, matching the hand-written files.
@@ -189,7 +209,8 @@ All notable changes to Venomous are documented in this file.
 - Created the Venomous project.
 - Added the initial project README and project documentation.
 
-[Unreleased]: https://gitlab.com/international-duck-incorporated/Venomous/-/compare/v7.0.0...main
+[Unreleased]: https://gitlab.com/international-duck-incorporated/Venomous/-/compare/v7.1.0...main
+[7.1.0]: https://gitlab.com/international-duck-incorporated/Venomous/-/releases/v7.1.0
 [7.0.0]: https://gitlab.com/international-duck-incorporated/Venomous/-/releases/v7.0.0
 [6.2.6]: https://gitlab.com/international-duck-incorporated/Venomous/-/releases/v6.2.6
 [6.1.6]: https://gitlab.com/international-duck-incorporated/Venomous/-/releases/v6.1.6

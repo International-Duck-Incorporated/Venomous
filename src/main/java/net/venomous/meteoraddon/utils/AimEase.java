@@ -61,12 +61,16 @@ public final class AimEase {
     /**
      * The velocity to carry into the next tick.
      *
+     * <p>Returned as a magnitude, matching what {@link #step} consumes. It previously returned the
+     * signed step, which made the ramp compare a negative velocity against a positive target and
+     * collapse toward zero - so a sweep to the left crawled while the same sweep to the right
+     * moved normally.</p>
+     *
      * <p>Returned separately from the step so the caller can keep it; recomputing it from the
      * step would lose the ramp.</p>
      */
     public static float nextVelocity(float remaining, float maxStep, float velocity, float capture, float noise) {
-        float step = step(remaining, maxStep, velocity, capture, noise);
-        return Math.abs(step) >= Math.abs(remaining) ? 0.0F : step;
+        return Math.abs(step(remaining, maxStep, velocity, capture, noise));
     }
 
     private static float clamp(float value, float min, float max) {
