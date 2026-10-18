@@ -104,7 +104,7 @@ public class AutoFarm extends Module {
                     if (harvestPos != null) {
                         this.currentTarget = harvestPos;
                         if ((Boolean)this.rotate.get()) {
-                            PreRotate.rotateThen(Rotations.getYaw(harvestPos), Rotations.getPitch(harvestPos), () -> {
+                            PreRotate.rotateThen(this, Rotations.getYaw(harvestPos), Rotations.getPitch(harvestPos), () -> {
                                 this.mc.gameMode.destroyBlock(harvestPos);
                                 this.mc.player.swing(InteractionHand.MAIN_HAND);
                             });
@@ -130,7 +130,7 @@ public class AutoFarm extends Module {
 
                             BlockHitResult bhr = new BlockHitResult(Vec3.atCenterOf(plantPos), Direction.UP, plantPos, false);
                             if ((Boolean)this.rotate.get()) {
-                                PreRotate.rotateThen(Rotations.getYaw(plantPos), Rotations.getPitch(plantPos), () -> {
+                                PreRotate.rotateThen(this, Rotations.getYaw(plantPos), Rotations.getPitch(plantPos), () -> {
                                     this.mc.gameMode.useItemOn(this.mc.player, InteractionHand.MAIN_HAND, bhr);
                                     this.mc.player.swing(InteractionHand.MAIN_HAND);
                                 });

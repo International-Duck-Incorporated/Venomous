@@ -39,11 +39,9 @@ public class WindPearlMacro extends Module {
             } else {
                 this.throwingPearl = true;
                 this.tickCounter = 0;
-                PreRotate.rotateThen(this.mc.player.getYRot(), -90.0, () -> {
-                    // Deferred until the server rotation lands, so the module may have been
-                    // switched off (or the hotbar changed) in the meantime. Bail rather than
-                    // throwing a pearl at a stale slot from a disabled module.
-                    if (!this.isActive()) return;
+                PreRotate.rotateThen(this, this.mc.player.getYRot(), -90.0, () -> {
+                    // Deferred until the server rotation lands, so the hotbar may have changed in
+                    // the meantime. rotateThen drops this if the module was switched off first.
                     InvUtils.swap(pearlSlot, true);
                     this.mc.gameMode.useItem(this.mc.player, InteractionHand.MAIN_HAND);
                     this.mc.player.swing(InteractionHand.MAIN_HAND);
@@ -67,8 +65,7 @@ public class WindPearlMacro extends Module {
                     return;
                 }
 
-                PreRotate.rotateThen(this.mc.player.getYRot(), -90.0, () -> {
-                    if (!this.isActive()) return;
+                PreRotate.rotateThen(this, this.mc.player.getYRot(), -90.0, () -> {
                     InvUtils.swap(windSlot, true);
                     this.mc.gameMode.useItem(this.mc.player, InteractionHand.MAIN_HAND);
                     this.mc.player.swing(InteractionHand.MAIN_HAND);

@@ -26,6 +26,14 @@ All notable changes to Venomous are documented in this file.
   middle-click down-edge and never read them. Timing now lives in the pure, unit-tested
   `ClickTiming` helper, and the target is resolved on the press so the delay cannot act on
   a different entity than the one clicked.
+- Every `PreRotate` consumer kept running its deferred action after being switched off,
+  because nothing re-checked that the action was still wanted. `PreRotate` now takes a
+  mandatory guard — `rotateThen(this, …)` for modules, or any `Guard` for non-modules —
+  and the unguarded overloads are gone, so the compiler enforces it.
+- `v-auto-city` and `auto-break-selected` captured a mutable field in their deferred action,
+  so the rotation was computed for one block while the action ran against another. Both now
+  capture the target by value. `auto-break-selected` additionally dereferenced a target that
+  its own `resetMining()` teardown had just nulled, which could throw.
 
 ## [7.0.0] - 2026-09-19
 

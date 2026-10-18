@@ -201,7 +201,7 @@ public class AutoPotion extends Module {
             this.cooldown = (Integer)this.delay.get();
         };
         if (this.rotate.get() == AutoPotion.RotateMode.Down) {
-            PreRotate.rotateThen(this.mc.player.getYRot(), 90.0, action);
+            PreRotate.rotateThen(this, this.mc.player.getYRot(), 90.0, action);
         } else {
             action.run();
         }

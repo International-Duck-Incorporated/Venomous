@@ -182,7 +182,11 @@ public class VAutoCity extends Module {
         }
 
         if (this.rotate.get()) {
-            PreRotate.rotateThen(Rotations.getYaw(this.targetBlock), Rotations.getPitch(this.targetBlock), () -> this.mine(this.targetBlock));
+            // Captured into a local on purpose. Reading this.targetBlock from inside the
+            // deferred action would mine whatever block the field has since been reassigned
+            // to, while the server rotation still points at the block we aimed at.
+            BlockPos block = this.targetBlock;
+            PreRotate.rotateThen(this, Rotations.getYaw(block), Rotations.getPitch(block), () -> this.mine(block));
         } else {
             this.mine(this.targetBlock);
         }

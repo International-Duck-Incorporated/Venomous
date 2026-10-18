@@ -5,6 +5,7 @@ import java.util.List;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
@@ -32,7 +33,10 @@ import net.minecraft.world.phys.Vec3;
  * Replace:
  * <pre>{@code Rotations.rotate(yaw, pitch, 10, () -> doThing());}</pre>
  * with:
- * <pre>{@code PreRotate.rotateThen(yaw, pitch, () -> doThing());}</pre>
+ * <pre>{@code PreRotate.rotateThen(this, yaw, pitch, () -> doThing());}</pre>
+ *
+ * <p>Passing {@code this} ties the action to the module's lifetime: it is dropped if the module
+ * is switched off before the rotation lands.</p>
  */
 public final class PreRotate {
     /** How close the server-side rotation must be, in degrees, before the action fires. */
@@ -56,20 +60,44 @@ public final class PreRotate {
     }
 
     /**
-     * Requests a rotation and runs {@code action} in the PRE phase once the server has seen it.
+     * Decides whether a queued action is still worth running.
      *
-     * @param yaw    target yaw, degrees
-     * @param pitch  target pitch, degrees
-     * @param action the interaction to perform; never run from POST
+     * <p>A queued action outlives the tick that requested it by up to {@link #MAX_AGE} ticks. A
+     * module switched off in that window would otherwise still perform its interaction - and
+     * would do so against whatever state its teardown just cleared. Every call site must
+     * supply one; there is deliberately no overload that omits it, so the compiler enforces it.</p>
      */
-    public static void rotateThen(double yaw, double pitch, Runnable action) {
-        rotateThen(yaw, pitch, 10, action);
+    @FunctionalInterface
+    public interface Guard {
+        boolean shouldStillRun();
+    }
+
+    /** Convenience for module callers: the action is dropped unless {@code owner} is still on. */
+    public static void rotateThen(Module owner, double yaw, double pitch, Runnable action) {
+        rotateThen(owner::isActive, yaw, pitch, 10, action);
+    }
+
+    /** As above, with an explicit Meteor rotation priority. */
+    public static void rotateThen(Module owner, double yaw, double pitch, int priority, Runnable action) {
+        rotateThen(owner::isActive, yaw, pitch, priority, action);
+    }
+
+    /** General form, for callers that are not modules. */
+    public static void rotateThen(Guard guard, double yaw, double pitch, Runnable action) {
+        rotateThen(guard, yaw, pitch, 10, action);
     }
 
     /**
+     * Requests a rotation and runs {@code action} in the PRE phase once the server has seen it.
+     *
+     * @param guard    re-checked immediately before the action runs, outside the lock; a false
+     *                 result discards the action
+     * @param yaw      target yaw, degrees
+     * @param pitch    target pitch, degrees
      * @param priority rotation priority handed to Meteor, higher wins contention
+     * @param action   the interaction to perform; never run from POST
      */
-    public static void rotateThen(double yaw, double pitch, int priority, Runnable action) {
+    public static void rotateThen(Guard guard, double yaw, double pitch, int priority, Runnable action) {
         if (action == null) {
             Rotations.rotate(yaw, pitch, priority, null);
             return;
@@ -82,13 +110,8 @@ public final class PreRotate {
         Rotations.rotate(yaw, pitch, priority, null);
 
         synchronized (PENDING) {
-            PENDING.add(new Pending((float) yaw, (float) pitch, action));
+            PENDING.add(new Pending((float) yaw, (float) pitch, action, guard));
         }
-    }
-
-    /** Convenience overload for aiming at a point in the world. */
-    public static void rotateThen(Vec3 target, Runnable action) {
-        rotateThen(Rotations.getYaw(target), Rotations.getPitch(target), action);
     }
 
     /** Drops every queued action. Call from {@code onDeactivate}. */
@@ -106,7 +129,7 @@ public final class PreRotate {
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     private static void onSendMovementPacketsPre(SendMovementPacketsEvent.Pre event) {
-        List<Runnable> ready = null;
+        List<Pending> ready = null;
 
         synchronized (PENDING) {
             if (PENDING.isEmpty()) {
@@ -120,7 +143,7 @@ public final class PreRotate {
                     if (ready == null) {
                         ready = new ArrayList<>(2);
                     }
-                    ready.add(pending.action);
+                    ready.add(pending);
                     PENDING.remove(i);
                 } else if (++pending.age > MAX_AGE) {
                     // The rotation never landed (interrupted, or contended by another module).
@@ -131,9 +154,12 @@ public final class PreRotate {
         }
 
         if (ready != null) {
-            // Run outside the lock: actions may themselves queue further rotations.
-            for (Runnable action : ready) {
-                action.run();
+            // Run outside the lock: actions may themselves queue further rotations. The guard
+            // is evaluated here, at the last possible moment, rather than when the action was
+            // collected - a queued action may legitimately have been invalidated in between.
+            for (Pending pending : ready) {
+                if (pending.guard != null && !pending.guard.shouldStillRun()) continue;
+                pending.action.run();
             }
         }
     }
@@ -150,12 +176,14 @@ public final class PreRotate {
         private final float yaw;
         private final float pitch;
         private final Runnable action;
+        private final Guard guard;
         private int age;
 
-        private Pending(float yaw, float pitch, Runnable action) {
+        private Pending(float yaw, float pitch, Runnable action, Guard guard) {
             this.yaw = yaw;
             this.pitch = pitch;
             this.action = action;
+            this.guard = guard;
         }
 
         /** True once the rotation the server last received matches what this action needs. */

@@ -104,18 +104,26 @@ public class AutoBreakSelected extends Module {
                     if (!this.isInRange(this.currentTarget)) {
                         this.resetMining();
                     } else if ((Boolean)this.rotate.get()) {
-                        PreRotate.rotateThen(Rotations.getYaw(this.currentTarget), Rotations.getPitch(this.currentTarget), this::doBreak);
+                        // Captured into a local on purpose. currentTarget is cleared by a mining
+                        // timeout, an out-of-range reset, or deactivation, and any of those can
+                        // land in the window before the deferred action runs - doBreak would then
+                        // dereference a null target, or break a block we are no longer aiming at.
+                        BlockPos target = this.currentTarget;
+                        PreRotate.rotateThen(this, Rotations.getYaw(target), Rotations.getPitch(target), () -> {
+                            if (this.currentTarget == null || !this.currentTarget.equals(target)) return;
+                            this.doBreak(target);
+                        });
                     } else {
-                        this.doBreak();
+                        this.doBreak(this.currentTarget);
                     }
                 }
             }
         }
     }
 
-    private void doBreak() {
-        if (this.mc.gameMode != null) {
-            this.mc.gameMode.continueDestroyBlock(this.currentTarget, this.getDirection(this.currentTarget));
+    private void doBreak(BlockPos pos) {
+        if (this.mc.gameMode != null && pos != null) {
+            this.mc.gameMode.continueDestroyBlock(pos, this.getDirection(pos));
             this.mc.player.swing(InteractionHand.MAIN_HAND);
             this.miningTicks++;
         }
