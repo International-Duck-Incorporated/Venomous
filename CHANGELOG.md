@@ -43,6 +43,17 @@ All notable changes to Venomous are documented in this file.
   two actions on one aim would have run them backwards.
 - Added `PreRotate.rotateThenSequence` for macros that must run every step, such as
   `pearl-wind-macro` throwing an item and then using a charge on the same aim.
+- Made `v-scaffold` actually human-shaped. Its camera moved at a fixed 7°/tick for the whole
+  sweep and stopped dead on the target, which no hand produces; edge thresholds fired at
+  identical distances every time; and placements landed exactly `place-delay` ticks apart,
+  forever. Aim now eases in, decelerates into the target and carries per-tick noise, thresholds
+  and cadence are jittered, and — most importantly — rotation deltas are quantised to the
+  sensitivity GCD grid. A real mouse emits only whole multiples of that grid, so the old
+  unquantised `setYRot` sweep produced angles no human could generate. That is what
+  `Aimbot` and `KillAura` already did via their `gcd-fix` settings; scaffold had neither.
+- Extracted the sensitivity GCD formula into `RotationGcd` and the easing curve into `AimEase`,
+  both free of Minecraft types so they unit-test on a plain JVM. The GCD formula had been
+  copy-pasted into `Aimbot`, `KillAura` and `GlobalNetworkInterceptor`.
 
 ## [7.0.0] - 2026-09-19
 

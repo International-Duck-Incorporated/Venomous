@@ -24,6 +24,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.RotationGcd;
 import net.venomous.meteoraddon.utils.McCompat;
 
 public class Aimbot extends Module {
@@ -206,13 +207,7 @@ public class Aimbot extends Module {
 
     private float applyGcd(float delta) {
         if (this.mc.options == null) return delta;
-        double sens = this.mc.options.sensitivity().get();
-        double f = sens * 0.6 + 0.2;
-        double gcd = f * f * f * 1.2;
-        if (gcd <= 0.0001) {
-            return delta;
-        }
-        return (float)(Math.round(delta / gcd) * gcd);
+        return RotationGcd.quantize(this.mc.options.sensitivity().get(), delta);
     }
 
     private float wrap(float v) {

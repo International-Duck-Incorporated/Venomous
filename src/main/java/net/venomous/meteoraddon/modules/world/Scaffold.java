@@ -1,5 +1,6 @@
 package net.venomous.meteoraddon.modules.world;
 
+import java.util.Random;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
@@ -21,7 +22,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.AimEase;
 import net.venomous.meteoraddon.utils.MovementMath;
+import net.venomous.meteoraddon.utils.RotationGcd;
 
 public class Scaffold extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -204,6 +207,12 @@ public class Scaffold extends Module {
             .build()
     );
 
+    /** Distance at which a slew is treated as arrived and the last fraction is snapped. */
+    private static final float CAPTURE_DEGREES = 6.0F;
+
+    /** Extra ticks a placement may be held back by, on top of the configured delay. */
+    private static final int CADENCE_JITTER_TICKS = 2;
+
     private int prevSlot = -1;
     private int towerTicks = 0;
     private int scaffoldCount = 0;
@@ -220,6 +229,9 @@ public class Scaffold extends Module {
     private int godBridgePhase = 0;
     private int godBridgeTicks = 0;
     private int breezilySide = 1;
+    private float aimYawVelocity = 0.0F;
+    private float aimPitchVelocity = 0.0F;
+    private final Random random = new Random();
 
     public Scaffold() {
         super(VenomousAddon.CATEGORY, "v-scaffold", "Scaffold & Bridge bypasses for Grim, Vulcan, NCP, and fast bridging.");
@@ -240,6 +252,8 @@ public class Scaffold extends Module {
         this.godBridgePhase = 0;
         this.godBridgeTicks = 0;
         this.breezilySide = 1;
+        this.aimYawVelocity = 0.0F;
+        this.aimPitchVelocity = 0.0F;
         this.targetY = this.mc.player != null ? (int)Math.floor(this.mc.player.getY() - 1.0) : -1;
     }
 
@@ -258,6 +272,8 @@ public class Scaffold extends Module {
         this.godBridgePhase = 0;
         this.godBridgeTicks = 0;
         this.targetY = -1;
+        this.aimYawVelocity = 0.0F;
+        this.aimPitchVelocity = 0.0F;
     }
 
     private boolean isBridgeMode() {
@@ -335,7 +351,7 @@ public class Scaffold extends Module {
 
         // NCP is deliberately conservative: crouch before the edge and visibly aim steeply.
         if (this.technique.get() == Scaffold.Technique.NCPNormal) {
-            if (this.isOverEdge() || this.edgeDistance(this.movementDirection()) < 0.32) this.pressManagedSneak();
+            if (this.isOverEdge() || this.edgeDistance(this.movementDirection()) < this.jittered(0.32)) this.pressManagedSneak();
             else this.releaseManagedSneak();
             if (!this.smoothAimAt(placePos, 9.0F, 5.0F)) return;
             this.place(placePos, false);
@@ -369,7 +385,7 @@ public class Scaffold extends Module {
         }
 
         Vec3 direction = this.movementDirection();
-        boolean nearEdge = this.isOverEdge() || (direction.lengthSqr() > 1.0E-4 && this.edgeDistance(direction) < 0.38);
+        boolean nearEdge = this.isOverEdge() || (direction.lengthSqr() > 1.0E-4 && this.edgeDistance(direction) < this.jittered(0.38));
         if (nearEdge) this.pressManagedSneak();
         else this.releaseManagedSneak();
 
@@ -386,7 +402,7 @@ public class Scaffold extends Module {
             if (input.lengthSqr() < 1.0E-4) return;
             this.bridgeHeading = input.normalize();
 
-            if (this.edgeDistance(this.bridgeHeading) < 0.30 && this.mc.player.onGround()) {
+            if (this.edgeDistance(this.bridgeHeading) < this.jittered(0.30) && this.mc.player.onGround()) {
                 this.restoreYaw = this.mc.player.getYRot();
                 this.restorePitch = this.mc.player.getXRot();
                 this.mc.player.jumpFromGround();
@@ -442,7 +458,7 @@ public class Scaffold extends Module {
         forward = forward.normalize();
         this.releaseManagedSneak();
 
-        if (this.edgeDistance(forward) < 0.34) {
+        if (this.edgeDistance(forward) < this.jittered(0.34)) {
             Vec3 velocity = this.mc.player.getDeltaMovement();
             Vec3 side = new Vec3(-forward.z, 0.0, forward.x).scale(0.055 * this.breezilySide);
             this.mc.player.setDeltaMovement(velocity.x + side.x, velocity.y, velocity.z + side.z);
@@ -471,7 +487,7 @@ public class Scaffold extends Module {
             }
         }
 
-        boolean edge = this.edgeDistance(dir) <= this.bridgeEdgeThreshold.get();
+        boolean edge = this.edgeDistance(dir) <= this.jittered(this.bridgeEdgeThreshold.get());
         Scaffold.Technique tech = this.technique.get();
 
         boolean isFastBridge = (tech == Scaffold.Technique.GodBridge || tech == Scaffold.Technique.Breezily);
@@ -543,11 +559,43 @@ public class Scaffold extends Module {
     private boolean smoothViewTo(float targetYaw, float targetPitch, float maxYawStep, float maxPitchStep) {
         float yawDelta = wrapDegrees(targetYaw - this.mc.player.getYRot());
         float pitchDelta = targetPitch - this.mc.player.getXRot();
-        float yawStep = clamp(yawDelta, -maxYawStep, maxYawStep);
-        float pitchStep = clamp(pitchDelta, -maxPitchStep, maxPitchStep);
-        this.mc.player.setYRot(this.mc.player.getYRot() + yawStep);
-        this.mc.player.setXRot(clamp(this.mc.player.getXRot() + pitchStep, -90.0F, 90.0F));
+
+        float yawStep = AimEase.step(yawDelta, maxYawStep, this.aimYawVelocity, CAPTURE_DEGREES, this.aimNoise());
+        float pitchStep = AimEase.step(pitchDelta, maxPitchStep, this.aimPitchVelocity, CAPTURE_DEGREES, this.aimNoise());
+
+        this.aimYawVelocity = AimEase.nextVelocity(yawDelta, maxYawStep, this.aimYawVelocity, CAPTURE_DEGREES, 0.0F);
+        this.aimPitchVelocity = AimEase.nextVelocity(pitchDelta, maxPitchStep, this.aimPitchVelocity, CAPTURE_DEGREES, 0.0F);
+
+        this.applyLook(this.mc.player.getYRot() + yawStep, this.mc.player.getXRot() + pitchStep);
         return Math.abs(yawDelta) <= 4.0F && Math.abs(pitchDelta) <= 4.0F;
+    }
+
+    /**
+     * Writes a look change a real mouse could have produced.
+     *
+     * <p>Every yaw and pitch delta a genuine mouse emits is an exact multiple of the sensitivity
+     * GCD. Writing the camera directly with an arbitrary float produces a delta no human could
+     * generate, which is precisely what rotation checks fingerprint. Aimbot and KillAura already
+     * quantise for this reason; scaffold wrote straight to {@code setYRot}, so its sweep moved by
+     * exactly 7 degrees per tick for as long as it lasted.</p>
+     */
+    private void applyLook(float yaw, float pitch) {
+        double sensitivity = this.mc.options.sensitivity().get();
+        float yawOut = this.mc.player.getYRot() + RotationGcd.quantize(sensitivity, yaw - this.mc.player.getYRot());
+        float pitchOut = this.mc.player.getXRot() + RotationGcd.quantize(sensitivity, pitch - this.mc.player.getXRot());
+
+        this.mc.player.setYRot(yawOut);
+        this.mc.player.setXRot(clamp(pitchOut, -90.0F, 90.0F));
+    }
+
+    /** Signed jitter, used to break up constant-rate sweeps. */
+    private float aimNoise() {
+        return (float)(this.random.nextGaussian() * 0.6);
+    }
+
+    /** Threshold with per-evaluation variance, so the crouch is not metronomic. */
+    private double jittered(double base) {
+        return base * (0.82 + this.random.nextDouble() * 0.36);
     }
 
     private static float wrapDegrees(float angle) {
@@ -651,7 +699,9 @@ public class Scaffold extends Module {
 
         if (BlockUtils.canPlace(pos)) {
             if (BlockUtils.place(pos, block, shouldRotate, 10, this.swing.get(), true)) {
-                this.placeCooldown = delay;
+                // Jitter only ever lengthens the gap, never shortens it, so bridging stays at
+                // least as reliable as the fixed cadence while no longer being metronomic.
+                this.placeCooldown = delay + this.random.nextInt(CADENCE_JITTER_TICKS + 1);
                 return true;
             }
         }
