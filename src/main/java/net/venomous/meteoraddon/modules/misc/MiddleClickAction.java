@@ -12,6 +12,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.ClickTiming;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class MiddleClickAction extends Module {
@@ -24,12 +25,12 @@ public class MiddleClickAction extends Module {
                 .defaultValue(true)
                 .build()
         );
-    private final Setting<MiddleClickAction.Technique> technique = this.sgGeneral
+    private final Setting<ClickTiming.Technique> technique = this.sgGeneral
         .add(
-            new meteordevelopment.meteorclient.settings.EnumSetting.Builder<MiddleClickAction.Technique>()
+            new meteordevelopment.meteorclient.settings.EnumSetting.Builder<ClickTiming.Technique>()
                 .name("technique")
-                .description("Click pattern for middle click (humanlike).")
-                .defaultValue(MiddleClickAction.Technique.Stabilized)
+                .description("Click pattern used to pace the action after the press.")
+                .defaultValue(ClickTiming.Technique.Stabilized)
                 .build()
         );
     private final Setting<Integer> minCps = this.sgGeneral
@@ -54,6 +55,8 @@ public class MiddleClickAction extends Module {
         );
     private int ticksUntilClick = 0;
     private boolean wasMiddleDown = false;
+    private boolean clickParity = false;
+    private int pendingTargetId = -1;
     private final Random random = new Random();
 
     public MiddleClickAction() {
@@ -63,44 +66,66 @@ public class MiddleClickAction extends Module {
     public void onActivate() {
         this.ticksUntilClick = 0;
         this.wasMiddleDown = false;
+        this.pendingTargetId = -1;
     }
 
     public void onDeactivate() {
         // Clearing wasMiddleDown is what stops a held middle-click from being seen as a fresh
-        // press the moment the module is switched back on.
+        // press the moment the module is switched back on. Dropping the pending target stops a
+        // scheduled action firing at whoever happens to be standing there by then.
         this.ticksUntilClick = 0;
         this.wasMiddleDown = false;
+        this.pendingTargetId = -1;
     }
 
     @EventHandler
     private void onTick(Pre event) {
-        if (this.mc.player != null && this.mc.level != null) {
-            boolean middleDown = this.mc.options.keyPickItem.isDown();
-            if (middleDown && !this.wasMiddleDown) {
-                this.handleClick();
-            }
+        if (this.mc.player == null || this.mc.level == null) return;
 
-            this.wasMiddleDown = middleDown;
-        }
-    }
+        boolean middleDown = this.mc.options.keyPickItem.isDown();
 
-    private void handleClick() {
-        if (this.mc.hitResult != null
-            && this.mc.hitResult.getType() == Type.ENTITY
-            && this.mc.level.getEntity(((EntityHitResult)this.mc.hitResult).getEntity().getId()) instanceof Player player) {
-            if ((Boolean)this.addFriend.get() && !Friends.get().isFriend(player)) {
-                Friends.get().add(new Friend(player));
-                this.info("Added " + player.getName().getString() + " as friend.", new Object[0]);
-            } else if ((Boolean)this.removeFriend.get() && Friends.get().isFriend(player)) {
-                Friends.get().remove(new Friend(player));
-                this.info("Removed " + player.getName().getString() + " from friends.", new Object[0]);
+        if (middleDown && !this.wasMiddleDown) {
+            // The target is resolved on the press, not when the action fires. Waiting a few
+            // ticks and then re-reading the crosshair would act on whoever the player drifted
+            // to look at instead, which is not what a click on that entity meant.
+            this.pendingTargetId = this.targetUnderCrosshair();
+            if (this.pendingTargetId != -1) {
+                this.ticksUntilClick = ClickTiming.reactionDelayTicks(
+                    this.technique.get(), this.minCps.get(), this.maxCps.get(), this.random, this.clickParity);
+                this.clickParity = !this.clickParity;
             }
         }
+
+        if (this.ticksUntilClick > 0 && --this.ticksUntilClick == 0 && this.pendingTargetId != -1) {
+            this.handleClick(this.pendingTargetId);
+            this.pendingTargetId = -1;
+        }
+
+        this.wasMiddleDown = middleDown;
     }
 
-    public enum Technique {
-        Stabilized,
-        Butterfly,
-        NormalDistribution;
+    /** Entity id under the crosshair, or -1 when the player is not aiming at an entity. */
+    private int targetUnderCrosshair() {
+        if (this.mc.hitResult == null || this.mc.hitResult.getType() != Type.ENTITY) {
+            return -1;
+        }
+
+        return ((EntityHitResult)this.mc.hitResult).getEntity().getId();
+    }
+
+    private void handleClick(int entityId) {
+        // Re-resolved from the level rather than holding the entity, so a player who logged
+        // out during the delay is skipped instead of being actioned as a stale object.
+        if (!(this.mc.level.getEntity(entityId) instanceof Player player)) {
+            return;
+        }
+
+        if ((Boolean)this.addFriend.get() && !Friends.get().isFriend(player)) {
+            Friends.get().add(new Friend(player));
+            this.info("Added " + player.getName().getString() + " as friend.", new Object[0]);
+        } else if ((Boolean)this.removeFriend.get() && Friends.get().isFriend(player)) {
+            Friends.get().remove(new Friend(player));
+            this.info("Removed " + player.getName().getString() + " from friends.", new Object[0]);
+        }
     }
 }

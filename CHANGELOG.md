@@ -13,6 +13,19 @@ All notable changes to Venomous are documented in this file.
 - Moved `ServerAnalyzer` from `modules/detection` to `utils`. It is a helper owned by
   `AntiCheatDetect` rather than a registrable module, so `modules/` now contains only
   modules and the registry tests no longer need to special-case it.
+- Narrowed `ServerAnalyzer.getServerIp`'s undocumented `catch (Throwable)` to
+  `catch (LinkageError)` and documented why: `MeteorClient`'s static initialiser throws
+  `ExceptionInInitializerError` outside a running game, which is an `Error`, so a
+  `RuntimeException` catch silently stops covering it. Genuine `Error`s now propagate.
+- `v-ghost-hand` no longer leaves Meteor's `StorageESP` running forever after it is
+  switched off, and now only disables an ESP it enabled itself.
+- `pearl-wind-macro` no longer fires its queued rotation actions after being disabled,
+  which threw items at stale hotbar slots from an inactive module.
+- Implemented the advertised humanlike timing in `middle-click-action`. Its `technique`,
+  `min-cps` and `max-cps` settings were decorative — the module acted instantly on the
+  middle-click down-edge and never read them. Timing now lives in the pure, unit-tested
+  `ClickTiming` helper, and the target is resolved on the press so the delay cannot act on
+  a different entity than the one clicked.
 
 ## [7.0.0] - 2026-09-19
 
