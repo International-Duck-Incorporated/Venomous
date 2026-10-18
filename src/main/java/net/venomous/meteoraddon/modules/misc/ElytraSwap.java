@@ -9,79 +9,79 @@ import net.minecraft.world.item.Items;
 import net.venomous.meteoraddon.VenomousAddon;
 
 public class ElytraSwap extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
 
-   public ElytraSwap() {
-      super(VenomousAddon.CATEGORY, "elytraswap", "Swap between chestplate and elytra. Toggles off after swapping.");
-   }
+    public ElytraSwap() {
+        super(VenomousAddon.CATEGORY, "elytraswap", "Swap between chestplate and elytra. Toggles off after swapping.");
+    }
 
-   @Override
-   public void onActivate() {
-      if (this.mc.player == null || this.mc.gameMode == null) {
-         this.mc.execute(() -> {
-            if (this.isActive()) this.toggle();
-         });
-         return;
-      }
+    @Override
+    public void onActivate() {
+        if (this.mc.player == null || this.mc.gameMode == null) {
+            this.mc.execute(() -> {
+                if (this.isActive()) this.toggle();
+            });
+            return;
+        }
 
-      ItemStack chestplate = this.mc.player.getItemBySlot(EquipmentSlot.CHEST);
-      boolean wearingElytra = chestplate.getItem() == Items.ELYTRA;
-      int targetSlot = -1;
-      if (wearingElytra) {
-         targetSlot = this.findChestplate();
-      } else {
-         targetSlot = this.findElytra();
-      }
+        ItemStack chestplate = this.mc.player.getItemBySlot(EquipmentSlot.CHEST);
+        boolean wearingElytra = chestplate.getItem() == Items.ELYTRA;
+        int targetSlot = -1;
+        if (wearingElytra) {
+            targetSlot = this.findChestplate();
+        } else {
+            targetSlot = this.findElytra();
+        }
 
-      if (targetSlot == -1) {
-         this.info(wearingElytra ? "No chestplate found." : "No elytra found.", new Object[0]);
-      } else {
-         this.mc.gameMode.handleContainerInput(this.mc.player.inventoryMenu.containerId, targetSlot + 9, 0, ContainerInput.PICKUP, this.mc.player);
-         this.mc.gameMode.handleContainerInput(this.mc.player.inventoryMenu.containerId, 6, 0, ContainerInput.PICKUP, this.mc.player);
-         if (!this.mc.player.containerMenu.getCarried().isEmpty()) {
+        if (targetSlot == -1) {
+            this.info(wearingElytra ? "No chestplate found." : "No elytra found.", new Object[0]);
+        } else {
             this.mc.gameMode.handleContainerInput(this.mc.player.inventoryMenu.containerId, targetSlot + 9, 0, ContainerInput.PICKUP, this.mc.player);
-         }
-
-         this.info(wearingElytra ? "Swapped to chestplate." : "Swapped to elytra.", new Object[0]);
-      }
-
-      this.mc.execute(() -> {
-         if (this.isActive()) this.toggle();
-      });
-   }
-
-   private int findElytra() {
-      for (int i = 0; i < this.mc.player.getInventory().getContainerSize(); i++) {
-         if (i >= 5 && i != 40) {
-            ItemStack stack = this.mc.player.getInventory().getItem(i);
-            if (stack.getItem() == Items.ELYTRA) {
-               return i - 9;
+            this.mc.gameMode.handleContainerInput(this.mc.player.inventoryMenu.containerId, 6, 0, ContainerInput.PICKUP, this.mc.player);
+            if (!this.mc.player.containerMenu.getCarried().isEmpty()) {
+                this.mc.gameMode.handleContainerInput(this.mc.player.inventoryMenu.containerId, targetSlot + 9, 0, ContainerInput.PICKUP, this.mc.player);
             }
-         }
-      }
 
-      return -1;
-   }
+            this.info(wearingElytra ? "Swapped to chestplate." : "Swapped to elytra.", new Object[0]);
+        }
 
-   private int findChestplate() {
-      for (int i = 0; i < this.mc.player.getInventory().getContainerSize(); i++) {
-         if (i >= 5 && i != 40) {
-            ItemStack stack = this.mc.player.getInventory().getItem(i);
-            if (this.isChestplate(stack)) {
-               return i - 9;
+        this.mc.execute(() -> {
+            if (this.isActive()) this.toggle();
+        });
+    }
+
+    private int findElytra() {
+        for (int i = 0; i < this.mc.player.getInventory().getContainerSize(); i++) {
+            if (i >= 5 && i != 40) {
+                ItemStack stack = this.mc.player.getInventory().getItem(i);
+                if (stack.getItem() == Items.ELYTRA) {
+                    return i - 9;
+                }
             }
-         }
-      }
+        }
 
-      return -1;
-   }
+        return -1;
+    }
 
-   private boolean isChestplate(ItemStack stack) {
-      if (stack.isEmpty()) {
-         return false;
-      }
+    private int findChestplate() {
+        for (int i = 0; i < this.mc.player.getInventory().getContainerSize(); i++) {
+            if (i >= 5 && i != 40) {
+                ItemStack stack = this.mc.player.getInventory().getItem(i);
+                if (this.isChestplate(stack)) {
+                    return i - 9;
+                }
+            }
+        }
 
-      String name = stack.getItem().toString().toLowerCase();
-      return name.contains("chestplate");
-   }
+        return -1;
+    }
+
+    private boolean isChestplate(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+
+        String name = stack.getItem().toString().toLowerCase();
+        return name.contains("chestplate");
+    }
 }

@@ -21,245 +21,245 @@ import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class AssertDominance extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final SettingGroup sgTargeting = this.settings.createGroup("Targeting");
-   private final Setting<AssertDominance.Mode> mode = this.sgGeneral
-      .add(
-         new EnumSetting.Builder<AssertDominance.Mode>().name("mode")
-            .description("Orbit circles smoothly; Random teleports around; Velocity orbits smoothly using motion physics.")
-            .defaultValue(AssertDominance.Mode.Orbit)
-            .build()
-      );
-   private final Setting<Double> radius = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-            .name("radius")
-            .description("Distance from the target.")
-            .defaultValue(2.0)
-            .range(0.5, 24.0)
-            .sliderMax(16.0)
-            .build()
-      );
-   private final Setting<Double> speed = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-            .name("speed")
-            .description("Orbit speed per tick.")
-            .defaultValue(0.1)
-            .range(0.01, 3.0)
-            .sliderMax(2.0)
-            .visible(() -> this.mode.get() == AssertDominance.Mode.Orbit || this.mode.get() == AssertDominance.Mode.Velocity)
-            .build()
-      );
-   private final Setting<Integer> randomDelay = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-            .name("random-delay")
-            .description("Ticks between random teleports around the target.")
-            .defaultValue(5)
-            .range(1, 40)
-            .sliderMax(20)
-            .visible(() -> this.mode.get() == AssertDominance.Mode.Random)
-            .build()
-      );
-   private final Setting<Double> randomY = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-            .name("random-y")
-            .description("Maximum vertical random offset in Random mode.")
-            .defaultValue(0.0)
-            .range(0.0, 6.0)
-            .sliderMax(3.0)
-            .visible(() -> this.mode.get() == AssertDominance.Mode.Random)
-            .build()
-      );
-   private final Setting<Boolean> sendPackets = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-            .name("send-packets")
-            .description("Send movement packets after repositioning.")
-            .defaultValue(true)
-            .build()
-      );
-   private final Setting<Set<EntityType<?>>> entities = this.sgTargeting
-      .add(
-         new meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder()
-            .name("entities")
-            .description("Entity types to assert dominance over.")
-            .defaultValue(new EntityType[]{EntityTypes.PLAYER})
-            .build()
-      );
-   private final Setting<Double> range = this.sgTargeting
-      .add(
-         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-            .name("range")
-            .description("Only target entities within this many blocks. 0 for unlimited.")
-            .defaultValue(0.0)
-            .min(0.0)
-            .sliderMax(64.0)
-            .build()
-      );
-   private final Setting<SortPriority> priority = this.sgTargeting
-      .add(
-         new EnumSetting.Builder<SortPriority>().name("priority").description("How the target is picked when several match.")
-            .defaultValue(SortPriority.LowestDistance)
-            .build()
-      );
-   private final Setting<Boolean> ignoreFriends = this.sgTargeting
-      .add(
-         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-            .name("ignore-friends")
-            .description("Never target your friends.")
-            .defaultValue(true)
-            .build()
-      );
-   private final Setting<Boolean> ignoreNamed = this.sgTargeting
-      .add(
-         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-            .name("ignore-named")
-            .description("Skip mobs that have a name tag - handy for not harassing your own pets.")
-            .defaultValue(false)
-            .build()
-      );
-   private double angle;
-   private int ticks;
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final SettingGroup sgTargeting = this.settings.createGroup("Targeting");
+    private final Setting<AssertDominance.Mode> mode = this.sgGeneral
+        .add(
+            new EnumSetting.Builder<AssertDominance.Mode>().name("mode")
+                .description("Orbit circles smoothly; Random teleports around; Velocity orbits smoothly using motion physics.")
+                .defaultValue(AssertDominance.Mode.Orbit)
+                .build()
+        );
+    private final Setting<Double> radius = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+                .name("radius")
+                .description("Distance from the target.")
+                .defaultValue(2.0)
+                .range(0.5, 24.0)
+                .sliderMax(16.0)
+                .build()
+        );
+    private final Setting<Double> speed = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+                .name("speed")
+                .description("Orbit speed per tick.")
+                .defaultValue(0.1)
+                .range(0.01, 3.0)
+                .sliderMax(2.0)
+                .visible(() -> this.mode.get() == AssertDominance.Mode.Orbit || this.mode.get() == AssertDominance.Mode.Velocity)
+                .build()
+        );
+    private final Setting<Integer> randomDelay = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+                .name("random-delay")
+                .description("Ticks between random teleports around the target.")
+                .defaultValue(5)
+                .range(1, 40)
+                .sliderMax(20)
+                .visible(() -> this.mode.get() == AssertDominance.Mode.Random)
+                .build()
+        );
+    private final Setting<Double> randomY = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+                .name("random-y")
+                .description("Maximum vertical random offset in Random mode.")
+                .defaultValue(0.0)
+                .range(0.0, 6.0)
+                .sliderMax(3.0)
+                .visible(() -> this.mode.get() == AssertDominance.Mode.Random)
+                .build()
+        );
+    private final Setting<Boolean> sendPackets = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("send-packets")
+                .description("Send movement packets after repositioning.")
+                .defaultValue(true)
+                .build()
+        );
+    private final Setting<Set<EntityType<?>>> entities = this.sgTargeting
+        .add(
+            new meteordevelopment.meteorclient.settings.EntityTypeListSetting.Builder()
+                .name("entities")
+                .description("Entity types to assert dominance over.")
+                .defaultValue(new EntityType[]{EntityTypes.PLAYER})
+                .build()
+        );
+    private final Setting<Double> range = this.sgTargeting
+        .add(
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+                .name("range")
+                .description("Only target entities within this many blocks. 0 for unlimited.")
+                .defaultValue(0.0)
+                .min(0.0)
+                .sliderMax(64.0)
+                .build()
+        );
+    private final Setting<SortPriority> priority = this.sgTargeting
+        .add(
+            new EnumSetting.Builder<SortPriority>().name("priority").description("How the target is picked when several match.")
+                .defaultValue(SortPriority.LowestDistance)
+                .build()
+        );
+    private final Setting<Boolean> ignoreFriends = this.sgTargeting
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("ignore-friends")
+                .description("Never target your friends.")
+                .defaultValue(true)
+                .build()
+        );
+    private final Setting<Boolean> ignoreNamed = this.sgTargeting
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("ignore-named")
+                .description("Skip mobs that have a name tag - handy for not harassing your own pets.")
+                .defaultValue(false)
+                .build()
+        );
+    private double angle;
+    private int ticks;
 
-   public AssertDominance() {
-      super(VenomousAddon.CATEGORY, "assert-dominance", "Moves around the nearest player or mob using orbit or random teleport mode.");
-   }
+    public AssertDominance() {
+        super(VenomousAddon.CATEGORY, "assert-dominance", "Moves around the nearest player or mob using orbit or random teleport mode.");
+    }
 
-   @Override
-   public void onActivate() {
-      this.ticks = 0;
-      this.angle = 0.0;
-   }
+    @Override
+    public void onActivate() {
+        this.ticks = 0;
+        this.angle = 0.0;
+    }
 
-   @Override
-   public void onDeactivate() {
-      this.ticks = 0;
-      this.angle = 0.0;
-   }
+    @Override
+    public void onDeactivate() {
+        this.ticks = 0;
+        this.angle = 0.0;
+    }
 
-   @EventHandler
-   private void onTick(Pre var1) {
-      if (this.mc.player != null && this.mc.level != null) {
-         Entity var2 = TargetUtils.get(this::isGoodTarget, (SortPriority)this.priority.get());
-         if (var2 != null) {
-            double var3 = this.sanitizeDouble((Double)this.radius.get(), 2.0, 0.0, 24.0);
-            double var5 = this.sanitizeDouble((Double)this.speed.get(), 0.1, 0.0, 3.0);
-            double var7;
-            double var9;
-            double var11;
-            if (this.mode.get() == AssertDominance.Mode.Orbit) {
-               this.angle += var5;
-               var7 = var2.getX() + Math.cos(this.angle) * var3;
-               var9 = var2.getY();
-               var11 = var2.getZ() + Math.sin(this.angle) * var3;
-            } else if (this.mode.get() == AssertDominance.Mode.Velocity) {
-               double dx = this.mc.player.getX() - var2.getX();
-               double dz = this.mc.player.getZ() - var2.getZ();
-               double dist = Math.hypot(dx, dz);
+    @EventHandler
+    private void onTick(Pre var1) {
+        if (this.mc.player != null && this.mc.level != null) {
+            Entity var2 = TargetUtils.get(this::isGoodTarget, (SortPriority)this.priority.get());
+            if (var2 != null) {
+                double var3 = this.sanitizeDouble((Double)this.radius.get(), 2.0, 0.0, 24.0);
+                double var5 = this.sanitizeDouble((Double)this.speed.get(), 0.1, 0.0, 3.0);
+                double var7;
+                double var9;
+                double var11;
+                if (this.mode.get() == AssertDominance.Mode.Orbit) {
+                    this.angle += var5;
+                    var7 = var2.getX() + Math.cos(this.angle) * var3;
+                    var9 = var2.getY();
+                    var11 = var2.getZ() + Math.sin(this.angle) * var3;
+                } else if (this.mode.get() == AssertDominance.Mode.Velocity) {
+                    double dx = this.mc.player.getX() - var2.getX();
+                    double dz = this.mc.player.getZ() - var2.getZ();
+                    double dist = Math.hypot(dx, dz);
 
-               if (dist < 1.0E-4) {
-                  dx = 1.0;
-                  dz = 0.0;
-                  dist = 1.0;
-               }
+                    if (dist < 1.0E-4) {
+                        dx = 1.0;
+                        dz = 0.0;
+                        dist = 1.0;
+                    }
 
-               double ux = dx / dist;
-               double uz = dz / dist;
+                    double ux = dx / dist;
+                    double uz = dz / dist;
 
-               double tx = -uz;
-               double tz = ux;
+                    double tx = -uz;
+                    double tz = ux;
 
-               double vx = tx * var5;
-               double vz = tz * var5;
+                    double vx = tx * var5;
+                    double vz = tz * var5;
 
-               double radialDiff = var3 - dist;
-               double radialSpeed = Math.max(-0.5, Math.min(0.5, radialDiff * 0.4));
-               vx += ux * radialSpeed;
-               vz += uz * radialSpeed;
+                    double radialDiff = var3 - dist;
+                    double radialSpeed = Math.max(-0.5, Math.min(0.5, radialDiff * 0.4));
+                    vx += ux * radialSpeed;
+                    vz += uz * radialSpeed;
 
-               double dy = var2.getY() - this.mc.player.getY();
-               double vy = Math.max(-0.3, Math.min(0.3, dy * 0.3));
+                    double dy = var2.getY() - this.mc.player.getY();
+                    double vy = Math.max(-0.3, Math.min(0.3, dy * 0.3));
 
-               this.mc.player.setDeltaMovement(vx, vy, vz);
-               return;
-            } else {
-               int var13 = Math.max(1, (Integer)this.randomDelay.get());
-               if (++this.ticks < var13) {
-                  return;
-               }
+                    this.mc.player.setDeltaMovement(vx, vy, vz);
+                    return;
+                } else {
+                    int var13 = Math.max(1, (Integer)this.randomDelay.get());
+                    if (++this.ticks < var13) {
+                        return;
+                    }
 
-               this.ticks = 0;
-               ThreadLocalRandom var14 = ThreadLocalRandom.current();
-               double var15 = var14.nextDouble(0.0, Math.PI * 2);
-               double var17 = this.randomDistance(var14, var3);
-               double var19 = this.sanitizeDouble((Double)this.randomY.get(), 0.0, 0.0, 6.0);
-               var7 = var2.getX() + Math.cos(var15) * var17;
-               var9 = var2.getY() + (var19 <= 0.0 ? 0.0 : var14.nextDouble(-var19, var19));
-               var11 = var2.getZ() + Math.sin(var15) * var17;
+                    this.ticks = 0;
+                    ThreadLocalRandom var14 = ThreadLocalRandom.current();
+                    double var15 = var14.nextDouble(0.0, Math.PI * 2);
+                    double var17 = this.randomDistance(var14, var3);
+                    double var19 = this.sanitizeDouble((Double)this.randomY.get(), 0.0, 0.0, 6.0);
+                    var7 = var2.getX() + Math.cos(var15) * var17;
+                    var9 = var2.getY() + (var19 <= 0.0 ? 0.0 : var14.nextDouble(-var19, var19));
+                    var11 = var2.getZ() + Math.sin(var15) * var17;
+                }
+
+                this.mc.player.setPos(var7, var9, var11);
+                if ((Boolean)this.sendPackets.get() && this.mc.getConnection() != null) {
+                    this.mc.getConnection().send(new Pos(var7, var9, var11, this.mc.player.onGround(), this.mc.player.horizontalCollision));
+                }
+            }
+        }
+    }
+
+    private boolean isGoodTarget(Entity var1) {
+        if (var1 != this.mc.player && var1.isAlive()) {
+            if (!((Set)this.entities.get()).contains(var1.getType())) {
+                return false;
             }
 
-            this.mc.player.setPos(var7, var9, var11);
-            if ((Boolean)this.sendPackets.get() && this.mc.getConnection() != null) {
-               this.mc.getConnection().send(new Pos(var7, var9, var11, this.mc.player.onGround(), this.mc.player.horizontalCollision));
+            double var2 = (Double)this.range.get();
+            if (var2 > 0.0 && !PlayerUtils.isWithin(var1, var2)) {
+                return false;
             }
-         }
-      }
-   }
 
-   private boolean isGoodTarget(Entity var1) {
-      if (var1 != this.mc.player && var1.isAlive()) {
-         if (!((Set)this.entities.get()).contains(var1.getType())) {
+            if (var1 instanceof Player var4) {
+                if (var4.isSpectator()) {
+                    return false;
+                }
+
+                if ((Boolean)this.ignoreFriends.get() && !Friends.get().shouldAttack(var4)) {
+                    return false;
+                }
+            } else if ((Boolean)this.ignoreNamed.get() && var1.hasCustomName()) {
+                return false;
+            }
+
+            return true;
+        } else {
             return false;
-         }
+        }
+    }
 
-         double var2 = (Double)this.range.get();
-         if (var2 > 0.0 && !PlayerUtils.isWithin(var1, var2)) {
-            return false;
-         }
+    private double randomDistance(ThreadLocalRandom var1, double var2) {
+        double var4 = 0.75;
+        return var2 <= var4 ? Math.max(0.0, var2) : var1.nextDouble(var4, var2);
+    }
 
-         if (var1 instanceof Player var4) {
-            if (var4.isSpectator()) {
-               return false;
-            }
+    private double sanitizeDouble(double var1, double var3, double var5, double var7) {
+        if (!Double.isFinite(var1)) {
+            return var3;
+        } else if (var1 < var5) {
+            return var5;
+        } else {
+            return var1 > var7 ? var7 : var1;
+        }
+    }
 
-            if ((Boolean)this.ignoreFriends.get() && !Friends.get().shouldAttack(var4)) {
-               return false;
-            }
-         } else if ((Boolean)this.ignoreNamed.get() && var1.hasCustomName()) {
-            return false;
-         }
+    public String getInfoString() {
+        return ((AssertDominance.Mode)this.mode.get()).toString();
+    }
 
-         return true;
-      } else {
-         return false;
-      }
-   }
-
-   private double randomDistance(ThreadLocalRandom var1, double var2) {
-      double var4 = 0.75;
-      return var2 <= var4 ? Math.max(0.0, var2) : var1.nextDouble(var4, var2);
-   }
-
-   private double sanitizeDouble(double var1, double var3, double var5, double var7) {
-      if (!Double.isFinite(var1)) {
-         return var3;
-      } else if (var1 < var5) {
-         return var5;
-      } else {
-         return var1 > var7 ? var7 : var1;
-      }
-   }
-
-   public String getInfoString() {
-      return ((AssertDominance.Mode)this.mode.get()).toString();
-   }
-
-   public enum Mode {
-      Orbit,
-      Random,
-      Velocity;
-   }
+    public enum Mode {
+        Orbit,
+        Random,
+        Velocity;
+    }
 }

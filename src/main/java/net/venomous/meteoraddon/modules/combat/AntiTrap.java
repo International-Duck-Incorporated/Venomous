@@ -17,63 +17,63 @@ import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class AntiTrap extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final Setting<Boolean> notifications;
-   private final Setting<Boolean> armorStands;
-   private final Setting<Boolean> chestMinecarts;
-   private final List<Entity> hiddenEntities = new ArrayList<>();
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final Setting<Boolean> notifications;
+    private final Setting<Boolean> armorStands;
+    private final Setting<Boolean> chestMinecarts;
+    private final List<Entity> hiddenEntities = new ArrayList<>();
 
-   public AntiTrap() {
-      super(VenomousAddon.CATEGORY, "anti-trap", "Hides armor stands and chest minecarts that trap you.");
-      this.notifications = this.sgGeneral
-         .add(
-            new BoolSetting.Builder().name("notifications").description("Notify in chat when a trap entity is hidden.").defaultValue(true)
-               .build()
-         );
-      this.armorStands = this.sgGeneral
-         .add(new BoolSetting.Builder().name("armor-stands").description("Hide armor stands near you.").defaultValue(true).build());
-      this.chestMinecarts = this.sgGeneral
-         .add(new BoolSetting.Builder().name("chest-minecarts").description("Hide chest minecarts near you.").defaultValue(true).build());
-   }
+    public AntiTrap() {
+        super(VenomousAddon.CATEGORY, "anti-trap", "Hides armor stands and chest minecarts that trap you.");
+        this.notifications = this.sgGeneral
+            .add(
+                new BoolSetting.Builder().name("notifications").description("Notify in chat when a trap entity is hidden.").defaultValue(true)
+                    .build()
+            );
+        this.armorStands = this.sgGeneral
+            .add(new BoolSetting.Builder().name("armor-stands").description("Hide armor stands near you.").defaultValue(true).build());
+        this.chestMinecarts = this.sgGeneral
+            .add(new BoolSetting.Builder().name("chest-minecarts").description("Hide chest minecarts near you.").defaultValue(true).build());
+    }
 
-   public void onDeactivate() {
-      this.hiddenEntities.clear();
-   }
+    public void onDeactivate() {
+        this.hiddenEntities.clear();
+    }
 
-   @EventHandler
-   private void onEntityAdded(EntityAddedEvent event) {
-      if (this.mc.player != null) {
-         Entity entity = event.entity;
-         if (this.isTrapEntity(entity) && entity.distanceTo(this.mc.player) < 5.0) {
-            this.hideEntity(entity);
-         }
-      }
-   }
-
-   @EventHandler
-   private void onTick(Pre event) {
-      if (this.mc.level != null && this.mc.player != null) {
-         for (Entity entity : this.mc.level.entitiesForRendering()) {
+    @EventHandler
+    private void onEntityAdded(EntityAddedEvent event) {
+        if (this.mc.player != null) {
+            Entity entity = event.entity;
             if (this.isTrapEntity(entity) && entity.distanceTo(this.mc.player) < 5.0) {
-               this.hideEntity(entity);
+                this.hideEntity(entity);
             }
-         }
-      }
-   }
+        }
+    }
 
-   private void hideEntity(Entity entity) {
-      if (!this.hiddenEntities.contains(entity)) {
-         this.hiddenEntities.add(entity);
-         this.mc.level.removeEntity(entity.getId(), RemovalReason.DISCARDED);
-         if ((Boolean)this.notifications.get()) {
-            this.info("Hid trap entity: " + entity.getType().getDescription().getString(), new Object[0]);
-         }
-      }
-   }
+    @EventHandler
+    private void onTick(Pre event) {
+        if (this.mc.level != null && this.mc.player != null) {
+            for (Entity entity : this.mc.level.entitiesForRendering()) {
+                if (this.isTrapEntity(entity) && entity.distanceTo(this.mc.player) < 5.0) {
+                    this.hideEntity(entity);
+                }
+            }
+        }
+    }
 
-   private boolean isTrapEntity(Entity entity) {
-      return this.armorStands.get() && entity instanceof ArmorStand
-         ? true
-         : (Boolean)this.chestMinecarts.get() && (entity instanceof MinecartChest || entity instanceof MinecartHopper);
-   }
+    private void hideEntity(Entity entity) {
+        if (!this.hiddenEntities.contains(entity)) {
+            this.hiddenEntities.add(entity);
+            this.mc.level.removeEntity(entity.getId(), RemovalReason.DISCARDED);
+            if ((Boolean)this.notifications.get()) {
+                this.info("Hid trap entity: " + entity.getType().getDescription().getString(), new Object[0]);
+            }
+        }
+    }
+
+    private boolean isTrapEntity(Entity entity) {
+        return this.armorStands.get() && entity instanceof ArmorStand
+            ? true
+            : (Boolean)this.chestMinecarts.get() && (entity instanceof MinecartChest || entity instanceof MinecartHopper);
+    }
 }

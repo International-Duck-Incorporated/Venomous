@@ -20,142 +20,142 @@ import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.StringSetting;
 
 public class BookBot extends Module {
-   private static final int MAX_LINES_PER_PAGE = 14;
-   private static final float MAX_LINE_WIDTH = 114.0F;
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final Setting<String> bookName = this.sgGeneral
-      .add(
-         new StringSetting.Builder().name("book-name").description("Name template for signed books. Use %count% for book number.")
-            .defaultValue("Venom doesnt miss")
-            .build()
-      );
-   private final Setting<Boolean> signBooks = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-            .name("sign-books")
-            .description("Sign the books after writing.")
-            .defaultValue(true)
-            .build()
-      );
-   private final Setting<Boolean> asciiOnly = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-            .name("ascii-only")
-            .description("Only use ASCII characters.")
-            .defaultValue(false)
-            .build()
-      );
-   private final Setting<Integer> pages = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-            .name("pages")
-            .description("Number of pages per book.")
-            .defaultValue(50)
-            .range(1, 100)
-            .sliderMax(100)
-            .build()
-      );
-   private final Setting<Integer> delay = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-            .name("delay")
-            .description("Delay between books in ticks.")
-            .defaultValue(40)
-            .min(1)
-            .sliderMax(200)
-            .build()
-      );
-   private int bookCount = 0;
-   private int tickCounter = 0;
-   private final Random random = new Random();
+    private static final int MAX_LINES_PER_PAGE = 14;
+    private static final float MAX_LINE_WIDTH = 114.0F;
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final Setting<String> bookName = this.sgGeneral
+        .add(
+            new StringSetting.Builder().name("book-name").description("Name template for signed books. Use %count% for book number.")
+                .defaultValue("Venom doesnt miss")
+                .build()
+        );
+    private final Setting<Boolean> signBooks = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("sign-books")
+                .description("Sign the books after writing.")
+                .defaultValue(true)
+                .build()
+        );
+    private final Setting<Boolean> asciiOnly = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("ascii-only")
+                .description("Only use ASCII characters.")
+                .defaultValue(false)
+                .build()
+        );
+    private final Setting<Integer> pages = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+                .name("pages")
+                .description("Number of pages per book.")
+                .defaultValue(50)
+                .range(1, 100)
+                .sliderMax(100)
+                .build()
+        );
+    private final Setting<Integer> delay = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+                .name("delay")
+                .description("Delay between books in ticks.")
+                .defaultValue(40)
+                .min(1)
+                .sliderMax(200)
+                .build()
+        );
+    private int bookCount = 0;
+    private int tickCounter = 0;
+    private final Random random = new Random();
 
-   public BookBot() {
-      super(VenomousAddon.CATEGORY, "bookbot", "Automatically writes and signs books with generated text.");
-   }
+    public BookBot() {
+        super(VenomousAddon.CATEGORY, "bookbot", "Automatically writes and signs books with generated text.");
+    }
 
-   @Override
-   public void onActivate() {
-      this.bookCount = 0;
-      this.tickCounter = 0;
-   }
+    @Override
+    public void onActivate() {
+        this.bookCount = 0;
+        this.tickCounter = 0;
+    }
 
-   @Override
-   public void onDeactivate() {
-      this.bookCount = 0;
-      this.tickCounter = 0;
-   }
+    @Override
+    public void onDeactivate() {
+        this.bookCount = 0;
+        this.tickCounter = 0;
+    }
 
-   @EventHandler
-   private void onTick(Pre event) {
-      if (this.mc.player != null && ++this.tickCounter >= (Integer)this.delay.get()) {
-         this.tickCounter = 0;
-         int bookSlot = -1;
+    @EventHandler
+    private void onTick(Pre event) {
+        if (this.mc.player != null && ++this.tickCounter >= (Integer)this.delay.get()) {
+            this.tickCounter = 0;
+            int bookSlot = -1;
 
-         for (int i = 0; i < 9; i++) {
-            ItemStack stack = this.mc.player.getInventory().getItem(i);
-            if (stack.getItem() == Items.WRITABLE_BOOK) {
-               bookSlot = i;
-               break;
-            }
-         }
-
-         if (bookSlot == -1) {
-            this.info("No writable book found in hotbar. Disabling.", new Object[0]);
-            this.toggle();
-         } else {
-            int prevSlot = this.mc.player.getInventory().getSelectedSlot();
-            this.mc.player.getInventory().setSelectedSlot(bookSlot);
-            List<String> pageTexts = new ArrayList<>();
-            List<Filterable<Component>> filteredPages = new ArrayList<>();
-
-            for (int p = 0; p < this.pages.get(); p++) {
-               String pageText = this.generatePage();
-               pageTexts.add(pageText);
-               filteredPages.add(Filterable.passThrough(Component.literal(pageText)));
+            for (int i = 0; i < 9; i++) {
+                ItemStack stack = this.mc.player.getInventory().getItem(i);
+                if (stack.getItem() == Items.WRITABLE_BOOK) {
+                    bookSlot = i;
+                    break;
+                }
             }
 
-            String title = ((String)this.bookName.get()).replace("%count%", String.valueOf(this.bookCount));
-            ItemStack bookStack = this.mc.player.getInventory().getItem(bookSlot);
-            bookStack.set(
-               DataComponents.WRITTEN_BOOK_CONTENT,
-               new WrittenBookContent(Filterable.passThrough(title), this.mc.player.getGameProfile().name(), 0, filteredPages, true)
-            );
-            this.mc.player.connection.send(new ServerboundEditBookPacket(bookSlot, pageTexts, this.signBooks.get() ? Optional.of(title) : Optional.empty()));
-            this.bookCount++;
-            this.mc.player.getInventory().setSelectedSlot(prevSlot);
-         }
-      }
-   }
+            if (bookSlot == -1) {
+                this.info("No writable book found in hotbar. Disabling.", new Object[0]);
+                this.toggle();
+            } else {
+                int prevSlot = this.mc.player.getInventory().getSelectedSlot();
+                this.mc.player.getInventory().setSelectedSlot(bookSlot);
+                List<String> pageTexts = new ArrayList<>();
+                List<Filterable<Component>> filteredPages = new ArrayList<>();
 
-   private String generatePage() {
-      StringBuilder page = new StringBuilder();
-      int lineIndex = 0;
-      float lineWidth = 0.0F;
+                for (int p = 0; p < this.pages.get(); p++) {
+                    String pageText = this.generatePage();
+                    pageTexts.add(pageText);
+                    filteredPages.add(Filterable.passThrough(Component.literal(pageText)));
+                }
 
-      while (lineIndex < 14) {
-         char c = this.asciiOnly.get() ? (char)(this.random.nextInt(94) + 33) : (char)(this.random.nextInt(93) + 33);
-         float charWidth = this.mc.font.width(String.valueOf(c));
-         if (lineWidth + charWidth > 114.0F) {
-            lineIndex++;
-            lineWidth = 0.0F;
-            if (lineIndex < 14) {
-               page.append('\n');
+                String title = ((String)this.bookName.get()).replace("%count%", String.valueOf(this.bookCount));
+                ItemStack bookStack = this.mc.player.getInventory().getItem(bookSlot);
+                bookStack.set(
+                    DataComponents.WRITTEN_BOOK_CONTENT,
+                    new WrittenBookContent(Filterable.passThrough(title), this.mc.player.getGameProfile().name(), 0, filteredPages, true)
+                );
+                this.mc.player.connection.send(new ServerboundEditBookPacket(bookSlot, pageTexts, this.signBooks.get() ? Optional.of(title) : Optional.empty()));
+                this.bookCount++;
+                this.mc.player.getInventory().setSelectedSlot(prevSlot);
             }
+        }
+    }
 
-            if (lineWidth + charWidth <= 114.0F) {
-               page.append(c);
-               lineWidth += charWidth;
+    private String generatePage() {
+        StringBuilder page = new StringBuilder();
+        int lineIndex = 0;
+        float lineWidth = 0.0F;
+
+        while (lineIndex < 14) {
+            char c = this.asciiOnly.get() ? (char)(this.random.nextInt(94) + 33) : (char)(this.random.nextInt(93) + 33);
+            float charWidth = this.mc.font.width(String.valueOf(c));
+            if (lineWidth + charWidth > 114.0F) {
+                lineIndex++;
+                lineWidth = 0.0F;
+                if (lineIndex < 14) {
+                    page.append('\n');
+                }
+
+                if (lineWidth + charWidth <= 114.0F) {
+                    page.append(c);
+                    lineWidth += charWidth;
+                }
+            } else {
+                page.append(c);
+                lineWidth += charWidth;
             }
-         } else {
-            page.append(c);
-            lineWidth += charWidth;
-         }
-      }
+        }
 
-      return page.toString();
-   }
+        return page.toString();
+    }
 
-   public String getInfoString() {
-      return String.valueOf(this.bookCount);
-   }
+    public String getInfoString() {
+        return String.valueOf(this.bookCount);
+    }
 }

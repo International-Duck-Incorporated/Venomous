@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(ClientIntentionPacket.class)
 public interface ClientIntentionPacketAccessor {
-   @Mutable
-   @Accessor("hostName")
-   void venomous$setHostName(String var1);
+    @Mutable
+    @Accessor("hostName")
+    void venomous$setHostName(String var1);
 }

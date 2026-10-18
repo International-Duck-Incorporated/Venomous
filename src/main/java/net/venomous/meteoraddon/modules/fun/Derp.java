@@ -12,87 +12,87 @@ import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class Derp extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final Setting<Derp.YawMode> yawMode = this.sgGeneral
-      .add(new EnumSetting.Builder<Derp.YawMode>().name("yaw-mode").defaultValue(Derp.YawMode.RANDOM).build());
-   private final Setting<Derp.PitchMode> pitchMode = this.sgGeneral
-      .add(new EnumSetting.Builder<Derp.PitchMode>().name("pitch-mode").defaultValue(Derp.PitchMode.RANDOM).build());
-   private final Setting<Boolean> handDerp = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-            .name("hand-derp")
-            .defaultValue(true)
-            .build()
-      );
-   private final Setting<Boolean> serverSide = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-            .name("server-side-only")
-            .defaultValue(true)
-            .build()
-      );
-   private final Setting<Boolean> safePitch = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-            .name("safe-pitch")
-            .defaultValue(true)
-            .build()
-      );
-   private final Setting<Double> spinSpeed = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-            .name("spin-speed")
-            .defaultValue(50.0)
-            .min(-70.0)
-            .max(70.0)
-            .visible(() -> this.yawMode.get() == Derp.YawMode.SPIN)
-            .build()
-      );
-   private float spinYaw = 0.0F;
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final Setting<Derp.YawMode> yawMode = this.sgGeneral
+        .add(new EnumSetting.Builder<Derp.YawMode>().name("yaw-mode").defaultValue(Derp.YawMode.RANDOM).build());
+    private final Setting<Derp.PitchMode> pitchMode = this.sgGeneral
+        .add(new EnumSetting.Builder<Derp.PitchMode>().name("pitch-mode").defaultValue(Derp.PitchMode.RANDOM).build());
+    private final Setting<Boolean> handDerp = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("hand-derp")
+                .defaultValue(true)
+                .build()
+        );
+    private final Setting<Boolean> serverSide = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("server-side-only")
+                .defaultValue(true)
+                .build()
+        );
+    private final Setting<Boolean> safePitch = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("safe-pitch")
+                .defaultValue(true)
+                .build()
+        );
+    private final Setting<Double> spinSpeed = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+                .name("spin-speed")
+                .defaultValue(50.0)
+                .min(-70.0)
+                .max(70.0)
+                .visible(() -> this.yawMode.get() == Derp.YawMode.SPIN)
+                .build()
+        );
+    private float spinYaw = 0.0F;
 
-   public Derp() {
-      super(VenomousAddon.CATEGORY, "derp", "Makes it look like you're derping around.");
-   }
+    public Derp() {
+        super(VenomousAddon.CATEGORY, "derp", "Makes it look like you're derping around.");
+    }
 
-   @EventHandler
-   private void onTick(Pre event) {
-      if (this.mc.player != null) {
-         float yaw = switch ((Derp.YawMode)this.yawMode.get()) {
-            case RANDOM -> ThreadLocalRandom.current().nextFloat() * 360.0F - 180.0F;
-            case SPIN -> {
-               this.spinYaw = this.spinYaw + ((Double)this.spinSpeed.get()).floatValue();
-               yield this.spinYaw;
+    @EventHandler
+    private void onTick(Pre event) {
+        if (this.mc.player != null) {
+            float yaw = switch ((Derp.YawMode)this.yawMode.get()) {
+                case RANDOM -> ThreadLocalRandom.current().nextFloat() * 360.0F - 180.0F;
+                case SPIN -> {
+                    this.spinYaw = this.spinYaw + ((Double)this.spinSpeed.get()).floatValue();
+                    yield this.spinYaw;
+                }
+                case STATIC -> 0.0F;
+            };
+
+            float pitch = switch ((Derp.PitchMode)this.pitchMode.get()) {
+                case RANDOM -> this.safePitch.get()
+                    ? ThreadLocalRandom.current().nextFloat() * 180.0F - 90.0F
+                    : ThreadLocalRandom.current().nextFloat() * 360.0F - 180.0F;
+                case STATIC -> -90.0F;
+            };
+            if ((Boolean)this.serverSide.get()) {
+                Rotations.rotate(yaw, pitch, 10, null);
+            } else {
+                this.mc.player.setYRot(yaw);
+                this.mc.player.setXRot(pitch);
             }
-            case STATIC -> 0.0F;
-         };
 
-         float pitch = switch ((Derp.PitchMode)this.pitchMode.get()) {
-            case RANDOM -> this.safePitch.get()
-               ? ThreadLocalRandom.current().nextFloat() * 180.0F - 90.0F
-               : ThreadLocalRandom.current().nextFloat() * 360.0F - 180.0F;
-            case STATIC -> -90.0F;
-         };
-         if ((Boolean)this.serverSide.get()) {
-            Rotations.rotate(yaw, pitch, 10, null);
-         } else {
-            this.mc.player.setYRot(yaw);
-            this.mc.player.setXRot(pitch);
-         }
+            if ((Boolean)this.handDerp.get()) {
+                this.mc.player.swing(ThreadLocalRandom.current().nextBoolean() ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND);
+            }
+        }
+    }
 
-         if ((Boolean)this.handDerp.get()) {
-            this.mc.player.swing(ThreadLocalRandom.current().nextBoolean() ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND);
-         }
-      }
-   }
+    public enum PitchMode {
+        RANDOM,
+        STATIC;
+    }
 
-   public enum PitchMode {
-      RANDOM,
-      STATIC;
-   }
-
-   public enum YawMode {
-      RANDOM,
-      SPIN,
-      STATIC;
-   }
+    public enum YawMode {
+        RANDOM,
+        SPIN,
+        STATIC;
+    }
 }

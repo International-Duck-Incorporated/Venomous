@@ -10,32 +10,32 @@ import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class AntiBlind extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final Setting<Boolean> blockNausea = this.sgGeneral
-      .add(new BoolSetting.Builder().name("block-nausea").description("Block nausea effect.").defaultValue(true).build());
-   private final Setting<Boolean> blockBlindness = this.sgGeneral
-      .add(new BoolSetting.Builder().name("block-blindness").description("Block blindness effect.").defaultValue(true).build());
-   private final Setting<Boolean> blockDarkness = this.sgGeneral
-      .add(new BoolSetting.Builder().name("block-darkness").description("Block darkness effect.").defaultValue(true).build());
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final Setting<Boolean> blockNausea = this.sgGeneral
+        .add(new BoolSetting.Builder().name("block-nausea").description("Block nausea effect.").defaultValue(true).build());
+    private final Setting<Boolean> blockBlindness = this.sgGeneral
+        .add(new BoolSetting.Builder().name("block-blindness").description("Block blindness effect.").defaultValue(true).build());
+    private final Setting<Boolean> blockDarkness = this.sgGeneral
+        .add(new BoolSetting.Builder().name("block-darkness").description("Block darkness effect.").defaultValue(true).build());
 
-   public AntiBlind() {
-      super(VenomousAddon.CATEGORY, "anti-blind", "Blocks annoying screen effects like blindness, nausea, etc.");
-   }
+    public AntiBlind() {
+        super(VenomousAddon.CATEGORY, "anti-blind", "Blocks annoying screen effects like blindness, nausea, etc.");
+    }
 
-   @EventHandler
-   private void onTick(Pre event) {
-      if (this.mc.player != null) {
-         if ((Boolean)this.blockBlindness.get() && this.mc.player.hasEffect(MobEffects.BLINDNESS)) {
-            this.mc.player.removeEffect(MobEffects.BLINDNESS);
-         }
+    @EventHandler
+    private void onTick(Pre event) {
+        if (this.mc.player != null) {
+            if ((Boolean)this.blockBlindness.get() && this.mc.player.hasEffect(MobEffects.BLINDNESS)) {
+                this.mc.player.removeEffect(MobEffects.BLINDNESS);
+            }
 
-         if ((Boolean)this.blockNausea.get() && this.mc.player.hasEffect(MobEffects.NAUSEA)) {
-            this.mc.player.removeEffect(MobEffects.NAUSEA);
-         }
+            if ((Boolean)this.blockNausea.get() && this.mc.player.hasEffect(MobEffects.NAUSEA)) {
+                this.mc.player.removeEffect(MobEffects.NAUSEA);
+            }
 
-         if ((Boolean)this.blockDarkness.get() && this.mc.player.hasEffect(MobEffects.DARKNESS)) {
-            this.mc.player.removeEffect(MobEffects.DARKNESS);
-         }
-      }
-   }
+            if ((Boolean)this.blockDarkness.get() && this.mc.player.hasEffect(MobEffects.DARKNESS)) {
+                this.mc.player.removeEffect(MobEffects.DARKNESS);
+            }
+        }
+    }
 }

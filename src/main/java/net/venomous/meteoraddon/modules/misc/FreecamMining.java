@@ -11,43 +11,43 @@ import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class FreecamMining extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final Setting<Double> range = this.sgGeneral
-      .add(
-         new DoubleSetting.Builder().name("range").description("Maximum range to mine blocks from freecam position.")
-            .defaultValue(64.0)
-            .min(4.0)
-            .max(256.0)
-            .sliderMax(128.0)
-            .build()
-      );
-   private final Setting<Boolean> rotate = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
-            .name("rotate")
-            .description("Rotate towards the block before mining.")
-            .defaultValue(false)
-            .build()
-      );
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final Setting<Double> range = this.sgGeneral
+        .add(
+            new DoubleSetting.Builder().name("range").description("Maximum range to mine blocks from freecam position.")
+                .defaultValue(64.0)
+                .min(4.0)
+                .max(256.0)
+                .sliderMax(128.0)
+                .build()
+        );
+    private final Setting<Boolean> rotate = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("rotate")
+                .description("Rotate towards the block before mining.")
+                .defaultValue(false)
+                .build()
+        );
 
-   public FreecamMining() {
-      super(VenomousAddon.CATEGORY, "freecam-mining", "Allows mining blocks while freecam is active.");
-   }
+    public FreecamMining() {
+        super(VenomousAddon.CATEGORY, "freecam-mining", "Allows mining blocks while freecam is active.");
+    }
 
-   @EventHandler
-   private void onTick(Pre event) {
-      if (this.mc.player != null && this.mc.level != null) {
-         Freecam freecam = (Freecam)Modules.get().get(Freecam.class);
-         if (freecam != null && !freecam.isActive()) {
-         }
-      }
-   }
+    @EventHandler
+    private void onTick(Pre event) {
+        if (this.mc.player != null && this.mc.level != null) {
+            Freecam freecam = (Freecam)Modules.get().get(Freecam.class);
+            if (freecam != null && !freecam.isActive()) {
+            }
+        }
+    }
 
-   public boolean isActiveAndFreecamOn() {
-      return this.isActive() && Modules.get().isActive(Freecam.class);
-   }
+    public boolean isActiveAndFreecamOn() {
+        return this.isActive() && Modules.get().isActive(Freecam.class);
+    }
 
-   public double getExtendedRange() {
-      return this.isActive() ? (Double)this.range.get() : 4.5;
-   }
+    public double getExtendedRange() {
+        return this.isActive() ? (Double)this.range.get() : 4.5;
+    }
 }

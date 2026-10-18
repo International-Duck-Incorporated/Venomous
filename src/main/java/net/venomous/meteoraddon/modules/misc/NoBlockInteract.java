@@ -11,39 +11,39 @@ import net.venomous.meteoraddon.utils.McCompat;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class NoBlockInteract extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final Setting<Boolean> onlyWhenHoldingWeapon = this.sgGeneral
-      .add(
-         new BoolSetting.Builder().name("only-when-holding-weapon").description("Only prevent block interaction when holding a weapon.")
-            .defaultValue(true)
-            .build()
-      );
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final Setting<Boolean> onlyWhenHoldingWeapon = this.sgGeneral
+        .add(
+            new BoolSetting.Builder().name("only-when-holding-weapon").description("Only prevent block interaction when holding a weapon.")
+                .defaultValue(true)
+                .build()
+        );
 
-   public NoBlockInteract() {
-      super(VenomousAddon.CATEGORY, "no-block-interact", "Prevents accidental block interaction (chests, buttons, etc).");
-   }
+    public NoBlockInteract() {
+        super(VenomousAddon.CATEGORY, "no-block-interact", "Prevents accidental block interaction (chests, buttons, etc).");
+    }
 
-   @EventHandler
-   private void onInteractBlock(InteractBlockEvent event) {
-      if (this.shouldCancelBlockInteract()) {
-         event.cancel();
-      }
-   }
+    @EventHandler
+    private void onInteractBlock(InteractBlockEvent event) {
+        if (this.shouldCancelBlockInteract()) {
+            event.cancel();
+        }
+    }
 
-   public boolean shouldCancelBlockInteract() {
-      if (!this.isActive()) {
-         return false;
-      }
+    public boolean shouldCancelBlockInteract() {
+        if (!this.isActive()) {
+            return false;
+        }
 
-      if (!(Boolean)this.onlyWhenHoldingWeapon.get()) {
-         return true;
-      }
+        if (!(Boolean)this.onlyWhenHoldingWeapon.get()) {
+            return true;
+        }
 
-      if (this.mc.player == null) {
-         return false;
-      }
+        if (this.mc.player == null) {
+            return false;
+        }
 
-      Item item = this.mc.player.getMainHandItem().getItem();
-      return McCompat.isWeapon(item);
-   }
+        Item item = this.mc.player.getMainHandItem().getItem();
+        return McCompat.isWeapon(item);
+    }
 }

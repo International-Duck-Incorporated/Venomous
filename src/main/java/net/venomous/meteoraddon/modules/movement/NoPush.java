@@ -25,93 +25,93 @@ import net.venomous.meteoraddon.VenomousAddon;
  * into {@link #suppresses(Source)}.
  */
 public class NoPush extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
 
-   private final Setting<List<String>> pushBy = this.sgGeneral.add(
-      new StringListSetting.Builder()
-         .name("push-by")
-         .description("Which push sources to block: entities, blocks, fishing-rod, liquids, sinking.")
-         .defaultValue(List.of(Source.ENTITIES.key, Source.LIQUIDS.key, Source.SINKING.key))
-         .build()
-   );
+    private final Setting<List<String>> pushBy = this.sgGeneral.add(
+        new StringListSetting.Builder()
+            .name("push-by")
+            .description("Which push sources to block: entities, blocks, fishing-rod, liquids, sinking.")
+            .defaultValue(List.of(Source.ENTITIES.key, Source.LIQUIDS.key, Source.SINKING.key))
+            .build()
+    );
 
-   private final Setting<Boolean> onlyWhileSneaking = this.sgGeneral.add(
-      new BoolSetting.Builder()
-         .name("only-while-sneaking")
-         .description("Only suppress pushing while you are sneaking.")
-         .defaultValue(false)
-         .build()
-   );
+    private final Setting<Boolean> onlyWhileSneaking = this.sgGeneral.add(
+        new BoolSetting.Builder()
+            .name("only-while-sneaking")
+            .description("Only suppress pushing while you are sneaking.")
+            .defaultValue(false)
+            .build()
+    );
 
-   public NoPush() {
-      super(VenomousAddon.CATEGORY, "no-push", "Disables being pushed by entities, liquids, blocks and fishing rods.");
-   }
+    public NoPush() {
+        super(VenomousAddon.CATEGORY, "no-push", "Disables being pushed by entities, liquids, blocks and fishing rods.");
+    }
 
-   /**
+    /**
     * Whether {@code source} should currently be suppressed.
     *
     * <p>Static so the mixins can consult it without holding a module reference.
     */
-   public static boolean blocks(Source source) {
-      // Entity mixins can fire before Meteor's module system exists.
-      Modules modules = Modules.get();
-      if (modules == null) {
-         return false;
-      }
+    public static boolean blocks(Source source) {
+        // Entity mixins can fire before Meteor's module system exists.
+        Modules modules = Modules.get();
+        if (modules == null) {
+            return false;
+        }
 
-      NoPush module = modules.get(NoPush.class);
-      return module != null && module.isActive() && module.suppresses(source);
-   }
+        NoPush module = modules.get(NoPush.class);
+        return module != null && module.isActive() && module.suppresses(source);
+    }
 
-   public boolean suppresses(Source source) {
-      if (this.onlyWhileSneaking.get() && this.mc.player != null && !this.mc.player.isShiftKeyDown()) {
-         return false;
-      }
+    public boolean suppresses(Source source) {
+        if (this.onlyWhileSneaking.get() && this.mc.player != null && !this.mc.player.isShiftKeyDown()) {
+            return false;
+        }
 
-      for (String entry : this.pushBy.get()) {
-         if (entry != null && entry.trim().replace('_', '-').equalsIgnoreCase(source.key)) {
-            return true;
-         }
-      }
-      return false;
-   }
+        for (String entry : this.pushBy.get()) {
+            if (entry != null && entry.trim().replace('_', '-').equalsIgnoreCase(source.key)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-   @EventHandler
-   private void onTick(Pre event) {
-      if (this.mc.player == null) {
-         return;
-      }
+    @EventHandler
+    private void onTick(Pre event) {
+        if (this.mc.player == null) {
+            return;
+        }
 
-      if (this.suppresses(Source.SINKING)
-         && !this.mc.options.keyJump.isDown()
-         && !this.mc.options.keyShift.isDown()
-         && this.mc.player.isInWater()
-         && this.mc.player.getDeltaMovement().y < 0.0) {
-         this.mc.player.setDeltaMovement(
-            this.mc.player.getDeltaMovement().x,
-            0.0,
-            this.mc.player.getDeltaMovement().z
-         );
-      }
-   }
+        if (this.suppresses(Source.SINKING)
+            && !this.mc.options.keyJump.isDown()
+            && !this.mc.options.keyShift.isDown()
+            && this.mc.player.isInWater()
+            && this.mc.player.getDeltaMovement().y < 0.0) {
+            this.mc.player.setDeltaMovement(
+                this.mc.player.getDeltaMovement().x,
+                0.0,
+                this.mc.player.getDeltaMovement().z
+            );
+        }
+    }
 
-   @Override
-   public String getInfoString() {
-      return String.join(", ", this.pushBy.get());
-   }
+    @Override
+    public String getInfoString() {
+        return String.join(", ", this.pushBy.get());
+    }
 
-   /** A source of unwanted motion. */
-   public enum Source {
-      ENTITIES("entities"),
-      BLOCKS("blocks"),
-      FISHING_ROD("fishing-rod"),
-      LIQUIDS("liquids"),
-      SINKING("sinking");
+    /** A source of unwanted motion. */
+    public enum Source {
+        ENTITIES("entities"),
+        BLOCKS("blocks"),
+        FISHING_ROD("fishing-rod"),
+        LIQUIDS("liquids"),
+        SINKING("sinking");
 
-      public final String key;
+        public final String key;
 
-      Source(String key) {
-         this.key = key;
-      }
-   }
+        Source(String key) {
+            this.key = key;
+        }
+    }
 }

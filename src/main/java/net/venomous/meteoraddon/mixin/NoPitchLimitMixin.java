@@ -12,16 +12,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Entity.class)
 public abstract class NoPitchLimitMixin {
-   @Shadow
-   private float xRot;
+    @Shadow
+    private float xRot;
 
-   @Inject(method = "setXRot", at = @At("HEAD"), cancellable = true)
-   private void venomous$setXRotWithoutLimit(float xRot, CallbackInfo ci) {
-      Minecraft mc = Minecraft.getInstance();
-      Modules modules = Modules.get();
-      if (mc != null && mc.player != null && ((Entity)(Object)this) == mc.player && modules != null && modules.isActive(NoPitchLimit.class)) {
-         this.xRot = xRot;
-         ci.cancel();
-      }
-   }
+    @Inject(method = "setXRot", at = @At("HEAD"), cancellable = true)
+    private void venomous$setXRotWithoutLimit(float xRot, CallbackInfo ci) {
+        Minecraft mc = Minecraft.getInstance();
+        Modules modules = Modules.get();
+        if (mc != null && mc.player != null && ((Entity)(Object)this) == mc.player && modules != null && modules.isActive(NoPitchLimit.class)) {
+            this.xRot = xRot;
+            ci.cancel();
+        }
+    }
 }

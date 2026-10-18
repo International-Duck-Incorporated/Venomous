@@ -9,91 +9,91 @@ import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class AntiVoid extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final Setting<AntiVoid.Mode> mode = this.sgGeneral
-      .add(
-         new EnumSetting.Builder<AntiVoid.Mode>().name("mode").description("Motion boosts you up, Back teleports you to your last safe position.")
-            .defaultValue(AntiVoid.Mode.Motion)
-            .build()
-      );
-   private final Setting<Integer> threshold = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-            .name("threshold")
-            .description("Blocks above world bottom to activate.")
-            .defaultValue(5)
-            .min(0)
-            .max(64)
-            .build()
-      );
-   private final Setting<Double> upwardVelocity = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-            .name("upward-velocity")
-            .description("Upward velocity for Motion mode.")
-            .defaultValue(0.5)
-            .min(0.0)
-            .max(5.0)
-            .visible(() -> this.mode.get() == AntiVoid.Mode.Motion)
-            .build()
-      );
-   private double safeX;
-   private double safeY;
-   private double safeZ;
-   private boolean hasSafePos = false;
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final Setting<AntiVoid.Mode> mode = this.sgGeneral
+        .add(
+            new EnumSetting.Builder<AntiVoid.Mode>().name("mode").description("Motion boosts you up, Back teleports you to your last safe position.")
+                .defaultValue(AntiVoid.Mode.Motion)
+                .build()
+        );
+    private final Setting<Integer> threshold = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+                .name("threshold")
+                .description("Blocks above world bottom to activate.")
+                .defaultValue(5)
+                .min(0)
+                .max(64)
+                .build()
+        );
+    private final Setting<Double> upwardVelocity = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+                .name("upward-velocity")
+                .description("Upward velocity for Motion mode.")
+                .defaultValue(0.5)
+                .min(0.0)
+                .max(5.0)
+                .visible(() -> this.mode.get() == AntiVoid.Mode.Motion)
+                .build()
+        );
+    private double safeX;
+    private double safeY;
+    private double safeZ;
+    private boolean hasSafePos = false;
 
-   public AntiVoid() {
-      // Keep Meteor's built-in anti-void module available; module names are global.
-      super(VenomousAddon.CATEGORY, "v-anti-void", "Prevents falling into the void.");
-   }
+    public AntiVoid() {
+        // Keep Meteor's built-in anti-void module available; module names are global.
+        super(VenomousAddon.CATEGORY, "v-anti-void", "Prevents falling into the void.");
+    }
 
-   @Override
-   public void onActivate() {
-      if (this.mc.player != null && this.mc.level != null && this.mc.player.getY() > this.mc.level.getMinY() + (Integer)this.threshold.get()) {
-         this.rememberSafe();
-      } else {
-         this.hasSafePos = false;
-      }
-   }
-
-   @Override
-   public void onDeactivate() {
-      this.hasSafePos = false;
-   }
-
-   @EventHandler
-   private void onTick(Pre event) {
-      if (this.mc.player != null && this.mc.level != null) {
-         if (this.mc.player.onGround() && this.mc.player.getY() > this.mc.level.getMinY() + (Integer)this.threshold.get()) {
+    @Override
+    public void onActivate() {
+        if (this.mc.player != null && this.mc.level != null && this.mc.player.getY() > this.mc.level.getMinY() + (Integer)this.threshold.get()) {
             this.rememberSafe();
-         }
+        } else {
+            this.hasSafePos = false;
+        }
+    }
 
-         if (this.nearVoid()) {
-            if (this.mode.get() == AntiVoid.Mode.Motion) {
-               this.mc.player.setDeltaMovement(this.mc.player.getDeltaMovement().x, (Double)this.upwardVelocity.get(), this.mc.player.getDeltaMovement().z);
-               this.mc.player.fallDistance = 0.0F;
-            } else if (this.hasSafePos) {
-               this.mc.player.setPos(this.safeX, this.safeY, this.safeZ);
-               this.mc.player.setDeltaMovement(0.0, 0.0, 0.0);
-               this.mc.player.fallDistance = 0.0F;
+    @Override
+    public void onDeactivate() {
+        this.hasSafePos = false;
+    }
+
+    @EventHandler
+    private void onTick(Pre event) {
+        if (this.mc.player != null && this.mc.level != null) {
+            if (this.mc.player.onGround() && this.mc.player.getY() > this.mc.level.getMinY() + (Integer)this.threshold.get()) {
+                this.rememberSafe();
             }
-         }
-      }
-   }
 
-   private boolean nearVoid() {
-      return this.mc.player.getY() < this.mc.level.getMinY() + (Integer)this.threshold.get() && this.mc.player.getDeltaMovement().y < 0.0;
-   }
+            if (this.nearVoid()) {
+                if (this.mode.get() == AntiVoid.Mode.Motion) {
+                    this.mc.player.setDeltaMovement(this.mc.player.getDeltaMovement().x, (Double)this.upwardVelocity.get(), this.mc.player.getDeltaMovement().z);
+                    this.mc.player.fallDistance = 0.0F;
+                } else if (this.hasSafePos) {
+                    this.mc.player.setPos(this.safeX, this.safeY, this.safeZ);
+                    this.mc.player.setDeltaMovement(0.0, 0.0, 0.0);
+                    this.mc.player.fallDistance = 0.0F;
+                }
+            }
+        }
+    }
 
-   private void rememberSafe() {
-      this.safeX = this.mc.player.getX();
-      this.safeY = this.mc.player.getY();
-      this.safeZ = this.mc.player.getZ();
-      this.hasSafePos = true;
-   }
+    private boolean nearVoid() {
+        return this.mc.player.getY() < this.mc.level.getMinY() + (Integer)this.threshold.get() && this.mc.player.getDeltaMovement().y < 0.0;
+    }
 
-   public enum Mode {
-      Motion,
-      Back;
-   }
+    private void rememberSafe() {
+        this.safeX = this.mc.player.getX();
+        this.safeY = this.mc.player.getY();
+        this.safeZ = this.mc.player.getZ();
+        this.hasSafePos = true;
+    }
+
+    public enum Mode {
+        Motion,
+        Back;
+    }
 }

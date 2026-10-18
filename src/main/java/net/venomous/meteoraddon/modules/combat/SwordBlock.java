@@ -12,44 +12,44 @@ import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class SwordBlock extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final Setting<Boolean> onlyVisual = this.sgGeneral
-      .add(
-         new BoolSetting.Builder().name("only-visual").description("Only show the blocking animation, don't actually block.")
-            .defaultValue(false)
-            .build()
-      );
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final Setting<Boolean> onlyVisual = this.sgGeneral
+        .add(
+            new BoolSetting.Builder().name("only-visual").description("Only show the blocking animation, don't actually block.")
+                .defaultValue(false)
+                .build()
+        );
 
-   public SwordBlock() {
-      super(VenomousAddon.CATEGORY, "sword-block", "Block with swords using an offhand shield (1.8-style blocking).");
-   }
+    public SwordBlock() {
+        super(VenomousAddon.CATEGORY, "sword-block", "Block with swords using an offhand shield (1.8-style blocking).");
+    }
 
-   private boolean isHoldingSword() {
-      if (this.mc.player == null) {
-         return false;
-      }
+    private boolean isHoldingSword() {
+        if (this.mc.player == null) {
+            return false;
+        }
 
-      String name = this.mc.player.getMainHandItem().getItem().toString().toLowerCase();
-      return name.contains("sword");
-   }
+        String name = this.mc.player.getMainHandItem().getItem().toString().toLowerCase();
+        return name.contains("sword");
+    }
 
-   private boolean hasOffhandShield() {
-      return this.mc.player == null ? false : this.mc.player.getOffhandItem().getItem() instanceof ShieldItem;
-   }
+    private boolean hasOffhandShield() {
+        return this.mc.player == null ? false : this.mc.player.getOffhandItem().getItem() instanceof ShieldItem;
+    }
 
-   @EventHandler
-   private void onPacketSend(Send event) {
-      if (this.mc.player != null
-         && !(Boolean)this.onlyVisual.get()
-         && event.packet instanceof ServerboundUseItemPacket packet
-         && packet.getHand() == InteractionHand.MAIN_HAND
-         && this.isHoldingSword()
-         && this.hasOffhandShield()) {
-         event.cancel();
-         this.mc
-            .player
-            .connection
-            .send(new ServerboundUseItemPacket(InteractionHand.OFF_HAND, packet.getSequence(), this.mc.player.getYRot(), this.mc.player.getXRot()));
-      }
-   }
+    @EventHandler
+    private void onPacketSend(Send event) {
+        if (this.mc.player != null
+            && !(Boolean)this.onlyVisual.get()
+            && event.packet instanceof ServerboundUseItemPacket packet
+            && packet.getHand() == InteractionHand.MAIN_HAND
+            && this.isHoldingSword()
+            && this.hasOffhandShield()) {
+            event.cancel();
+            this.mc
+                .player
+                .connection
+                .send(new ServerboundUseItemPacket(InteractionHand.OFF_HAND, packet.getSequence(), this.mc.player.getYRot(), this.mc.player.getXRot()));
+        }
+    }
 }

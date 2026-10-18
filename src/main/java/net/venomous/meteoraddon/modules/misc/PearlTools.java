@@ -21,143 +21,143 @@ import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 
 public class PearlTools extends Module {
-   private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-   private final SettingGroup sgRender = this.settings.createGroup("Render");
-   private final Setting<Boolean> landingWarning = this.sgGeneral
-      .add(
-         new BoolSetting.Builder().name("landing-warning").description("Warn when a non-owned pearl is predicted to land near you.")
-            .defaultValue(true)
-            .build()
-      );
-   private final Setting<Double> dangerRange = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-            .name("danger-range")
-            .description("Distance from predicted landing to warn.")
-            .defaultValue(6.0)
-            .range(1.0, 32.0)
-            .sliderMax(16.0)
-            .build()
-      );
-   private final Setting<Integer> simSteps = this.sgGeneral
-      .add(
-         new meteordevelopment.meteorclient.settings.IntSetting.Builder()
-            .name("sim-steps")
-            .description("Ticks to simulate pearl trajectory.")
-            .defaultValue(80)
-            .range(10, 200)
-            .sliderMax(120)
-            .build()
-      );
-   private final Setting<Boolean> render = this.sgRender
-      .add(new BoolSetting.Builder().name("render").description("Render pearl trajectory and landing boxes.").defaultValue(true).build());
-   private final Setting<SettingColor> color = this.sgRender
-      .add(
-         new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
-            .name("color")
-            .description("Pearl render color.")
-            .defaultValue(new SettingColor(80, 200, 255, 210))
-            .build()
-      );
-   private final Set<Integer> warned = new HashSet<>();
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final SettingGroup sgRender = this.settings.createGroup("Render");
+    private final Setting<Boolean> landingWarning = this.sgGeneral
+        .add(
+            new BoolSetting.Builder().name("landing-warning").description("Warn when a non-owned pearl is predicted to land near you.")
+                .defaultValue(true)
+                .build()
+        );
+    private final Setting<Double> dangerRange = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
+                .name("danger-range")
+                .description("Distance from predicted landing to warn.")
+                .defaultValue(6.0)
+                .range(1.0, 32.0)
+                .sliderMax(16.0)
+                .build()
+        );
+    private final Setting<Integer> simSteps = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+                .name("sim-steps")
+                .description("Ticks to simulate pearl trajectory.")
+                .defaultValue(80)
+                .range(10, 200)
+                .sliderMax(120)
+                .build()
+        );
+    private final Setting<Boolean> render = this.sgRender
+        .add(new BoolSetting.Builder().name("render").description("Render pearl trajectory and landing boxes.").defaultValue(true).build());
+    private final Setting<SettingColor> color = this.sgRender
+        .add(
+            new meteordevelopment.meteorclient.settings.ColorSetting.Builder()
+                .name("color")
+                .description("Pearl render color.")
+                .defaultValue(new SettingColor(80, 200, 255, 210))
+                .build()
+        );
+    private final Set<Integer> warned = new HashSet<>();
 
-   public PearlTools() {
-      super(VenomousAddon.CATEGORY, "pearl-tools", "Tracks ender pearls, predicts landing spots and warns about dangerous pearls.");
-   }
+    public PearlTools() {
+        super(VenomousAddon.CATEGORY, "pearl-tools", "Tracks ender pearls, predicts landing spots and warns about dangerous pearls.");
+    }
 
-   @Override
-   public void onActivate() {
-      this.warned.clear();
-   }
+    @Override
+    public void onActivate() {
+        this.warned.clear();
+    }
 
-   @Override
-   public void onDeactivate() {
-      this.warned.clear();
-   }
+    @Override
+    public void onDeactivate() {
+        this.warned.clear();
+    }
 
-   @EventHandler
-   private void onTick(Pre event) {
-      if ((Boolean)this.landingWarning.get() && this.mc.player != null && this.mc.level != null) {
-         HashSet<Integer> present = new HashSet<>();
+    @EventHandler
+    private void onTick(Pre event) {
+        if ((Boolean)this.landingWarning.get() && this.mc.player != null && this.mc.level != null) {
+            HashSet<Integer> present = new HashSet<>();
 
-         for (Entity e : this.mc.level.entitiesForRendering()) {
-            if (e.getType() == EntityTypes.ENDER_PEARL) {
-               present.add(e.getId());
+            for (Entity e : this.mc.level.entitiesForRendering()) {
+                if (e.getType() == EntityTypes.ENDER_PEARL) {
+                    present.add(e.getId());
+                }
             }
-         }
 
-         this.warned.retainAll(present);
+            this.warned.retainAll(present);
 
-         for (Entity e : this.mc.level.entitiesForRendering()) {
-            Vec3 landing;
-            Projectile p;
-            if (e.getType() == EntityTypes.ENDER_PEARL
-               && e instanceof Projectile
-               && (p = (Projectile)e).getOwner() != this.mc.player
-               && (landing = this.simulate(e, null)) != null
-               && this.mc.player.distanceToSqr(landing) <= (Double)this.dangerRange.get() * (Double)this.dangerRange.get()
-               && this.warned.add(e.getId())) {
-               this.warning("Danger pearl landing nearby: %.1f blocks", new Object[]{Math.sqrt(this.mc.player.distanceToSqr(landing))});
+            for (Entity e : this.mc.level.entitiesForRendering()) {
+                Vec3 landing;
+                Projectile p;
+                if (e.getType() == EntityTypes.ENDER_PEARL
+                    && e instanceof Projectile
+                    && (p = (Projectile)e).getOwner() != this.mc.player
+                    && (landing = this.simulate(e, null)) != null
+                    && this.mc.player.distanceToSqr(landing) <= (Double)this.dangerRange.get() * (Double)this.dangerRange.get()
+                    && this.warned.add(e.getId())) {
+                    this.warning("Danger pearl landing nearby: %.1f blocks", new Object[]{Math.sqrt(this.mc.player.distanceToSqr(landing))});
+                }
             }
-         }
-      }
-   }
+        }
+    }
 
-   @EventHandler
-   private void onRender(Render3DEvent event) {
-      if ((Boolean)this.render.get() && this.mc.player != null && this.mc.level != null) {
-         for (Entity e : this.mc.level.entitiesForRendering()) {
-            if (e.getType() == EntityTypes.ENDER_PEARL) {
-               Vec3 landing = this.simulate(e, event);
-               if (landing != null) {
-                  event.renderer
-                     .box(
-                        landing.x - 0.15,
-                        landing.y - 0.15,
-                        landing.z - 0.15,
-                        landing.x + 0.15,
-                        landing.y + 0.15,
-                        landing.z + 0.15,
-                        (Color)this.color.get(),
-                        (Color)this.color.get(),
-                        ShapeMode.Both,
-                        0
-                     );
-               }
+    @EventHandler
+    private void onRender(Render3DEvent event) {
+        if ((Boolean)this.render.get() && this.mc.player != null && this.mc.level != null) {
+            for (Entity e : this.mc.level.entitiesForRendering()) {
+                if (e.getType() == EntityTypes.ENDER_PEARL) {
+                    Vec3 landing = this.simulate(e, event);
+                    if (landing != null) {
+                        event.renderer
+                            .box(
+                                landing.x - 0.15,
+                                landing.y - 0.15,
+                                landing.z - 0.15,
+                                landing.x + 0.15,
+                                landing.y + 0.15,
+                                landing.z + 0.15,
+                                (Color)this.color.get(),
+                                (Color)this.color.get(),
+                                ShapeMode.Both,
+                                0
+                            );
+                    }
+                }
             }
-         }
-      }
-   }
+        }
+    }
 
-   private Vec3 simulate(Entity pearl, Render3DEvent event) {
-      if (this.mc.level == null) {
-         return null;
-      }
+    private Vec3 simulate(Entity pearl, Render3DEvent event) {
+        if (this.mc.level == null) {
+            return null;
+        }
 
-      Vec3 pos = pearl.position();
-      Vec3 vel = pearl.getDeltaMovement();
-      Vec3 prev = pos;
+        Vec3 pos = pearl.position();
+        Vec3 vel = pearl.getDeltaMovement();
+        Vec3 prev = pos;
 
-      for (int i = 0; i < this.simSteps.get(); i++) {
-         vel = new Vec3(vel.x * 0.99, (vel.y - 0.03) * 0.99, vel.z * 0.99);
-         Vec3 next = pos.add(vel);
-         if (event != null) {
-            event.renderer.line(prev.x, prev.y, prev.z, next.x, next.y, next.z, (Color)this.color.get());
-         }
+        for (int i = 0; i < this.simSteps.get(); i++) {
+            vel = new Vec3(vel.x * 0.99, (vel.y - 0.03) * 0.99, vel.z * 0.99);
+            Vec3 next = pos.add(vel);
+            if (event != null) {
+                event.renderer.line(prev.x, prev.y, prev.z, next.x, next.y, next.z, (Color)this.color.get());
+            }
 
-         BlockPos bp = BlockPos.containing(next.x, next.y, next.z);
-         if (!this.mc.level.getBlockState(bp).isAir() && !this.mc.level.getBlockState(bp).getFluidState().isEmpty()) {
-            return next;
-         }
+            BlockPos bp = BlockPos.containing(next.x, next.y, next.z);
+            if (!this.mc.level.getBlockState(bp).isAir() && !this.mc.level.getBlockState(bp).getFluidState().isEmpty()) {
+                return next;
+            }
 
-         if (!this.mc.level.getBlockState(bp).isAir()) {
-            return next;
-         }
+            if (!this.mc.level.getBlockState(bp).isAir()) {
+                return next;
+            }
 
-         prev = next;
-         pos = next;
-      }
+            prev = next;
+            pos = next;
+        }
 
-      return pos;
-   }
+        return pos;
+    }
 }
