@@ -6,6 +6,13 @@ All notable changes to Venomous are documented in this file.
 
 - Continued development and maintenance following the migration from GitHub to GitLab.
 - Improved project documentation and clarified the project's work-in-progress status.
+- Reindented the recovered sources from 3-space to 4-space, matching the hand-written files.
+  The recovered tree carried Vineflower's 3-space output, so 122 of 150 Java files were
+  formatted differently from the rest; the change is whitespace-only and leaves compiled
+  output byte-identical.
+- Moved `ServerAnalyzer` from `modules/detection` to `utils`. It is a helper owned by
+  `AntiCheatDetect` rather than a registrable module, so `modules/` now contains only
+  modules and the registry tests no longer need to special-case it.
 
 ## [7.0.0] - 2026-09-19
 

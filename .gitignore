@@ -31,3 +31,6 @@ logs/
 
 # Stray patch files
 *.patch
+
+# Local scratch notes
+DEV_NOTES.md

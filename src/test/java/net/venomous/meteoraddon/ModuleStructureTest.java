@@ -139,7 +139,7 @@ public class ModuleStructureTest {
     @Test
     void testModuleListMatchesSourceTree() throws Exception {
         java.nio.file.Path root = java.nio.file.Path.of("src/main/java/net/venomous/meteoraddon/modules");
-        java.util.Set<String> ignored = java.util.Set.of("ModuleRegistry", "ServerAnalyzer");
+        java.util.Set<String> ignored = java.util.Set.of("ModuleRegistry");
 
         java.util.Set<String> onDisk;
         try (java.util.stream.Stream<java.nio.file.Path> paths = java.nio.file.Files.walk(root)) {

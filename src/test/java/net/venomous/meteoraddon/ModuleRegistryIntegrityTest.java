@@ -23,8 +23,7 @@ public class ModuleRegistryIntegrityTest {
      * Classes that live under modules/ but are helpers rather than registrable Meteor modules.
      */
     private static final Set<String> NON_MODULE_CLASSES = Set.of(
-        "ModuleRegistry",
-        "ServerAnalyzer"
+        "ModuleRegistry"
     );
 
     private static Set<String> registeredModules() throws Exception {

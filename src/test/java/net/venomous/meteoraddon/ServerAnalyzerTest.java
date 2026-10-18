@@ -1,6 +1,6 @@
 package net.venomous.meteoraddon;
 
-import net.venomous.meteoraddon.modules.detection.ServerAnalyzer;
+import net.venomous.meteoraddon.utils.ServerAnalyzer;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
