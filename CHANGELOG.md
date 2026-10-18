@@ -6,6 +6,15 @@ All notable changes to Venomous are documented in this file.
 
 ## [7.1.0] - 2026-10-18
 
+- Fixed `v-scaffold`'s default placement cadence being detectable on its own, independent of
+  rotation. AntiCheat-Addition's `ScaffoldAverageBatchProcessor` averages the real gaps between
+  placements on one straight line and flags anything faster than its `placement_delay` default of
+  238ms, and a straight bridge is the *strict* case — diagonal building is allowed 138ms. The
+  default `place-delay` of 3 produced `3 + random(0..2)` ticks, a 200ms mean, so it was under the
+  floor by construction. Observed on AntiCheat-Addition as `failed scaffold x15` then `x20`;
+  decoding its `1.1 * (238 - actual) + 5` puts the measured average at ~229ms and ~224ms, which is
+  the 200ms nominal plus tick scheduling. The default is now 5 and the invariant lives in the pure,
+  unit-tested `ScaffoldCadence` so the setting and its guard cannot drift apart.
 - `v-scaffold` no longer drags the player's view onto the server's rotation. Both the GrimScaffold
   and the NCP placement paths snapped the camera to whatever the block needed, so bridging overrode
   where you were looking and the mouse fought the client. They now hand the rotation to Meteor and

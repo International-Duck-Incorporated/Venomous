@@ -25,6 +25,7 @@ import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.AimEase;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
+import net.venomous.meteoraddon.utils.ScaffoldCadence;
 import net.venomous.meteoraddon.utils.RotationGcd;
 
 public class Scaffold extends Module {
@@ -86,8 +87,11 @@ public class Scaffold extends Module {
     private final Setting<Integer> placeDelay = this.sgGeneral.add(
         new IntSetting.Builder()
             .name("place-delay")
-            .description("Ticks between placement attempts. Higher values reduce packet spam.")
-            .defaultValue(3)
+            .description("Ticks between placement attempts. Higher values reduce packet spam. "
+                + "AntiCheat-Addition expects at least " + (int) ScaffoldCadence.ACADDITION_MIN_STRAIGHT_DELAY_MS
+                + "ms between placements on a straight bridge, which is about 5 ticks; going "
+                + "below that is flagged regardless of how clean the rotation looks.")
+            .defaultValue(ScaffoldCadence.DEFAULT_PLACE_DELAY)
             .range(1, 10)
             .sliderMax(10)
             .build()
@@ -212,7 +216,7 @@ public class Scaffold extends Module {
     private static final float CAPTURE_DEGREES = 6.0F;
 
     /** Extra ticks a placement may be held back by, on top of the configured delay. */
-    private static final int CADENCE_JITTER_TICKS = 2;
+    private static final int CADENCE_JITTER_TICKS = ScaffoldCadence.CADENCE_JITTER_TICKS;
 
     private int prevSlot = -1;
     private int towerTicks = 0;
@@ -738,7 +742,8 @@ public class Scaffold extends Module {
             if (BlockUtils.place(pos, block, shouldRotate, 10, this.swing.get(), true)) {
                 // Jitter only ever lengthens the gap, never shortens it, so bridging stays at
                 // least as reliable as the fixed cadence while no longer being metronomic.
-                this.placeCooldown = delay + this.random.nextInt(CADENCE_JITTER_TICKS + 1);
+                this.placeCooldown = ScaffoldCadence.cooldownTicks(
+                    delay, this.random.nextInt(CADENCE_JITTER_TICKS + 1), CADENCE_JITTER_TICKS);
                 return true;
             }
         }
