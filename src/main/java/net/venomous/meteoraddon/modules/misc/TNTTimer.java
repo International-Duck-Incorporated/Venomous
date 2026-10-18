@@ -55,17 +55,14 @@ public class TNTTimer extends Module {
                 .visible(() -> (Boolean)this.render.get())
                 .build()
         );
-    private final Setting<Double> textScale = this.sgRender
-        .add(
-            new meteordevelopment.meteorclient.settings.DoubleSetting.Builder()
-                .name("text-scale")
-                .description("Scale of the timer text.")
-                .defaultValue(1.5)
-                .min(0.5)
-                .sliderMax(3.0)
-                .visible(() -> (Boolean)this.render.get())
-                .build()
-        );
+    // Removed: a "text-scale" setting, and with it the per-TNT fuse counter it controlled.
+    //
+    // The onRender handler computed the fuse count and a world position for it, then discarded
+    // both - the timer text was never actually drawn. Implementing it properly is blocked on
+    // this Minecraft version's renderer: MultiBufferSource no longer exists, and Font renders
+    // through a GpuTextureView pipeline with no BufferSource obtainable from Render3DEvent.
+    // Rather than ship a control that still does nothing, the setting is gone until the
+    // counters can be drawn for real.
     private final Set<Integer> warned = new HashSet<>();
 
     public TNTTimer() {
@@ -84,27 +81,27 @@ public class TNTTimer extends Module {
 
     @EventHandler
     private void onTick(Pre event) {
-        if ((Boolean)this.warn.get() && this.mc.level != null) {
-            HashSet<Integer> present = new HashSet<>();
+        if (!(Boolean)this.warn.get() || this.mc.level == null) return;
 
-            for (Entity entity : this.mc.level.entitiesForRendering()) {
-                if (entity instanceof PrimedTnt) {
-                    present.add(entity.getId());
-                }
+        HashSet<Integer> present = new HashSet<>();
+
+        for (Entity entity : this.mc.level.entitiesForRendering()) {
+            if (entity instanceof PrimedTnt) {
+                present.add(entity.getId());
             }
+        }
 
-            this.warned.retainAll(present);
+        this.warned.retainAll(present);
 
-            for (Entity entity : this.mc.level.entitiesForRendering()) {
-                if (entity instanceof PrimedTnt tnt) {
-                    int fuse = tnt.getFuse();
-                    if (fuse <= (Integer)this.warnFuse.get() && this.warned.add(tnt.getId())) {
-                        this.warning("TNT exploding in %d ticks!", new Object[]{fuse});
-                    }
+        for (Entity entity : this.mc.level.entitiesForRendering()) {
+            if (entity instanceof PrimedTnt tnt) {
+                int fuse = tnt.getFuse();
+                if (fuse <= (Integer)this.warnFuse.get() && this.warned.add(tnt.getId())) {
+                    this.warning("TNT exploding in %d ticks!", new Object[]{fuse});
+                }
 
-                    if (fuse > (Integer)this.warnFuse.get()) {
-                        this.warned.remove(tnt.getId());
-                    }
+                if (fuse > (Integer)this.warnFuse.get()) {
+                    this.warned.remove(tnt.getId());
                 }
             }
         }
@@ -112,19 +109,26 @@ public class TNTTimer extends Module {
 
     @EventHandler
     private void onRender(Render3DEvent event) {
-        if ((Boolean)this.render.get() && this.mc.level != null) {
-            for (Entity entity : this.mc.level.entitiesForRendering()) {
-                if (entity instanceof PrimedTnt tnt) {
-                    int fuse = tnt.getFuse();
-                    SettingColor c = fuse <= this.warnFuse.get() ? (SettingColor)this.dangerColor.get() : (SettingColor)this.safeColor.get();
-                    AABB box = tnt.getBoundingBox();
-                    event.renderer.box(box, c, c, ShapeMode.Both, 0);
-                    String text = String.valueOf(fuse);
-                    double x = (box.minX + box.maxX) / 2.0;
-                    double y = box.maxY + 0.3;
-                    double var13 = (box.minZ + box.maxZ) / 2.0;
-                }
-            }
+        if (!(Boolean)this.render.get() || this.mc.level == null || this.mc.player == null) return;
+
+        double maxDistSq = 64.0 * 64.0;
+
+        for (Entity entity : this.mc.level.entitiesForRendering()) {
+            if (!(entity instanceof PrimedTnt tnt)) continue;
+            if (this.mc.player.distanceToSqr(tnt) > maxDistSq) continue;
+
+            int fuse = tnt.getFuse();
+            SettingColor color = fuse <= (Integer)this.warnFuse.get()
+                ? (SettingColor)this.dangerColor.get()
+                : (SettingColor)this.safeColor.get();
+            AABB box = tnt.getBoundingBox();
+
+            // Box height doubles as the fuse readout: taller while the charge is long, so the
+            // danger is legible in world space without needing a text renderer.
+            float lift = 0.1F + 0.06F * Math.min(fuse, 40);
+            AABB marker = new AABB(box.minX, box.maxY, box.minZ, box.maxX, box.maxY + lift, box.maxZ);
+            event.renderer.box(marker, color, color, ShapeMode.Both, 0);
+            event.renderer.box(box, color, color, ShapeMode.Both, 0);
         }
     }
 }

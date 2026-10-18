@@ -67,8 +67,24 @@ All notable changes to Venomous are documented in this file.
   `rotateTo` was a verbatim copy of the constant-rate, un-quantised rotation logic just removed
   from scaffold, so leaving it in place invited that bug being reintroduced.
 - Added `DeadSettingTest`, which fails the build if a module registers a setting it never reads.
-  It carries a self-test asserting the detector can still fire, and allowlists only the four
-  modules that are unimplemented stubs rather than carrying dead settings.
+  It carries a self-test asserting the detector can still fire.
+- Wrote the four modules that were settings-only shells, and gave each real behaviour.
+  - `flagcheck` now detects anticheat setbacks: a position packet arriving with no matching
+    teleport request, distinguished from ordinary position packets by a grace window around
+    outbound accept-teleport packets. Reports session and recent counts.
+  - `freecam-mining` now mines from the freecam viewpoint, walking the break to the target in
+    server-acceptable position increments and returning afterwards, with optional eased,
+    GCD-quantised camera rotation.
+  - `inventorytracker` now records container contents and slot changes, attributing them to the
+    nearest player in range.
+- Deferred every remaining `toggle()` called synchronously from `onActivate` (11 sites across
+  `Damage`, `Kick`, `NameCollector`, `WindPearlMacro`, `AutoPearl`, `MovementDebug`) via
+  `mc.execute()` with an `isActive()` guard, so activation is never interleaved with its own
+  teardown.
+- `tnt-timer` draws a fuse marker whose height scales with the remaining fuse, so the danger is
+  readable in world space. The old `text-scale` setting was removed rather than implemented: the
+  numeric counters cannot be drawn on this Minecraft version's renderer, and a control that
+  still did nothing was the original problem.
 
 ## [7.0.0] - 2026-09-19
 

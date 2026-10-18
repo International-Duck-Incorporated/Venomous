@@ -74,8 +74,13 @@ public class AutoPearl extends Module {
             return;
         }
 
+        // Deferred rather than toggling inline: onActivate is still unwinding here, and calling
+        // toggle() from inside it re-enters Meteor's activation logic mid-activation. This is
+        // the trap that made v-coord-snapper double-fire.
         if (this.mc.player == null) {
-            this.toggle();
+            this.mc.execute(() -> {
+                if (this.isActive()) this.toggle();
+            });
             return;
         }
 

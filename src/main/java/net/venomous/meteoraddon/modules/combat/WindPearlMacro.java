@@ -35,7 +35,7 @@ public class WindPearlMacro extends Module {
             int pearlSlot = this.findPearlSlot();
             if (pearlSlot == -1) {
                 this.error("No Ender Pearl found in hotbar.", new Object[0]);
-                this.toggle();
+                this.selfDisable();
             } else {
                 this.throwingPearl = true;
                 this.tickCounter = 0;
@@ -49,8 +49,21 @@ public class WindPearlMacro extends Module {
                 });
             }
         } else {
-            this.toggle();
+            this.selfDisable();
         }
+    }
+
+    /**
+     * Switches off without re-entering Meteor's toggle logic from inside onActivate.
+     *
+     * <p>Deferring keeps activation from interleaving with its own teardown; the isActive guard
+     * covers the user having switched the module off in the meantime. This is the trap that made
+     * v-coord-snapper double-fire.</p>
+     */
+    private void selfDisable() {
+        this.mc.execute(() -> {
+            if (this.isActive()) this.toggle();
+        });
     }
 
     @EventHandler

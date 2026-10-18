@@ -72,7 +72,13 @@ public class MovementDebug extends Module {
         } catch (IOException e) {
             this.writer = null;
             this.error("Could not open movement debug file: " + e.getMessage(), new Object[0]);
-            this.toggle();
+
+            // Deferred: toggling from inside onActivate re-enters Meteor's toggle logic while
+            // activation is still unwinding. isActive() guards against a race where the user
+            // switched the module off before the deferred call runs.
+            this.mc.execute(() -> {
+                if (this.isActive()) this.toggle();
+            });
         }
     }
 

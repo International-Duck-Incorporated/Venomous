@@ -38,16 +38,18 @@ public class DeadSettingTest {
         Pattern.compile("private\\s+(?:final\\s+)?Setting(?:Group)?<[^>]*>\\s+(\\w+)\\s*=");
 
     /**
-     * Modules that are scaffolds, not implementations.
+     * Modules allowed to carry dead settings, because they are scaffolds rather than
+     * implementations.
      *
-     * <p>Each of these registers settings but has no logic behind them at all - FlagCheck is
-     * seventeen lines with zero event handlers, InventoryTracker's only handler is an empty if
-     * with an inverted condition, and TNTTimer computes a text position it never draws. Their
-     * settings cannot "do something" until the module itself is written, so they are reported
-     * alongside the real failures but do not fail the build on their own.</p>
+     * <p>Intentionally empty. It started out listing four stub modules - FlagCheck, FreecamMining,
+     * InventoryTracker and TNTTimer - none of which had any behaviour for a setting to gate.
+     * All four have since been written, so the list is now empty and any new entry has to be a
+     * deliberate decision rather than a leftover.</p>
+     *
+     * <p>The equality assertion below means the list cannot quietly grow: adding a module here
+     * requires also having a setting that genuinely has nothing behind it.</p>
      */
-    private static final Set<String> STUB_MODULES = Set.of(
-        "FlagCheck.java", "FreecamMining.java", "InventoryTracker.java", "TNTTimer.java");
+    private static final Set<String> STUB_MODULES = Set.of();
 
     @Test
     void noModuleRegistersASettingItNeverReads() throws IOException {
