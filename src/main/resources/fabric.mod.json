@@ -9,7 +9,7 @@
     "International Duck Incorporated"
   ],
   "contact": {
-    "sources": "https://github.com/International-Duck-Incorporated/Venomous"
+    "sources": "https://gitlab.com/international-duck-incorporated/Venomous"
   },
   "environment": "client",
   "entrypoints": {

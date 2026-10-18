@@ -42,11 +42,23 @@ public class VenomousAddon extends MeteorAddon {
         return "net.venomous.meteoraddon";
     }
 
+    /**
+     * Intentionally {@code null}: this project lives on GitLab, not GitHub.
+     *
+     * <p>Meteor's addon API can only describe a GitHub repository - {@code GithubRepo} is a
+     * {@code final record} of owner/name/branch with no host, so there is no way to return a
+     * GitLab one. Returning a {@code GithubRepo} anyway would render
+     * {@code github.com/international-duck-incorporated/Venomous} to the user, a link to a project
+     * that is no longer the source of truth.</p>
+     *
+     * <p>{@code null} is Meteor's own default for "no repository" and is null-checked before use:
+     * {@code TitleScreenCredits} guards on it and {@code CommitsScreen} is only reached after that
+     * guard. The cost is that the title screen stops offering a commit link; the current home is
+     * still stated in {@code fabric.mod.json}'s {@code contact.sources}, which users see in mod
+     * listings.</p>
+     */
     @Override
     public GithubRepo getRepo() {
-        return new GithubRepo(
-            "International-Duck-Incorporated",
-            "Venomous"
-        );
+        return null;
     }
 }

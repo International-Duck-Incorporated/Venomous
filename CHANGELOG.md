@@ -6,6 +6,13 @@ All notable changes to Venomous are documented in this file.
 
 ## [7.1.0] - 2026-10-18
 
+- Removed the last GitHub references now that the project lives on GitLab. `fabric.mod.json`'s
+  `contact.sources` pointed at a dead `github.com` repository, and `VenomousAddon.getRepo()` still
+  declared one — Meteor's addon API can only describe GitHub (`GithubRepo` is a `final record` with
+  no host field), so the honest value is `null`, which is Meteor's own default and is null-checked
+  before use. The cost is that the title screen no longer offers a commit link; `contact.sources`
+  is now the only source pointer and points at the GitLab group. The credited author is derived
+  from that URL rather than hardcoded, so the two cannot drift apart again.
 - Corrected the mod's credited author. `fabric.mod.json` still named a personal handle while the
   repository and the changelog had both moved to International Duck Incorporated, so anything
   reading the mod listing was told the wrong owner. The two are now asserted to agree, against the
