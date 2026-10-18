@@ -65,6 +65,13 @@ public class MiddleClickAction extends Module {
         this.wasMiddleDown = false;
     }
 
+    public void onDeactivate() {
+        // Clearing wasMiddleDown is what stops a held middle-click from being seen as a fresh
+        // press the moment the module is switched back on.
+        this.ticksUntilClick = 0;
+        this.wasMiddleDown = false;
+    }
+
     @EventHandler
     private void onTick(Pre event) {
         if (this.mc.player != null && this.mc.level != null) {

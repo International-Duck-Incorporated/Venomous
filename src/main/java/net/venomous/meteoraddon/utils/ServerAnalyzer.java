@@ -251,7 +251,18 @@ public class ServerAnalyzer {
             if (MeteorClient.mc != null && MeteorClient.mc.getCurrentServer() != null) {
                 return MeteorClient.mc.getCurrentServer().ip;
             }
-        } catch (Throwable ignored) {
+        } catch (LinkageError ignored) {
+            // MeteorClient's static initialiser reaches FabricLoaderImpl.getGameDir(), which is
+            // unavailable outside a running game - headless unit tests, and client startup before
+            // Fabric has finished. That surfaces as ExceptionInInitializerError, and later
+            // accesses as NoClassDefFoundError; both extend LinkageError, so a Throwable or
+            // RuntimeException catch is needed to cover them but is far too broad here. It is an
+            // Error rather than an Exception precisely because the failure is in class loading.
+            //
+            // Scoped to LinkageError so a genuine OutOfMemoryError or StackOverflowError still
+            // propagates instead of being turned into "server unknown". The IP is only a
+            // diagnostic label for the Watchdog score boost, and the caller null-checks, so
+            // swallowing here cannot abort detection.
         }
         return null;
     }

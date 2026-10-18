@@ -5,7 +5,6 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
-import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
@@ -41,6 +40,10 @@ public class WindPearlMacro extends Module {
                 this.throwingPearl = true;
                 this.tickCounter = 0;
                 PreRotate.rotateThen(this.mc.player.getYRot(), -90.0, () -> {
+                    // Deferred until the server rotation lands, so the module may have been
+                    // switched off (or the hotbar changed) in the meantime. Bail rather than
+                    // throwing a pearl at a stale slot from a disabled module.
+                    if (!this.isActive()) return;
                     InvUtils.swap(pearlSlot, true);
                     this.mc.gameMode.useItem(this.mc.player, InteractionHand.MAIN_HAND);
                     this.mc.player.swing(InteractionHand.MAIN_HAND);
@@ -65,6 +68,7 @@ public class WindPearlMacro extends Module {
                 }
 
                 PreRotate.rotateThen(this.mc.player.getYRot(), -90.0, () -> {
+                    if (!this.isActive()) return;
                     InvUtils.swap(windSlot, true);
                     this.mc.gameMode.useItem(this.mc.player, InteractionHand.MAIN_HAND);
                     this.mc.player.swing(InteractionHand.MAIN_HAND);
@@ -76,14 +80,11 @@ public class WindPearlMacro extends Module {
         }
     }
 
-    private void throwPearl() {
-        this.mc.player.swing(InteractionHand.MAIN_HAND);
-        this.mc.gameMode.useItem(this.mc.player, InteractionHand.MAIN_HAND);
-    }
-
-    private void useWindCharge() {
-        this.mc.player.swing(InteractionHand.MAIN_HAND);
-        this.mc.gameMode.useItem(this.mc.player, InteractionHand.MAIN_HAND);
+    public void onDeactivate() {
+        // Without this, switching off mid-sequence leaves throwingPearl latched true and the
+        // queued rotation still fires against a disabled module.
+        this.throwingPearl = false;
+        this.tickCounter = 0;
     }
 
     private int findPearlSlot() {
