@@ -1,6 +1,5 @@
 package net.venomous.meteoraddon.utils;
 
-import java.util.ArrayList;
 import java.util.List;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
@@ -45,7 +44,7 @@ public final class PreRotate {
     /** Ticks a queued action may wait for its rotation before being discarded. */
     private static final int MAX_AGE = 5;
 
-    private static final List<Pending> PENDING = new ArrayList<>();
+    private static final DeferredActions<Runnable> PENDING = new DeferredActions<>();
     private static boolean initialised = false;
 
     private PreRotate() {
@@ -68,23 +67,49 @@ public final class PreRotate {
      * supply one; there is deliberately no overload that omits it, so the compiler enforces it.</p>
      */
     @FunctionalInterface
-    public interface Guard {
-        boolean shouldStillRun();
+    public interface Guard extends DeferredActions.Guard {
     }
 
     /** Convenience for module callers: the action is dropped unless {@code owner} is still on. */
     public static void rotateThen(Module owner, double yaw, double pitch, Runnable action) {
-        rotateThen(owner::isActive, yaw, pitch, 10, action);
+        rotateThen(owner, yaw, pitch, 10, action);
     }
 
     /** As above, with an explicit Meteor rotation priority. */
     public static void rotateThen(Module owner, double yaw, double pitch, int priority, Runnable action) {
-        rotateThen(owner::isActive, yaw, pitch, priority, action);
+        queue(owner, owner::isActive, yaw, pitch, priority, action, true);
     }
 
-    /** General form, for callers that are not modules. */
-    public static void rotateThen(Guard guard, double yaw, double pitch, Runnable action) {
-        rotateThen(guard, yaw, pitch, 10, action);
+    /**
+     * Appends to the caller's existing queue instead of superseding it.
+     *
+     * <p>For macros that deliberately queue a sequence of actions which must all run, such as
+     * throwing an item and then using a charge. Both share one aim, so under the default
+     * superseding behaviour the second request would silently discard the first.</p>
+     */
+    public static void rotateThenSequence(Module owner, double yaw, double pitch, Runnable action) {
+        rotateThenSequence(owner, yaw, pitch, 10, action);
+    }
+
+    /** As above, with an explicit Meteor rotation priority. */
+    public static void rotateThenSequence(Module owner, double yaw, double pitch, int priority, Runnable action) {
+        queue(owner, owner::isActive, yaw, pitch, priority, action, false);
+    }
+
+    /**
+     * General form, for callers that are not modules.
+     *
+     * <p>{@code owner} must be a stable identity for the caller - typically {@code this}. Do not
+     * pass the guard as the owner: a method reference such as {@code this::isRunning} creates a
+     * fresh instance on every call, so nothing would ever supersede anything.</p>
+     */
+    public static void rotateThen(Object owner, Guard guard, double yaw, double pitch, Runnable action) {
+        rotateThen(owner, guard, yaw, pitch, 10, action);
+    }
+
+    /** As above, with an explicit Meteor rotation priority. */
+    public static void rotateThen(Object owner, Guard guard, double yaw, double pitch, int priority, Runnable action) {
+        queue(owner, guard, yaw, pitch, priority, action, true);
     }
 
     /**
@@ -97,7 +122,7 @@ public final class PreRotate {
      * @param priority rotation priority handed to Meteor, higher wins contention
      * @param action   the interaction to perform; never run from POST
      */
-    public static void rotateThen(Guard guard, double yaw, double pitch, int priority, Runnable action) {
+    private static void queue(Object owner, Guard guard, double yaw, double pitch, int priority, Runnable action, boolean replace) {
         if (action == null) {
             Rotations.rotate(yaw, pitch, priority, null);
             return;
@@ -109,16 +134,12 @@ public final class PreRotate {
         // put us back in the POST phase, which is the whole problem.
         Rotations.rotate(yaw, pitch, priority, null);
 
-        synchronized (PENDING) {
-            PENDING.add(new Pending((float) yaw, (float) pitch, action, guard));
-        }
+        PENDING.add(owner, guard, (float) yaw, (float) pitch, action, replace);
     }
 
     /** Drops every queued action. Call from {@code onDeactivate}. */
     public static void cancelAll() {
-        synchronized (PENDING) {
-            PENDING.clear();
-        }
+        PENDING.clear();
     }
 
     /**
@@ -129,38 +150,18 @@ public final class PreRotate {
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     private static void onSendMovementPacketsPre(SendMovementPacketsEvent.Pre event) {
-        List<Pending> ready = null;
-
-        synchronized (PENDING) {
-            if (PENDING.isEmpty()) {
-                return;
-            }
-
-            for (int i = PENDING.size() - 1; i >= 0; i--) {
-                Pending pending = PENDING.get(i);
-
-                if (pending.isServerReady()) {
-                    if (ready == null) {
-                        ready = new ArrayList<>(2);
-                    }
-                    ready.add(pending);
-                    PENDING.remove(i);
-                } else if (++pending.age > MAX_AGE) {
-                    // The rotation never landed (interrupted, or contended by another module).
-                    // Drop it rather than firing at a stale angle.
-                    PENDING.remove(i);
-                }
-            }
+        if (PENDING.isEmpty()) {
+            return;
         }
 
-        if (ready != null) {
-            // Run outside the lock: actions may themselves queue further rotations. The guard
-            // is evaluated here, at the last possible moment, rather than when the action was
-            // collected - a queued action may legitimately have been invalidated in between.
-            for (Pending pending : ready) {
-                if (pending.guard != null && !pending.guard.shouldStillRun()) continue;
-                pending.action.run();
-            }
+        List<DeferredActions.Pending<Runnable>> ready = PENDING.drain(PreRotate::isServerReady, MAX_AGE);
+
+        // Run outside the lock: actions may themselves queue further rotations. The guard
+        // is evaluated here, at the last possible moment, rather than when the action was
+        // collected - a queued action may legitimately have been invalidated in between.
+        for (DeferredActions.Pending<Runnable> pending : ready) {
+            if (pending.guard() != null && !pending.guard().shouldStillRun()) continue;
+            pending.action().run();
         }
     }
 
@@ -172,26 +173,11 @@ public final class PreRotate {
         }
     }
 
-    private static final class Pending {
-        private final float yaw;
-        private final float pitch;
-        private final Runnable action;
-        private final Guard guard;
-        private int age;
-
-        private Pending(float yaw, float pitch, Runnable action, Guard guard) {
-            this.yaw = yaw;
-            this.pitch = pitch;
-            this.action = action;
-            this.guard = guard;
-        }
-
-        /** True once the rotation the server last received matches what this action needs. */
-        private boolean isServerReady() {
-            float yawDiff = Math.abs(wrapDegrees(Rotations.serverYaw - this.yaw));
-            float pitchDiff = Math.abs(Rotations.serverPitch - this.pitch);
-            return yawDiff <= TOLERANCE && pitchDiff <= TOLERANCE;
-        }
+    /** True once the rotation the server last received matches what this action needs. */
+    private static boolean isServerReady(DeferredActions.Pending<Runnable> pending) {
+        float yawDiff = Math.abs(wrapDegrees(Rotations.serverYaw - pending.yaw()));
+        float pitchDiff = Math.abs(Rotations.serverPitch - pending.pitch());
+        return yawDiff <= TOLERANCE && pitchDiff <= TOLERANCE;
     }
 
     private static float wrapDegrees(float value) {

@@ -24,7 +24,7 @@ public class PreRotateGuardTest {
         int checked = 0;
 
         for (Method method : PreRotate.class.getDeclaredMethods()) {
-            if (!method.getName().equals("rotateThen")) continue;
+            if (!method.getName().startsWith("rotateThen")) continue;
             checked++;
 
             Class<?>[] params = method.getParameterTypes();
@@ -42,7 +42,7 @@ public class PreRotateGuardTest {
     @Test
     void everyRotateThenOverloadTakesAnAction() throws Exception {
         for (Method method : PreRotate.class.getDeclaredMethods()) {
-            if (!method.getName().equals("rotateThen")) continue;
+            if (!method.getName().startsWith("rotateThen")) continue;
 
             Class<?>[] params = method.getParameterTypes();
             assertEquals(Runnable.class, params[params.length - 1],

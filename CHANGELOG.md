@@ -34,6 +34,15 @@ All notable changes to Venomous are documented in this file.
   so the rotation was computed for one block while the action ran against another. Both now
   capture the target by value. `auto-break-selected` additionally dereferenced a target that
   its own `resetMining()` teardown had just nulled, which could throw.
+- Deferred actions no longer pile up. A module that re-requested its action every tick while the
+  rotation was settling queued one entry per tick, and every copy fired in the same tick once the
+  rotation landed — repeated `START`/`STOP` destroy packets for a single block. Queueing now
+  supersedes the caller's own earlier entry, expressing current intent instead of a backlog.
+- Fixed ready actions running in reverse queue order. They were collected back-to-front so
+  entries could be removed while iterating, and were never put back in order. A macro queuing
+  two actions on one aim would have run them backwards.
+- Added `PreRotate.rotateThenSequence` for macros that must run every step, such as
+  `pearl-wind-macro` throwing an item and then using a charge on the same aim.
 
 ## [7.0.0] - 2026-09-19
 
