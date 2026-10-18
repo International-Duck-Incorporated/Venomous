@@ -6,6 +6,10 @@ All notable changes to Venomous are documented in this file.
 
 ## [7.1.0] - 2026-10-18
 
+- Corrected the mod's credited author. `fabric.mod.json` still named a personal handle while the
+  repository and the changelog had both moved to International Duck Incorporated, so anything
+  reading the mod listing was told the wrong owner. The two are now asserted to agree, against the
+  packaged resource rather than the source file, so the shipped jar is what gets checked.
 - Fixed `v-scaffold`'s default placement cadence being detectable on its own, independent of
   rotation. AntiCheat-Addition's `ScaffoldAverageBatchProcessor` averages the real gaps between
   placements on one straight line and flags anything faster than its `placement_delay` default of

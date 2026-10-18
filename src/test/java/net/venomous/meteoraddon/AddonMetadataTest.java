@@ -1,12 +1,19 @@
 package net.venomous.meteoraddon;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +39,44 @@ public class AddonMetadataTest {
      * {@link VenomousAddon#VERSION} still said 7.0.0, so the startup banner lied. The build
      * numbers the jar from {@code libs.versions.toml}, so the constant must be bumped with it.
      */
+    /**
+     * Two places state who made this: {@code fabric.mod.json}'s {@code authors} and
+     * {@link VenomousAddon#getRepo()}'s owner. They had already drifted - the jar credited a
+     * personal handle while the repo said the organisation - and there is nothing else in the build
+     * that would notice.
+     *
+     * <p>Reads the packaged resource rather than the source file, so it is the {@code authors} the
+     * shipped jar actually carries that gets checked, and punctuation differences between the org's
+     * display name and its slug are not treated as a mismatch.</p>
+     */
+    @Test
+    void packagedAuthorsAgreeWithTheRepositoryOwner() throws IOException {
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("fabric.mod.json")) {
+            assertNotNull(is, "fabric.mod.json should exist in classpath resources");
+
+            JsonObject json = JsonParser
+                .parseReader(new InputStreamReader(is, StandardCharsets.UTF_8))
+                .getAsJsonObject();
+
+            assertTrue(json.has("authors") && json.getAsJsonArray("authors").size() > 0,
+                "fabric.mod.json must credit at least one author");
+
+            String owner = new VenomousAddon().getRepo().owner();
+
+            for (JsonElement element : json.getAsJsonArray("authors")) {
+                assertEquals(normalise(owner), normalise(element.getAsString()),
+                    "fabric.mod.json credits \"" + element.getAsString() + "\" but the repository "
+                        + "owner is \"" + owner + "\". Anyone reading the mod listing should be told "
+                        + "the same organisation the source lives under.");
+            }
+        }
+    }
+
+    /** Case- and punctuation-insensitive, so "International Duck Inc." matches its slug form. */
+    private static String normalise(String value) {
+        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+    }
+
     @Test
     void versionConstantMatchesTheVersionTheBuildStampsIntoTheJar() throws IOException {
         String toml = Files.readString(locate("gradle/libs.versions.toml"));
