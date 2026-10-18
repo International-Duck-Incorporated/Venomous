@@ -3,7 +3,9 @@ package net.venomous.meteoraddon.modules.misc;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
@@ -62,6 +64,71 @@ public class AutoChatGame extends Module {
                 .build()
         );
     private static final Pattern MATH_PATTERN = Pattern.compile("(?:what\\s+is\\s+|calculate\\s+|solve\\s+)?([\\d]+\\s*[+\\-*/]\\s*[\\d]+)\\s*[?=]?", 2);
+
+    /**
+     * Vocabulary for unscramble games.
+     *
+     * <p>An anagram has no analytic inverse, so the solver has to recognise a word rather than
+     * derive it. This is a pragmatic common-word list, not a dictionary - it covers the words
+     * these games actually use, and a miss is handled by simply not answering.</p>
+     */
+    private static final Set<String> COMMON_WORDS = Set.of(
+        "apple", "beach", "birth", "brake", "bread", "break", "brick", "bring", "cabin", "cable",
+        "canal", "candy", "cargo", "carve", "catch", "cause", "chain", "chair", "charm", "chart",
+        "chase", "cheese", "chess", "chest", "chief", "china", "chose", "claim", "class", "clean",
+        "clear", "climb", "clock", "close", "cloud", "coach", "coast", "color", "coral", "couch",
+        "could", "count", "court", "cover", "craft", "crane", "cream", "crime", "crisp", "cross",
+        "crowd", "crown", "crush", "dance", "dealt", "delta", "depth", "diary", "dirty", "doing",
+        "doubt", "dozen", "draft", "drama", "dream", "dress", "drift", "drink", "drive", "eagle",
+        "earth", "eight", "elbow", "elder", "elite", "empty", "enemy", "enjoy", "enter", "equal",
+        "error", "essay", "event", "every", "exact", "exist", "extra", "faith", "false", "fault",
+        "field", "fifth", "fight", "final", "first", "flame", "flash", "fleet", "flesh", "float",
+        "floor", "flour", "fluid", "focus", "force", "forge", "forth", "forty", "forum", "found",
+        "frame", "fresh", "front", "fruit", "fully", "funny", "giant", "given", "glass", "globe",
+        "grace", "grade", "grain", "grand", "grant", "grape", "grass", "grave", "great", "green",
+        "group", "grown", "guard", "guess", "guest", "guide", "habit", "happy", "heart", "heavy",
+        "hobby", "honey", "horse", "hotel", "house", "human", "humor", "ideal", "image", "imply",
+        "index", "inner", "input", "irony", "issue", "ivory", "japan", "jelly", "joint", "judge",
+        "juice", "knife", "knock", "label", "labor", "large", "laser", "later", "laugh", "layer",
+        "learn", "lease", "least", "leave", "legal", "lemon", "level", "light", "limit", "linen",
+        "links", "liver", "lobby", "local", "lodge", "logic", "loose", "lower", "loyal", "lucky",
+        "lunar", "lunch", "magic", "major", "maker", "march", "match", "maybe", "mayor", "meant",
+        "medal", "media", "metal", "meter", "might", "minor", "minus", "mixed", "model", "money",
+        "month", "moral", "motor", "mount", "mouse", "mouth", "movie", "music", "naked", "nerve",
+        "never", "newly", "night", "noble", "noise", "north", "noted", "novel", "nurse", "occur",
+        "ocean", "offer", "often", "olive", "onion", "orbit", "order", "organ", "other", "ought",
+        "ounce", "outer", "owner", "paint", "panel", "paper", "party", "pasta", "patch", "pause",
+        "peace", "peach", "pearl", "phase", "phone", "photo", "piano", "piece", "pilot", "pitch",
+        "pixel", "place", "plain", "plane", "plant", "plate", "plaza", "point", "polar", "porch",
+        "pound", "power", "press", "price", "pride", "prime", "print", "prior", "prize", "probe",
+        "proof", "proud", "prove", "pulse", "punch", "purse", "queen", "query", "quest", "queue",
+        "quick", "quiet", "quite", "quota", "radar", "radio", "raise", "rally", "ranch", "range",
+        "rapid", "ratio", "reach", "ready", "realm", "rebel", "refer", "reign", "relax", "relay",
+        "remix", "renew", "repay", "reply", "reset", "resin", "retry", "rider", "ridge", "rifle",
+        "right", "rigid", "rival", "river", "roast", "robin", "robot", "rocky", "roman", "rough",
+        "round", "route", "royal", "rugby", "ruler", "rural", "salad", "sauce", "scale", "scene",
+        "scope", "score", "scout", "sense", "serve", "seven", "shade", "shaft", "shake", "shall",
+        "shape", "share", "sharp", "sheep", "sheet", "shelf", "shell", "shift", "shine", "shirt",
+        "shock", "shoot", "shore", "short", "shown", "sight", "silly", "since", "sixth", "skill",
+        "slate", "sleep", "slice", "slide", "slope", "small", "smart", "smile", "smoke", "snake",
+        "solar", "solid", "solve", "sorry", "sound", "south", "space", "spare", "spark", "speak",
+        "speed", "spell", "spend", "spice", "spike", "spine", "split", "spoke", "sport", "staff",
+        "stage", "stain", "stake", "stamp", "stand", "stark", "start", "state", "steam", "steel",
+        "steep", "steer", "stern", "stick", "still", "stock", "stone", "stood", "store", "storm",
+        "story", "stove", "strap", "straw", "strip", "study", "stuff", "style", "sugar", "suite",
+        "sunny", "super", "sweet", "swing", "sword", "table", "taken", "taste", "teach", "tempo",
+        "tenth", "thank", "theme", "there", "these", "thick", "thing", "think", "third", "those",
+        "three", "throw", "tiger", "tight", "timer", "tired", "title", "toast", "today", "token",
+        "tooth", "topic", "torch", "total", "touch", "tough", "tower", "trace", "track", "trade",
+        "trail", "train", "trait", "trash", "treat", "trend", "trial", "tribe", "trick", "troop",
+        "truck", "truly", "trunk", "trust", "truth", "tulip", "twice", "twist", "uncle", "under",
+        "undid", "union", "unit", "until", "upper", "upset", "urban", "usage", "usual", "valid",
+        "value", "valve", "vapor", "vault", "venue", "verse", "video", "vigor", "villa", "vinyl",
+        "virus", "visit", "visor", "vital", "vivid", "vocal", "voice", "voter", "wagon", "waist",
+        "waste", "watch", "water", "weary", "wheat", "wheel", "where", "which", "while", "white",
+        "whole", "whose", "widen", "width", "woman", "world", "worry", "worse", "worst", "worth",
+        "would", "wound", "wrist", "write", "wrong", "yacht", "yield", "young", "youth", "zebra"
+    );
     private static final Pattern SAME_SUM = Pattern.compile("([A-Za-z])(\\s*\\+\\s*\\1)*\\s*=\\s*(-?\\d+)");
     private static final Pattern FINAL_EQ = Pattern.compile("([A-Za-z]\\s*\\+\\s*)*([A-Za-z]|[+-]?\\d+)\\s*\\+\\s*([+-]?\\d+|[A-Za-z])\\s*=\\s*(-?\\d+)");
     private static final int RECENT_MAX = 8;
@@ -100,6 +167,18 @@ public class AutoChatGame extends Module {
             this.pushRecent(strip(var2));
             AutoChatGame.GameType var3 = detect(var2);
             switch (var3) {
+                case UNSCRAMBLE:
+                    if ((Boolean)this.scramble.get()) {
+                        String scrambled = backtickPayload(var2);
+                        if (scrambled != null) {
+                            String solved = solveUnscramble(scrambled);
+                            if (solved != null) {
+                                this.queueAnswer(solved, "scramble");
+                            }
+                        }
+                    }
+
+                    return;
                 case UNREVERSE:
                     if ((Boolean)this.unreverse.get()) {
                         String var18 = backtickPayload(var2);
@@ -314,6 +393,59 @@ public class AutoChatGame extends Module {
 
     private static String solveUnreverse(String var0) {
         return new StringBuilder(var0).reverse().toString();
+    }
+
+    /**
+     * Unscrambles a word by checking every distinct permutation against a known word.
+     *
+     * <p>Unlike unreverse there is no shortcut: an anagram cannot be inverted analytically, so
+     * this generates permutations and looks each one up. {@code limit} caps the work - a long
+     * scrambled string would otherwise be factorial and hang the client on the tick the message
+     * arrives. Common English words cover the overwhelming majority of these games, so a miss is
+     * expected now and then rather than exceptional.</p>
+     *
+     * @return the unscrambled word, or null if none matched or the cap was hit
+     */
+    private static String solveUnscramble(String scrambled) {
+        String word = scrambled.toLowerCase();
+        int length = word.length();
+
+        // 8! is already 40320 permutations; beyond that the search is not worth a client freeze.
+        if (length == 0 || length > 8) {
+            return null;
+        }
+
+        char[] letters = word.toCharArray();
+        Set<String> seen = new HashSet<>();
+        permute(letters, 0, seen);
+
+        for (String candidate : seen) {
+            if (COMMON_WORDS.contains(candidate)) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /** Collects the distinct permutations of {@code letters} into {@code out}. */
+    private static void permute(char[] letters, int index, Set<String> out) {
+        if (index == letters.length) {
+            out.add(new String(letters));
+            return;
+        }
+
+        for (int i = index; i < letters.length; i++) {
+            swap(letters, index, i);
+            permute(letters, index + 1, out);
+            swap(letters, index, i);
+        }
+    }
+
+    private static void swap(char[] letters, int a, int b) {
+        char tmp = letters[a];
+        letters[a] = letters[b];
+        letters[b] = tmp;
     }
 
     private static String solveRandom(String var0) {

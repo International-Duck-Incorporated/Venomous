@@ -5,6 +5,7 @@ import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -54,6 +55,10 @@ public class TargetLock extends Module {
 
     @EventHandler
     private void onAttack(AttackEntityEvent event) {
+        if ((Boolean)this.combatOnly.get() && !this.combatModuleActive()) {
+            return;
+        }
+
         if (event.entity instanceof Player target) {
             if (this.lockedEntityId == null || this.lockedEntityId != target.getId()) {
                 this.info("Locked onto %s.", new Object[]{target.getName().getString()});
@@ -67,6 +72,13 @@ public class TargetLock extends Module {
     @EventHandler
     private void onTick(Pre event) {
         if (this.mc.player != null && this.mc.level != null && this.lockedEntityId != null) {
+            // combat-only: a lock held while no combat module is running is just a stale id
+            // steering other modules' target selection, so drop it.
+            if ((Boolean)this.combatOnly.get() && !this.combatModuleActive()) {
+                this.lockedEntityId = null;
+                return;
+            }
+
             Entity locked = this.mc.level.getEntity(this.lockedEntityId);
             if (locked != null && !locked.isRemoved()) {
                 if (this.mc.player.distanceToSqr(locked) > (Double)this.range.get() * (Double)this.range.get()) {
@@ -86,6 +98,27 @@ public class TargetLock extends Module {
                 this.lockedEntityId = null;
             }
         }
+    }
+
+    /**
+     * True when at least one combat module is switched on.
+     *
+     * <p>Every Venomous module registers under a single {@code Category("Venomous")}, so Meteor's
+     * built-in Combat group is always empty here and cannot be used to answer this. The addon's
+     * own {@code modules.combat} package is what actually separates combat modules.</p>
+     */
+    private boolean combatModuleActive() {
+        // Modules.get() is null until Meteor initialises its systems.
+        meteordevelopment.meteorclient.systems.modules.Modules modules = Modules.get();
+        if (modules == null) return false;
+
+        for (Module module : modules.getActive()) {
+            if (module.getClass().getPackageName().endsWith(".modules.combat")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public boolean isLocked(Entity entity) {

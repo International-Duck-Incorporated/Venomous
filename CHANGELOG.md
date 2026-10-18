@@ -54,6 +54,21 @@ All notable changes to Venomous are documented in this file.
 - Extracted the sensitivity GCD formula into `RotationGcd` and the easing curve into `AimEase`,
   both free of Minecraft types so they unit-test on a plain JVM. The GCD formula had been
   copy-pasted into `Aimbot`, `KillAura` and `GlobalNetworkInterceptor`.
+- Implemented fifteen settings that were registered in the GUI but never read, so they silently
+  did nothing. `invis-esp` passed a hardcoded `0` for line width; `no-fall-plus` never consulted
+  `grim-save-ticks`; `new-chunks` only ever rendered the new-chunk colour; `auto-ez` tracked a
+  streak it never reported; `teams` ignored `armor-color`; `tickbase` banked a burst while idle
+  regardless of `only-on-attack`; `targetlock` never checked `combat-only`; `lethality` ignored
+  `hurt-time-check`; `autochatgame` had no unscramble solver at all despite detecting the game
+  type; `v-blink`'s `dummy` setting had no renderer behind it.
+- Removed `skeleton-esp`'s `line-width` setting instead of implementing it: `Renderer3D.line`
+  takes no width argument, so there is no call that could honour it.
+- Removed dead code in `auto-farm`: `rotateTo`, `isLookingAt` and `wrapDegrees` had no callers.
+  `rotateTo` was a verbatim copy of the constant-rate, un-quantised rotation logic just removed
+  from scaffold, so leaving it in place invited that bug being reintroduced.
+- Added `DeadSettingTest`, which fails the build if a module registers a setting it never reads.
+  It carries a self-test asserting the detector can still fire, and allowlists only the four
+  modules that are unimplemented stubs rather than carrying dead settings.
 
 ## [7.0.0] - 2026-09-19
 

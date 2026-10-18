@@ -72,6 +72,7 @@ public class AutoEZ extends Module {
     @Override
     public void onDeactivate() {
         this.attackedTargets.clear();
+        this.kills = 0;
     }
 
     @EventHandler
@@ -113,21 +114,23 @@ public class AutoEZ extends Module {
             if (player != null && (!player.isAlive() || player.getHealth() <= 0.0f)) {
                 if (player.distanceToSqr(this.mc.player) <= this.targetRange.get() * this.targetRange.get()) {
                     this.kills++;
-                    this.sendKillMessage(player);
+                    // With kill-streak off, {kills} reports this kill alone rather than the
+                    // session total, which is what "track your streak" being off should mean.
+                    this.sendKillMessage(player, (Boolean)this.killStreak.get() ? this.kills : 1);
                     it.remove();
                 }
             }
         }
     }
 
-    private void sendKillMessage(Player target) {
+    private void sendKillMessage(Player target, int streak) {
         String targetName = target.getName().getString();
         float hp = this.mc.player != null ? this.mc.player.getHealth() : 20.0f;
         String formattedHp = String.format("%.1f", hp);
 
         String text = this.message.get()
            .replace("{player}", targetName)
-           .replace("{kills}", String.valueOf(this.kills))
+           .replace("{kills}", String.valueOf(streak))
            .replace("{hp}", formattedHp);
 
         if (this.clientSide.get()) {

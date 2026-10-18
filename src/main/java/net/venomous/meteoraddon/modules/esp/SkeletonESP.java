@@ -14,15 +14,9 @@ import meteordevelopment.meteorclient.settings.DoubleSetting;
 
 public class SkeletonESP extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
-    private final Setting<Double> lineWidth = this.sgGeneral
-        .add(
-            new DoubleSetting.Builder().name("line-width").description("Width of the skeleton lines.")
-                .defaultValue(2.0)
-                .min(0.5)
-                .max(5.0)
-                .sliderMax(5.0)
-                .build()
-        );
+    // Removed: a "line-width" setting. It read into a local that was then never used, because
+    // Renderer3D.line takes no width argument at all - only a colour. Unlike Renderer3D.box,
+    // there is no overload that could honour it, so the control could only ever be a lie.
     private final Setting<Boolean> showPlayers = this.sgGeneral
         .add(
             new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
@@ -69,7 +63,6 @@ public class SkeletonESP extends Module {
         Vec3 head = player.getPosition(tickDelta).add(0.0, player.getEyeHeight(), 0.0);
         Vec3 body = player.getPosition(tickDelta).add(0.0, player.getEyeHeight() * 0.5, 0.0);
         Vec3 feet = player.getPosition(tickDelta);
-        float width = (float)((Double)this.lineWidth.get()).doubleValue();
         event.renderer.line(head.x, head.y, head.z, body.x, body.y, body.z, lineColor);
         event.renderer.line(body.x, body.y, body.z, feet.x, feet.y, feet.z, lineColor);
         double armOffset = 0.3;

@@ -95,6 +95,12 @@ public class NewChunks extends Module {
                 }
             }
         }
+
+        // persist off: forget chunks the client no longer holds, rather than accumulating every
+        // chunk the session has ever touched.
+        if (!(Boolean)this.persist.get() && this.mc.level != null) {
+            this.chunks.keySet().removeIf(pos -> !this.mc.level.hasChunk(pos.getMiddleBlockX() >> 4, pos.getMiddleBlockZ() >> 4));
+        }
     }
 
     @EventHandler
@@ -105,18 +111,19 @@ public class NewChunks extends Module {
 
             for (Entry<ChunkPos, Boolean> entry : this.chunks.entrySet()) {
                 ChunkPos chunk = entry.getKey();
+                int chunkX = chunk.getMinBlockX();
+                int chunkZ = chunk.getMinBlockZ();
+                double distSq = this.mc.player.distanceToSqr(chunkX + 8.0, this.mc.player.getY(), chunkZ + 8.0);
+                if (distSq > maxDistSq) continue;
+
+                // A chunk is "new" once flowing fluid has been observed in it; one we have seen
+                // but never seen fluid in is old. Both are rendered, in their own colour.
                 boolean isNew = entry.getValue();
-                if (isNew) {
-                    int chunkX = chunk.getMinBlockX();
-                    int chunkZ = chunk.getMinBlockZ();
-                    double distSq = this.mc.player.distanceToSqr(chunkX + 8.0, this.mc.player.getY(), chunkZ + 8.0);
-                    if (distSq <= maxDistSq) {
-                        Color sideColor = new Color((Color)this.newColor.get());
-                        Color outlineColor = new Color((Color)this.newColor.get());
-                        double y = this.mc.level.getMinY();
-                        event.renderer.box(chunkX, y, chunkZ, chunkX + 16, y + 1.0, chunkZ + 16, sideColor, outlineColor, ShapeMode.Both, 0);
-                    }
-                }
+                Color base = (Color)(isNew ? this.newColor.get() : this.oldColor.get());
+                Color sideColor = new Color(base);
+                Color outlineColor = new Color(base);
+                double y = this.mc.level.getMinY();
+                event.renderer.box(chunkX, y, chunkZ, chunkX + 16, y + 1.0, chunkZ + 16, sideColor, outlineColor, ShapeMode.Both, 0);
             }
         }
     }

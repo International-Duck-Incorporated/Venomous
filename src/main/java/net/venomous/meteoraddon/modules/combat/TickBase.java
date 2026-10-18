@@ -75,7 +75,11 @@ public class TickBase extends Module {
                 this.delayedTicks = 0;
                 this.shouldBurst = false;
             } else if (!this.shouldBurst && this.delayedTicks < (Integer)this.maxDelay.get()) {
-                this.delayedTicks++;
+                // With only-on-attack on, don't quietly bank a burst while the player is idle -
+                // the buffer is only useful if it was built around a real swing.
+                if (!(Boolean)this.onlyOnAttack.get() || this.mc.options.keyAttack.isDown()) {
+                    this.delayedTicks++;
+                }
             }
         }
     }

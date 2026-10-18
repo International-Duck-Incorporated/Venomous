@@ -4,7 +4,10 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.ItemStack;
 import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 
@@ -64,6 +67,31 @@ public class Teams extends Module {
             }
         }
 
+        if ((Boolean)this.armorColor.get() && this.sameLeatherDye(player)) {
+            return true;
+        }
+
         return false;
+    }
+
+    /**
+     * True when both players wear dyed leather of the same colour in the chest slot.
+     *
+     * <p>Undyed or non-leather chestplates return false rather than matching on "both undyed",
+     * since a server that colours leather as a team marker always dyes it.</p>
+     */
+    private boolean sameLeatherDye(Player player) {
+        ItemStack own = this.mc.player.getItemBySlot(EquipmentSlot.CHEST);
+        ItemStack theirs = player.getItemBySlot(EquipmentSlot.CHEST);
+        if (own == null || theirs == null) return false;
+
+        // Leather dye lives on the DYED_COLOR data component rather than an Item subclass in
+        // this Minecraft version, so it is compared as a component value.
+        Object ownColor = own.get(DataComponents.DYED_COLOR);
+        Object theirColor = theirs.get(DataComponents.DYED_COLOR);
+
+        // Both undyed must not count as a match: a server using leather colour as a team
+        // marker always dyes it, so undyed means "no marker".
+        return ownColor != null && ownColor.equals(theirColor);
     }
 }

@@ -10,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ServerboundInteractPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.venomous.meteoraddon.VenomousAddon;
@@ -138,6 +139,10 @@ public class CriticalsPlus extends Module {
                     return;
                 }
 
+                if ((Boolean)this.hurtTimeCheck.get() && this.targetIsInHurtTime(packet)) {
+                    return;
+                }
+
                 switch ((CriticalsPlus.Mode)this.mode.get()) {
                     case GrimSlime:
                     case GrimLegit:
@@ -253,6 +258,20 @@ public class CriticalsPlus extends Module {
                 }
             }
         }
+    }
+
+    /**
+     * True when the entity being interacted with is still in hurt time.
+     *
+     * <p>Criting a target inside its hurt window is the cheapest thing on the network for a
+     * server to spot, and no client ever does it deliberately.</p>
+     */
+    private boolean targetIsInHurtTime(Packet<?> packet) {
+        if (!(packet instanceof ServerboundInteractPacket interact) || this.mc.level == null) {
+            return false;
+        }
+
+        return this.mc.level.getEntity(interact.entityId()) instanceof LivingEntity living && living.hurtTime > 0;
     }
 
     private void checkSlimeProximity() {

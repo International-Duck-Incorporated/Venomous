@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Send;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
+import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -13,6 +16,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 import meteordevelopment.meteorclient.settings.BoolSetting;
@@ -88,6 +92,27 @@ public class VBlink extends Module {
             this.info("Auto-disabled after %d ticks.", new Object[]{this.ticks});
             this.toggle();
         }
+    }
+
+    /**
+     * Draws a marker at the position the server still believes the player occupies.
+     *
+     * <p>While packets are suppressed the server keeps seeing the player at {@code startPos}, so
+     * an outline drawn there is what makes the freeze legible. Nothing is drawn once the queue
+     * has flushed, because at that point nothing is frozen any more.</p>
+     */
+    @EventHandler
+    private void onRender(Render3DEvent event) {
+        if (!(Boolean)this.dummy.get() || this.startPos == null || this.mc.player == null) return;
+        if (this.outgoingPackets.isEmpty()) return;
+
+        AABB box = this.mc.player.getBoundingBox().move(
+            this.startPos.x - this.mc.player.getX(),
+            this.startPos.y - this.mc.player.getY(),
+            this.startPos.z - this.mc.player.getZ());
+
+        Color color = new Color(120, 170, 255, 200);
+        event.renderer.box(box, color, color, ShapeMode.Both, 0);
     }
 
     public String getInfoString() {

@@ -116,10 +116,19 @@ public class NoFallPlus extends Module {
                 if (this.mc.player.fallDistance >= this.triggerFallDistance.get() && this.mc.getConnection() != null) {
                     double velocityY = this.mc.player.getDeltaMovement().y;
                     if (velocityY < -0.5) {
-                        BlockState below = this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.5, this.mc.player.getZ()));
-                        BlockState below2 = this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 2.5, this.mc.player.getZ()));
-                        if (!below.isAir() || !below2.isAir()) {
-                            this.mc.getConnection().send(new StatusOnly(true, this.mc.player.horizontalCollision));
+                        // Ticks left before impact, approximated from how far we have already
+                        // fallen against the current downward speed. grim-save-ticks starts the
+                        // ground=true packet that far ahead of landing, rather than waiting on
+                        // the fall-distance trigger, which a slow descent reaches far too late.
+                        double ticksToLand = this.mc.player.fallDistance / Math.abs(velocityY);
+                        boolean aboutToLand = ticksToLand <= (Integer)this.grimSaveTicks.get();
+
+                        if (aboutToLand) {
+                            BlockState below = this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.5, this.mc.player.getZ()));
+                            BlockState below2 = this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 2.5, this.mc.player.getZ()));
+                            if (!below.isAir() || !below2.isAir()) {
+                                this.mc.getConnection().send(new StatusOnly(true, this.mc.player.horizontalCollision));
+                            }
                         }
                     }
                 }

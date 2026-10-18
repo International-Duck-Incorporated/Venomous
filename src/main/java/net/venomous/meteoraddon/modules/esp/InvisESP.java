@@ -204,7 +204,9 @@ public class InvisESP extends Module {
             finalLineColor.a = (int)(lineColor.a * fadeFactor);
         }
 
-        event.renderer.box(box, finalFillColor, finalLineColor, (ShapeMode)this.shapeMode.get(), 0);
+        // The width was hardcoded to 0, so the line-width setting had no effect at all.
+        event.renderer.box(box, finalFillColor, finalLineColor, (ShapeMode)this.shapeMode.get(),
+            (int)((Double)this.lineWidth.get()).doubleValue());
     }
 
     public String getInfoString() {

@@ -229,52 +229,6 @@ public class AutoFarm extends Module {
         return -1;
     }
 
-    private void rotateTo(BlockPos pos) {
-        double dx = pos.getX() + 0.5 - this.mc.player.getX();
-        double dy = pos.getY() + 0.5 - (this.mc.player.getY() + this.mc.player.getEyeHeight());
-        double dz = pos.getZ() + 0.5 - this.mc.player.getZ();
-        double dist = Math.sqrt(dx * dx + dz * dz);
-        float targetYaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
-        float targetPitch = (float)(-Math.toDegrees(Math.atan2(dy, dist)));
-        float yawDiff = this.wrapDegrees(targetYaw - this.mc.player.getYRot());
-        float pitchDiff = this.wrapDegrees(targetPitch - this.mc.player.getXRot());
-        float maxTurn = 10.0F;
-        if (Math.abs(yawDiff) > maxTurn) {
-            yawDiff = Math.signum(yawDiff) * maxTurn;
-        }
-
-        if (Math.abs(pitchDiff) > maxTurn) {
-            pitchDiff = Math.signum(pitchDiff) * maxTurn;
-        }
-
-        this.mc.player.setYRot(this.mc.player.getYRot() + yawDiff);
-        this.mc.player.setXRot(this.mc.player.getXRot() + pitchDiff);
-    }
-
-    private boolean isLookingAt(BlockPos pos, float threshold) {
-        double dx = pos.getX() + 0.5 - this.mc.player.getX();
-        double dy = pos.getY() + 0.5 - (this.mc.player.getY() + this.mc.player.getEyeHeight());
-        double dz = pos.getZ() + 0.5 - this.mc.player.getZ();
-        double dist = Math.sqrt(dx * dx + dz * dz);
-        float targetYaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
-        float targetPitch = (float)(-Math.toDegrees(Math.atan2(dy, dist)));
-        float yawDiff = Math.abs(this.wrapDegrees(targetYaw - this.mc.player.getYRot()));
-        float pitchDiff = Math.abs(this.wrapDegrees(targetPitch - this.mc.player.getXRot()));
-        return yawDiff < threshold && pitchDiff < threshold;
-    }
-
-    private float wrapDegrees(float v) {
-        while (v > 180.0F) {
-            v -= 360.0F;
-        }
-
-        while (v < -180.0F) {
-            v += 360.0F;
-        }
-
-        return v;
-    }
-
     public String getInfoString() {
         return this.currentTarget != null ? this.currentTarget.toShortString() : null;
     }
