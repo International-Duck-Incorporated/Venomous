@@ -2,6 +2,9 @@
 .gradle/
 build/
 
+# Fabric Loom dev-client run directory (created by ./gradlew runClient)
+run/
+
 # IDE
 .idea/
 .vscode/
