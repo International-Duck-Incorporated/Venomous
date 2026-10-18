@@ -85,6 +85,14 @@ All notable changes to Venomous are documented in this file.
   readable in world space. The old `text-scale` setting was removed rather than implemented: the
   numeric counters cannot be drawn on this Minecraft version's renderer, and a control that
   still did nothing was the original problem.
+- Removed `hide-scoreboard`'s `hide-numbers` setting and its uncalled `shouldHideNumbers()`.
+  `HudMixin` cancels `extractScoreboardSidebar` outright whenever the module is on, so the
+  sidebar was already hidden in full and the setting could not change anything.
+- Added `OrphanModuleTest`, which fails the build when a module exposes a public API that
+  nothing calls, or defines neither an event handler nor activation work while being referenced
+  nowhere. Four such cases are recorded in an allowlist with a drift check: `TextFieldProtect`
+  and `ExtendedFirework` are inert shells, and `VGhostHand.isTargeted` is the unhooked
+  interact-through-walls feature. All three await a mixin that was never written.
 
 ## [7.0.0] - 2026-09-19
 
