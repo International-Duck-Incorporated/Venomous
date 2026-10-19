@@ -17,8 +17,6 @@ import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -35,9 +33,7 @@ import net.venomous.meteoraddon.utils.SneakTiming;
 public class Scaffold extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
     private final SettingGroup sgGrim = this.settings.createGroup("Grim");
-    private final SettingGroup sgVulcan = this.settings.createGroup("Vulcan");
     private final SettingGroup sgBridge = this.settings.createGroup("Bridge Assist");
-    private final SettingGroup sgExpand = this.settings.createGroup("Expand");
     private final SettingGroup sgTower = this.settings.createGroup("Tower");
 
     private final Setting<Scaffold.Technique> technique = this.sgGeneral.add(
@@ -206,47 +202,6 @@ public class Scaffold extends Module {
             .build()
     );
 
-    private final Setting<Integer> vulcanExpand = this.sgVulcan.add(
-        new IntSetting.Builder()
-            .name("vulcan-expand")
-            .description("Blocks to expand ahead for Vulcan bridging.")
-            .defaultValue(1)
-            .range(0, 5)
-            .sliderMax(5)
-            .visible(() -> this.technique.get() == Scaffold.Technique.VulcanExpand)
-            .build()
-    );
-
-    private final Setting<Boolean> vulcanSprintDisabler = this.sgVulcan.add(
-        new BoolSetting.Builder()
-            .name("vulcan-sprint-disabler")
-            .description("Send sprint toggle packets for legacy Vulcan versions (disable on modern Vulcan).")
-            .defaultValue(false)
-            .visible(() -> this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
-            .build()
-    );
-
-    private final Setting<Integer> vulcanSprintInterval = this.sgVulcan.add(
-        new IntSetting.Builder()
-            .name("vulcan-sprint-interval")
-            .description("Ticks between sprint packet sends.")
-            .defaultValue(3)
-            .range(1, 10)
-            .visible(() -> (this.technique.get() == Scaffold.Technique.VulcanExpand || this.technique.get() == Scaffold.Technique.VulcanSprint)
-                            && this.vulcanSprintDisabler.get())
-                                .build()
-    );
-
-    private final Setting<Integer> expand = this.sgExpand.add(
-        new IntSetting.Builder()
-            .name("expand")
-            .description("Blocks to expand forward. NOTE: Expand > 0 flags FarPlace on Grim!")
-            .defaultValue(0)
-            .range(0, 5)
-            .sliderMax(5)
-            .build()
-    );
-
     private final Setting<Boolean> tower = this.sgTower.add(
         new BoolSetting.Builder()
             .name("tower")
@@ -285,7 +240,7 @@ public class Scaffold extends Module {
     private final Random random = new Random();
 
     public Scaffold() {
-        super(VenomousAddon.CATEGORY, "v-scaffold", "Scaffold & Bridge bypasses for Grim, Vulcan, NCP, and fast bridging.");
+        super(VenomousAddon.CATEGORY, "v-scaffold", "Scaffold & Bridge bypasses for Grim, NCP, and fast bridging.");
     }
 
     @Override
@@ -322,7 +277,7 @@ public class Scaffold extends Module {
         return this.technique.get() == Scaffold.Technique.AutoSneak
             || this.technique.get() == Scaffold.Technique.BridgeMacro
             || this.technique.get() == Scaffold.Technique.VapeBridge
-            || this.technique.get() == Scaffold.Technique.VulcanSprint;
+           ;
     }
 
     /** Per-technique placement cadence multiplier applied on top of {@code place-delay}. */
@@ -330,7 +285,6 @@ public class Scaffold extends Module {
         int base = Math.max(1, this.placeDelay.get());
         return switch (this.technique.get()) {
             case VapeBridge -> Math.max(1, base - 2);
-            case VulcanExpand, VulcanSprint -> Math.max(1, base);
             default -> base;
         };
     }
@@ -355,18 +309,10 @@ public class Scaffold extends Module {
             this.targetY = (int)Math.floor(this.mc.player.getY() - 1.0);
         }
 
-        if ((selected == Scaffold.Technique.VulcanExpand || selected == Scaffold.Technique.VulcanSprint)
-            && this.vulcanSprintDisabler.get()
-            && this.scaffoldCount % this.vulcanSprintInterval.get() == 0
-            && this.mc.getConnection() != null) {
-            this.mc.getConnection().send(new ServerboundPlayerCommandPacket(this.mc.player, Action.START_SPRINTING));
-            this.mc.getConnection().send(new ServerboundPlayerCommandPacket(this.mc.player, Action.STOP_SPRINTING));
-        }
-
         switch (selected) {
             case GrimScaffold -> this.tickGrim();
-            case AutoSneak, BridgeMacro, VapeBridge, VulcanSprint -> this.tickBridgeMode();
-            case VulcanExpand, Expand, NCPNormal, Normal -> this.tickStandardMode();
+            case AutoSneak, BridgeMacro, VapeBridge -> this.tickBridgeMode();
+            case NCPNormal, Normal -> this.tickStandardMode();
         }
     }
 
@@ -390,7 +336,7 @@ public class Scaffold extends Module {
             this.updateManagedSneak(this.isOverEdge()
                 || this.edgeDistance(this.movementDirection()) < this.jittered(0.32));
             if (!this.rotate.get()) {
-                this.place(placePos, false);
+                this.place(placePos);
             } else {
                 this.aimAndPlace(placePos);
             }
@@ -399,16 +345,10 @@ public class Scaffold extends Module {
 
         this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
 
-        if (this.technique.get() == Scaffold.Technique.VulcanExpand && this.vulcanExpand.get() > 0) {
-            for (int i = this.vulcanExpand.get(); i >= 0; i--) {
-                BlockPos expanded = this.getExpandPos(i);
-                if (expanded != null && this.place(expanded)) break;
-            }
-        } else if (this.technique.get() == Scaffold.Technique.Expand && this.expand.get() > 0) {
-            for (int i = this.expand.get(); i >= 0; i--) {
-                BlockPos expanded = this.getExpandPos(i);
-                if (expanded != null && this.place(expanded)) break;
-            }
+        // Expand/VulcanExpand were removed: they placed extra blocks per tick, which no cadence
+        // survives and which the anticheat's straight-line minimum punishes hardest.
+        if (this.rotate.get()) {
+            this.aimAndPlace(placePos);
         } else {
             this.place(placePos);
         }
@@ -429,7 +369,7 @@ public class Scaffold extends Module {
 
         // A low acceleration curve is intentional: no one-frame 180/90 degree snap.
         if (!this.rotate.get()) {
-            this.place(target, false);
+            this.place(target);
         } else {
             this.aimAndPlace(target);
         }
@@ -466,7 +406,7 @@ public class Scaffold extends Module {
                 float oldYaw = this.mc.player.getYRot();
                 float oldPitch = this.mc.player.getXRot();
 
-                if (this.bridgePitchAssist.get() && (tech == Scaffold.Technique.VapeBridge || tech == Scaffold.Technique.VulcanSprint)) {
+                if (this.bridgePitchAssist.get() && (tech == Scaffold.Technique.VapeBridge)) {
                     if (this.mc.player.getXRot() < 65.0F && !this.rotate.get()) {
                         this.mc.player.setXRot(75.5F);
                     }
@@ -520,7 +460,7 @@ public class Scaffold extends Module {
      */
     private void aimAndPlace(BlockPos pos) {
         float[] aim = this.aimAt(pos);
-        PreRotate.rotateThen(this, aim[0], aim[1], () -> this.place(pos, false));
+        PreRotate.rotateThen(this, aim[0], aim[1], () -> this.place(pos));
     }
 
     /** Yaw and pitch that would look at {@code pos}, without touching the camera. */
@@ -598,16 +538,6 @@ public class Scaffold extends Module {
         return null;
     }
 
-    private BlockPos getExpandPos(int fwd) {
-        Vec3 dir = this.movementDirection();
-        if (dir.lengthSqr() < 1.0E-4) {
-            double yaw = Math.toRadians(this.mc.player.getYRot());
-            dir = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
-        }
-        double d = fwd + 1;
-        BlockPos pos = BlockPos.containing(this.mc.player.getX() + dir.x * d, this.blockY(), this.mc.player.getZ() + dir.z * d);
-        return this.mc.level.getBlockState(pos).isAir() ? pos : null;
-    }
 
     private void doTower() {
         BlockPos below = BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ());
@@ -621,17 +551,25 @@ public class Scaffold extends Module {
         }
     }
 
-    /**
-    * Places a block at the given position using Meteor's normal placement utility.
-    *
-    * <p>Using Meteor's standard {@link BlockUtils#place} path avoids custom rotation spoofing
-    * desyncs between client camera state and server rotation state.
-    */
+/**
+ * Places a block at the given position, without touching rotation.
+ *
+ * <p>Deliberately has no "rotate" variant any more. {@link BlockUtils#place} with
+ * {@code rotate = true} calls {@code Rotations.rotate(yaw, pitch, runnable)}, and Meteor runs that
+ * callback from {@code SendMovementPacketsEvent.Post} - the interaction therefore leaves
+ * <em>after</em> the movement packet. AntiCheat-Addition names it on sight:</p>
+ *
+ * <pre>{@code
+ *   [Anticheat-Test] >Looks like you are currently attacking/placing on POST,
+ *                     this is a very common check on most anti-cheats
+ * }</pre>
+ *
+ * <p>That was happening on every path except GrimScaffold and NCP, because those were the only two
+ * routed through {@link #aimAndPlace}. Rotation-and-place is now always {@code aimAndPlace}, which
+ * defers to {@code Pre} via {@link PreRotate}. Removing the overload means the POST ordering cannot
+ * be reintroduced by a call site that forgets.</p>
+ */
     private boolean place(BlockPos pos) {
-        return this.place(pos, this.rotate.get());
-    }
-
-    private boolean place(BlockPos pos, boolean shouldRotate) {
         if (this.mc.player == null || this.mc.level == null || this.placeCooldown > 0) {
             return false;
         }
@@ -654,7 +592,7 @@ public class Scaffold extends Module {
         }
 
         if (BlockUtils.canPlace(pos)) {
-            if (BlockUtils.place(pos, block, shouldRotate, 10, this.swing.get(), true)) {
+            if (BlockUtils.place(pos, block, false, 10, this.swing.get(), true)) {
                 // Jitter only ever lengthens the gap, never shortens it, so bridging stays at
                 // least as reliable as the fixed cadence while no longer being metronomic.
                 this.placeCooldown = ScaffoldCadence.cooldownTicks(
@@ -769,10 +707,7 @@ public class Scaffold extends Module {
         AutoSneak,
         BridgeMacro,
         VapeBridge,
-        VulcanExpand,
-        VulcanSprint,
         NCPNormal,
-        Normal,
-        Expand;
+        Normal;
     }
 }

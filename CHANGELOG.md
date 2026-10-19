@@ -6,6 +6,19 @@ All notable changes to Venomous are documented in this file.
 
 ## [7.1.0] - 2026-10-18
 
+- Fixed `v-scaffold` placing on POST — the anticheat named it directly:
+  `Looks like you are currently attacking/placing on POST, this is a very common check on most
+  anti-cheats`. Meteor's `BlockUtils.place(..., rotate = true, ...)` calls
+  `Rotations.rotate(yaw, pitch, runnable)`, whose callback Meteor runs from
+  `SendMovementPacketsEvent.Post`, so the interaction left *after* the movement packet. Only
+  GrimScaffold and NCP were routed through `PreRotate`; every other path passed `rotate = true`
+  straight to `BlockUtils`. Rotation-and-place is now always `aimAndPlace`, and the rotating
+  `place(pos, shouldRotate)` overload has been deleted so no call site can reintroduce it.
+- Removed the `expand`, `vulcan-expand` and `vulcan-sprint` techniques from `v-scaffold`, along with
+  the `Expand` and `Vulcan` setting groups and every setting that belonged to them. They placed
+  extra blocks per tick, which no placement cadence survives and which the anticheat's
+  straight-line minimum punishes hardest. Nine techniques remain: GrimScaffold, AutoSneak,
+  BridgeMacro, VapeBridge, NCPNormal and Normal.
 - Added activity guards across the combat modules, ported from a decompile of Vape v4.10. Each one
   stops the client doing something a person would not: `aimbot` gained `click-aim` (only aim while
   the attack key is held), `check-block-break` (do not aim while mining) and `limit-to-items` — the
