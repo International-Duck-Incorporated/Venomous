@@ -1,7 +1,7 @@
 package net.venomous.meteoraddon.utils;
 
 /**
- * Where to point when placing a block against a given face.
+ * Where to point when placing a block against a given face, and whether placing is legal at all.
  *
  * <p>Free of Minecraft types so it unit-tests on a plain JVM, in the same spirit as {@link AimEase},
  * {@link ScaffoldGates} and {@link ScaffoldCadence}.</p>
@@ -17,12 +17,17 @@ package net.venomous.meteoraddon.utils;
  * <p>Aiming at the block's centre is only right when the eye happens to be square to the face. While
  * bridging, the player is above and behind the cell they are filling, so a ray at the centre enters
  * through a face the player is not actually addressing, and the resolved click position can land on
- * air.</p>
+ * air. The centre of the face being placed against is always on the correct face and always inside
+ * the block, whatever the eye is doing.</p>
  *
- * <p>What a person does is look at the nearest point of the face they are clicking. That point is
- * the centre of the face, slid along the face toward the eye and clamped to the block's own
- * extent. It is always on the correct face, always reachable, and it is the point whose normal
- * best faces the eye.</p>
+ * <h2>Why the face centre, and not the point nearest the eye</h2>
+ *
+ * <p>Sliding the point along the face toward the eye looks more like a human, and it was what this
+ * class did first. It does not survive contact with movement: the slide is clamped to the face, so
+ * when the eye crosses the face's own plane the offset flips sign and the target jumps to the far
+ * edge - a swing of most of 180 degrees. On a live run the face pitch alternated between 62.5 and
+ * 56.9 degrees on alternating ticks, and each of those flips arrived with a {@code RotationPlace}
+ * flag. The face centre is the same face from either side and never moves, so it is what ships.</p>
  */
 public final class ScaffoldAim {
     private ScaffoldAim() {
@@ -42,43 +47,27 @@ public final class ScaffoldAim {
      * @param halfExtent 0.5 for a full block; the face spans {@code [-half, +half]} per axis
      */
     public static double[] aimPoint(double blockX, double blockY, double blockZ, double[] normal,
-                                    double eyeX, double eyeY, double eyeZ, double halfExtent) {
+                                    double halfExtent) {
         if (normal == null) {
-            // No support on any face: there is nothing sensible to aim at, and place() refuses it
-            // anyway. The block centre is the safe, always-valid answer.
+            // No support on any face: there is nothing sensible to aim at, and the placement is
+            // refused anyway by hasSupport. The block centre is the safe, always-valid answer.
             return new double[] {blockX + 0.5, blockY + 0.5, blockZ + 0.5};
         }
 
-        double[] face = sharedFaceCentre(
+        return sharedFaceCentre(
             blockX - normal[0], blockY - normal[1], blockZ - normal[2], normal, halfExtent);
-
-        return nearestPointOnFace(face, normal, eyeX, eyeY, eyeZ, halfExtent);
     }
 
     /**
-     * The point on the shared face that is closest to the eye.
+     * Whether a placement should be attempted at all.
      *
-     * @param faceCentre the centre of the face being clicked, in block coordinates
-     * @param normal     unit face normal, pointing from the support towards the eye's side
-     * @param eyeX/eyeY/eyeZ the player's eye position
-     * @param halfExtent 0.5 for a full block; the face spans {@code [-half, +half]} per axis
-     * @return the aim point as {@code {x, y, z}}
+     * <p>{@code BlockUtils.canPlace} answers "is this cell free" and returns true even when no face
+     * of it has support - which is exactly the case where placing produces an air-place. Grim's
+     * {@code AirLiquidPlace} fired on precisely the ticks the debug log showed {@code side=NULL},
+     * with {@code canPlace=true}. A placement with no support face must not be attempted.</p>
      */
-    public static double[] nearestPointOnFace(double[] faceCentre, double[] normal,
-                                              double eyeX, double eyeY, double eyeZ,
-                                              double halfExtent) {
-        double[] point = faceCentre.clone();
-
-        for (int axis = 0; axis < 3; axis++) {
-            // Only axes the face does not lie along may be slid across the face.
-            if (Math.abs(normal[axis]) > 1.0E-6) continue;
-
-            double eye = axis == 0 ? eyeX : axis == 1 ? eyeY : eyeZ;
-            double offset = clamp(eye - point[axis], -halfExtent, halfExtent);
-            point[axis] += offset;
-        }
-
-        return point;
+    public static boolean hasSupport(boolean canPlace, boolean hasSide) {
+        return canPlace && hasSide;
     }
 
     /**
@@ -94,9 +83,5 @@ public final class ScaffoldAim {
             supportY + 0.5 + normal[1] * halfExtent,
             supportZ + 0.5 + normal[2] * halfExtent
         };
-    }
-
-    public static double clamp(double value, double min, double max) {
-        return value < min ? min : value > max ? max : value;
     }
 }

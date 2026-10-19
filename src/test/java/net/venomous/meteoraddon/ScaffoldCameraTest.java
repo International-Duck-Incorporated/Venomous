@@ -47,14 +47,14 @@ public class ScaffoldCameraTest extends SourceGuard {
 
         int face = normalised.indexOf("float[]face=this.faceAimAt(pos);");
         int camera = normalised.indexOf("this.easeCameraOnto(face);");
-        int server = normalised.indexOf("this.easedAimAt(pos);");
+        int server = normalised.indexOf("this.serverAimAt(pos);");
 
         assertTrue(face >= 0 && camera > face,
             "the face aim must be computed first and handed to the camera");
         assertTrue(server > camera,
             "the server rotation must be eased from the same point, so both agree on one face");
 
-        assertFalse(normalised.contains("this.easeCameraOnto(this.easedAimAt"),
+        assertFalse(normalised.contains("this.easeCameraOnto(this.serverAimAt"),
             "the camera must not be driven from the server rotation; that is what pinned the two "
                 + "together in the first place");
     }
@@ -69,6 +69,84 @@ public class ScaffoldCameraTest extends SourceGuard {
             "every camera delta must be a whole multiple of the sensitivity GCD; writing an "
                 + "arbitrary float to setYRot produces an angle no mouse can generate, which is "
                 + "what rotation checks fingerprint");
+    }
+
+    /**
+     * The camera yaw must be written <em>unwrapped</em>.
+     *
+     * <p>This is the opposite of the obvious fix and the reason matters. Grim's {@code AimModulo360}
+     * is not a range check - it is {@code |yaw| < 360 && |deltaYaw| > 320 && |lastDeltaYaw| < 30},
+     * which hunts exactly one thing: a client that reports a wrapped yaw where vanilla would report
+     * an unwrapped one. {@code Entity.turn} never wraps; only pitch is clamped to [-90, 90].</p>
+     *
+     * <p>Wrapping the value on write therefore does not fix anything - the long runs past 360 the
+     * debug log showed are correct vanilla behaviour, the easing was simply taking the short way
+     * round - and it manufactures the +-360 single-tick jump the check is built to catch. The
+     * remaining error is wrapped instead, so the approach still converges.</p>
+     */
+    @Test
+    void theCameraYawIsWrittenUnwrappedTheWayVanillaDoes() {
+        String body = methodBody(source(SCAFFOLD), "private void easeCameraOnto(float[] face)");
+
+        requireAnchor(body, "easeCameraOnto", "setYRot(");
+
+        assertFalse(squeeze(body).contains("setYRot(wrapDegrees("),
+            "wrapping the yaw on write creates a single-tick 360 degree jump, which is precisely "
+                + "what Grim's AimModulo360 flags; Entity.turn never wraps yaw, so neither may this");
+
+        assertTrue(squeeze(body).contains("wrapDegrees(face[0]-yaw)"),
+            "the remaining error is what gets wrapped instead, so the approach still takes the "
+                + "short way round and converges");
+    }
+
+    /**
+     * The server rotation is snapped to the face; only the camera eases.
+     *
+     * <p>Easing the server rotation was tried and reverted. AntiCheat-Addition's
+     * {@code ScaffoldRotation} scores rotation variance - 35 degrees or more inside two ticks, over
+     * 360 degrees of summed change, or variance above 70 - and its own source comment names
+     * "perfectly aiming at blocks" as a false-positive source, which is what a multi-tick approach
+     * looks like from the server. The live run it was reverted on showed the face pitch alternating
+     * 62.5 then 56.9 on consecutive ticks with 22 to 24 degrees of yaw per tick.</p>
+     */
+    @Test
+    void theServerRotationSnapsWhileTheCameraEases() {
+        String body = methodBody(source(SCAFFOLD), "private float[] serverAimAt(BlockPos pos)");
+
+        requireAnchor(body, "serverAimAt", "return");
+
+        String squeezed = squeeze(body);
+
+        assertFalse(squeezed.contains("AimEase."),
+            "the server rotation must not be eased; the visible easing belongs to the camera");
+
+        assertFalse(squeezed.contains("maxAimStep()"),
+            "a per-tick step on the server angle is exactly the variance ScaffoldRotation scores");
+
+        assertTrue(squeezed.contains("returnthis.faceAimAt(pos);"),
+            "the server angle is the face aim itself");
+    }
+
+    /**
+     * The placement is refused unless the cell is free <em>and</em> has a supporting face.
+     *
+     * <p>{@code canPlace} alone still returns true for a free cell with nothing to place against,
+     * and clicking one of those is what Grim's {@code AirLiquidPlace} reports. The debug log printed
+     * {@code side=NULL, canPlace=true} on exactly the ticks that flag arrived.</p>
+     */
+    @Test
+    void aimAndPlaceRefusesACellWithNoSupportingFace() {
+        String body = methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)");
+
+        requireAnchor(body, "aimAndPlace", "ScaffoldAim.hasSupport(");
+
+        assertTrue(squeeze(body).contains(
+                "ScaffoldAim.hasSupport(BlockUtils.canPlace(pos),BlockUtils.getPlaceSide(pos)!=null)"),
+            "the guard must combine canPlace with the existence of a place side; canPlace by itself "
+                + "does not distinguish a placeable cell from an air-place");
+
+        assertFalse(squeeze(body).contains("if (!BlockUtils.canPlace(pos))"),
+            "the bare canPlace check is what this replaces - it passes air-place cells through");
     }
 
     /**

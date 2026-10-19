@@ -138,12 +138,14 @@ public class Scaffold extends Module {
             .build()
     );
 
-    private final Setting<Double> aimSpeed = this.sgAnticheat.add(
+    private final Setting<Double> cameraSpeed = this.sgAnticheat.add(
         new DoubleSetting.Builder()
-            .name("aim-speed")
-            .description("Degrees per tick the server rotation may travel toward the placement "
-                + "face. The move eases in and decelerates into the target, so this is the peak, "
-                + "not the rate it starts or ends at.")
+            .name("camera-speed")
+            .description("Degrees per tick the camera may travel toward the placement face. The "
+                + "move eases in and decelerates into the target, so this is the peak, not the rate "
+                + "it starts or ends at. This drives what you see only; the rotation the server is "
+                + "told is snapped to the face, because AntiCheat-Addition's ScaffoldRotation "
+                + "scores rotation variance and a multi-tick approach reads as random aiming.")
             .defaultValue(22.0)
             .min(1.0)
             .sliderMax(60.0)
@@ -267,8 +269,6 @@ public class Scaffold extends Module {
     private int targetY = -1;
     private float camYawVelocity = 0.0F;
     private float camPitchVelocity = 0.0F;
-    private float aimYawVelocity = 0.0F;
-    private float aimPitchVelocity = 0.0F;
     private Scaffold.Technique lastTechnique = null;
     private Vec3 bridgeHeading = Vec3.ZERO;
     private final Random random = new Random();
@@ -307,8 +307,6 @@ public class Scaffold extends Module {
         this.targetY = -1;
         this.camYawVelocity = 0.0F;
         this.camPitchVelocity = 0.0F;
-        this.aimYawVelocity = 0.0F;
-        this.aimPitchVelocity = 0.0F;
     }
 
     private boolean isBridgeMode() {
@@ -505,18 +503,29 @@ public class Scaffold extends Module {
      * come from. Two changes address that:</p>
      *
      * <ul>
-     *   <li>The target is the point on the placement <em>face</em> nearest the eye, not the block
-     *       centre - while bridging the eye is above and behind the cell being filled, so a ray at
-     *       the centre enters through a face the player is not addressing.</li>
+     *   <li>The target is the centre of the placement face rather than the centre of the block.
+     *       While bridging, the eye is above and behind the cell being filled, so a ray at the block
+     *       centre enters through a face the player is not addressing and the click resolves to
+     *       air.</li>
+     *   <li>The target does not slide toward the eye. Sliding was tried and reverted: as the player
+     *       crossed the block the point flipped to the opposite edge of the face, swinging the
+     *       target by most of 180 degrees. The debug log caught it - the face pitch alternated
+     *       between 62.5 and 56.9 on alternating ticks, and every one of those flips lined up with
+     *       a {@code RotationPlace} flag.</li>
      *   <li>The approach is eased rather than stepped, so the rotation fades in off the old target
      *       and decelerates onto the face. {@link AimEase} already carries a velocity ramp with
      *       ease-out near the target, so it is reused instead of adding a second curve.</li>
      * </ul>
      */
     private void aimAndPlace(BlockPos pos) {
-        // canPlace is what place() checks anyway; doing it here avoids aiming at a target that is
-        // guaranteed to be refused, and is the other half of the null-side crash.
-        if (!BlockUtils.canPlace(pos)) return;
+        // A cell that is free but has no supporting face is not a placement target. canPlace
+        // answers "is the cell free"; it is still true when nothing around it can hold a block,
+        // and clicking anyway is exactly what Grim's AirLiquidPlace reports. The per-tick debug
+        // log showed those two facts side by side - "side=NULL canPlace=true" on the very ticks
+        // the flag arrived - and also showed the module retrying the same dead cell forever.
+        if (!ScaffoldAim.hasSupport(BlockUtils.canPlace(pos), BlockUtils.getPlaceSide(pos) != null)) {
+            return;
+        }
 
         // The camera follows the same face aim, eased and slower than the server rotation so it
         // reads as a look rather than a lock. GCD-quantised, because every delta a real mouse
@@ -524,38 +533,11 @@ public class Scaffold extends Module {
         float[] face = this.faceAimAt(pos);
         this.easeCameraOnto(face);
 
-        float[] aim = this.easedAimAt(pos);
-
-        // [DEBUG-scf] TEMPORARY - remove. Answers whether Meteor is actually applying our rotation
-        // or whether Rotations.serverYaw is lying, which is the difference between "the camera is
-        // slow" and "the server never saw the angle".
-        this.debugState(pos, face, aim);
+        float[] aim = this.serverAimAt(pos);
 
         // Only place once the rotation has actually arrived; PreRotate enforces the tolerance and
         // defers the interaction to SendMovementPacketsEvent.Pre so it leaves before the packet.
         PreRotate.rotateThen(this, aim[0], aim[1], () -> this.place(pos));
-    }
-
-    /** [DEBUG-scf] TEMPORARY - remove. One line per tick, tagged for a single-grep cleanup. */
-    private void debugState(BlockPos pos, float[] face, float[] aim) {
-        if (this.mc.player == null) return;
-
-        Direction side = BlockUtils.getPlaceSide(pos);
-        float yawErr = wrapDegrees(aim[0] - Rotations.serverYaw);
-        float pitchErr = aim[1] - Rotations.serverPitch;
-
-        VenomousAddon.LOG.info(String.format(
-            "[DEBUG-scf] pos=%s side=%s canPlace=%b | cam yaw=%.1f pitch=%.1f | srv yaw=%.1f pitch=%.1f "
-                + "| face yaw=%.1f pitch=%.1f | req yaw=%.1f pitch=%.1f | err yaw=%.1f pitch=%.1f | rot=%b",
-            pos.toShortString(),
-            side == null ? "NULL" : side.getName(),
-            BlockUtils.canPlace(pos),
-            this.mc.player.getYRot(), this.mc.player.getXRot(),
-            Rotations.serverYaw, Rotations.serverPitch,
-            face[0], face[1],
-            aim[0], aim[1],
-            yawErr, pitchErr,
-            this.rotate.get()));
     }
 
     /**
@@ -586,46 +568,53 @@ public class Scaffold extends Module {
 
         double sensitivity = this.mc.options.sensitivity().get();
 
+        // The yaw is written UNWRAPPED, deliberately. Grim's AimModulo360 is not a range check: it flags
+        // |yaw| < 360 together with |deltaYaw| > 320 in a single tick, i.e. a client that reports a
+        // wrapped value where vanilla would report an unwrapped one. Entity.turn never wraps yaw;
+        // only pitch is clamped. Wrapping here would manufacture exactly the +-360 jump that check
+        // exists to catch, so the eased value is stored as-is and wrapDegrees is applied to the
+        // remaining error instead - which is what makes the approach take the short way round.
         this.mc.player.setYRot(yaw + RotationGcd.quantize(sensitivity, yawStep));
-        this.mc.player.setXRot((float) ScaffoldAim.clamp(pitch + pitchStep, -90.0, 90.0));
+        this.mc.player.setXRot(clamp(pitch + pitchStep, -90.0F, 90.0F));
     }
 
     /**
-     * Next eased rotation toward the placement face, or the exact aim when already on it.
+     /**
+     * The exact yaw and pitch of the placement face, for the server.
      *
-     * <p>Returns the destination rather than a partial step: {@link PreRotate} defers the placement
-     * until the server rotation matches this value, so handing over a mid-flight angle each tick
-     * produces a smooth arrival instead of a single jump.</p>
+     * <p>Snapped, not eased, and deliberately so. Easing the <em>server</em> rotation was tried and
+     * reverted against a live run. Two independent pieces of evidence say it costs more than it
+     * buys:</p>
+     *
+     * <ul>
+     *   <li>AntiCheat-Addition's {@code ScaffoldRotation} scores rotation <em>variance</em> - a change
+     *       of 35 degrees or more inside two ticks, more than 360 degrees of summed change, or a
+     *       variance above 70, which its own source comments describe as "sending random rotations
+     *       <em>or is perfectly aiming at blocks</em>". An eased approach spends several ticks inside
+     *       that window on every single block. The debug log from that run showed the face pitch
+     *       alternating 62.5 then 56.9 on consecutive ticks with yaw moving 22 to 24 degrees per
+     *       tick, which is precisely the pattern the check scores.</li>
+     *   <li>Grim's {@code RotationPlace} retries on the tick <em>before</em> the place while the
+     *       rotation is still moving. A slow approach keeps the ray off the block for longer, which
+     *       is how it went from firing once to firing on every placement.</li>
+     * </ul>
+     *
+     * <p>Both reference implementations agree: Meteor's scaffold sends
+     * {@code Mth.wrapDegrees(target - current)} directly, and LiquidBounce's
+     * {@code FaceTargetPositionFactory} returns a point on the face with no smoothing at all. Grim
+     * explicitly tolerates rotation and place in the same tick - {@code CheckManagerListener} adopts
+     * a rotation packet that arrives within 15 ms of the place - which is what {@link PreRotate}
+     * already arranges.</p>
+     *
+     * <p>The visible easing the player cares about is not lost; it moved to the camera, which is
+     * what they actually see. See {@link #easeCameraOnto}.</p>
      */
-    private float[] easedAimAt(BlockPos pos) {
-        float[] target = this.faceAimAt(pos);
-        float yaw = Rotations.serverYaw;
-        float pitch = Rotations.serverPitch;
-
-        float yawDelta = wrapDegrees(target[0] - yaw);
-        float pitchDelta = target[1] - pitch;
-
-        // Close enough that easing further would only add latency; hand over the exact angle so
-        // PreRotate's tolerance is met this tick rather than several ticks from now.
-        if (Math.abs(yawDelta) < 0.5F && Math.abs(pitchDelta) < 0.5F) {
-            return target;
-        }
-
-        float yawStep = AimEase.step(yawDelta, this.maxAimStep(), this.aimYawVelocity,
-            CAPTURE_DEGREES, this.aimNoise());
-        float pitchStep = AimEase.step(pitchDelta, this.maxAimStep() * 0.5F, this.aimPitchVelocity,
-            CAPTURE_DEGREES, this.aimNoise() * 0.5F);
-
-        this.aimYawVelocity = AimEase.nextVelocity(yawDelta, this.maxAimStep(), this.aimYawVelocity,
-            CAPTURE_DEGREES, 0.0F);
-        this.aimPitchVelocity = AimEase.nextVelocity(pitchDelta, this.maxAimStep() * 0.5F,
-            this.aimPitchVelocity, CAPTURE_DEGREES, 0.0F);
-
-        return new float[] {yaw + yawStep, pitch + pitchStep};
+    private float[] serverAimAt(BlockPos pos) {
+        return this.faceAimAt(pos);
     }
 
     /**
-     * Yaw and pitch onto the placement face nearest the eye, without touching the camera.
+     * Yaw and pitch onto the centre of the placement face, without touching the camera.
      *
      * <p>Uses Meteor's own side resolution so the face is the one the placement would actually use.
      * See {@link ScaffoldAim}.</p>
@@ -641,8 +630,7 @@ public class Scaffold extends Module {
             side.getStepX(), side.getStepY(), side.getStepZ()
         };
 
-        double[] point = ScaffoldAim.aimPoint(pos.getX(), pos.getY(), pos.getZ(), normal,
-            eyes.x, eyes.y, eyes.z, 0.4);
+        double[] point = ScaffoldAim.aimPoint(pos.getX(), pos.getY(), pos.getZ(), normal, 0.4);
 
         double dx = point[0] - eyes.x;
         double dy = point[1] - eyes.y;
@@ -666,7 +654,7 @@ public class Scaffold extends Module {
      */
 
     private float maxAimStep() {
-        return (float) (double) this.aimSpeed.get();
+        return (float) (double) this.cameraSpeed.get();
     }
 
     /** Signed jitter for the easing, so a sweep never runs at an exactly constant rate. */
@@ -699,30 +687,51 @@ public class Scaffold extends Module {
     private BlockPos getPlacePos() {
         int y = this.blockY();
         BlockPos below = BlockPos.containing(this.mc.player.getX(), y, this.mc.player.getZ());
-        if (this.mc.level.getBlockState(below).isAir()) {
+        if (this.isSupported(below)) {
             return below;
         }
 
         for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
             BlockPos check = below.relative(dir);
-            if (this.mc.level.getBlockState(check).isAir()) {
-                double px = this.mc.player.getX() - Math.floor(this.mc.player.getX());
-                double pz = this.mc.player.getZ() - Math.floor(this.mc.player.getZ());
+            if (!this.isSupported(check)) {
+                continue;
+            }
 
-                boolean near = switch (dir) {
-                    case NORTH -> pz < 0.3;
-                    case SOUTH -> pz > 0.7;
-                    case EAST -> px > 0.7;
-                    case WEST -> px < 0.3;
-                    default -> false;
-                };
-                if (near) {
-                    return check;
-                }
+            double px = this.mc.player.getX() - Math.floor(this.mc.player.getX());
+            double pz = this.mc.player.getZ() - Math.floor(this.mc.player.getZ());
+
+            boolean near = switch (dir) {
+                case NORTH -> pz < 0.3;
+                case SOUTH -> pz > 0.7;
+                case EAST -> px > 0.7;
+                case WEST -> px < 0.3;
+                default -> false;
+            };
+            if (near) {
+                return check;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Whether {@code pos} is a cell this module may actually place into.
+     *
+     * <p>Two conditions, not one. {@code canPlace} asks whether the cell is free, which is not the
+     * same question as whether there is anything to place against: a free cell with no supporting
+     * neighbour on any of its six faces still reports {@code canPlace = true}. Targeting one of
+     * those produced two failures at once - Grim flagged {@code AirLiquidPlace}, and because the
+     * placement could never succeed the module retried the same dead cell on every tick for as long
+     * as the player stood there, with the debug log printing an identical line each time.</p>
+     *
+     * <p>Requiring a side here rather than only in {@link #aimAndPlace} is deliberate: it means the
+     * caller gets {@code null} and moves on to the next candidate instead of stalling on a cell that
+     * can never be filled.</p>
+     */
+    private boolean isSupported(BlockPos pos) {
+        return ScaffoldAim.hasSupport(
+            BlockUtils.canPlace(pos), BlockUtils.getPlaceSide(pos) != null);
     }
 
 
@@ -778,7 +787,7 @@ public class Scaffold extends Module {
             return false;
         }
 
-        if (BlockUtils.canPlace(pos)) {
+        if (this.isSupported(pos)) {
             if (BlockUtils.place(pos, block, false, 10, this.swing.get(), true)) {
                 // Jitter only ever lengthens the gap, never shortens it, so bridging stays at
                 // least as reliable as the fixed cadence while no longer being metronomic.
