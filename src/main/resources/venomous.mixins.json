@@ -7,6 +7,7 @@
     "ClientIntentionPacketAccessor",
     "ServerboundMovePlayerPacketAccessor",
     "NoPitchLimitMixin",
+    "ScaffoldCameraMixin",
     "MinecraftMixin",
     "ScreenMixin",
     "GameRendererMixin",

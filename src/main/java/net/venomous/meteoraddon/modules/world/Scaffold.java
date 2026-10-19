@@ -27,6 +27,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.GrimRay;
+import net.venomous.meteoraddon.utils.ScaffoldCamera;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
@@ -393,6 +394,10 @@ public class Scaffold extends Module {
 
         this.scaffoldCount++;
 
+        // The camera is the player's until the module has something to place, and the module cannot
+        // have the camera at all while the player is fighting.
+        ScaffoldCamera.release();
+
         if (this.scaffoldCount % 20 == 0) this.debugHeartbeat();
 
         this.debugTick();
@@ -427,6 +432,11 @@ public class Scaffold extends Module {
     }
 
     private void tickStandardMode() {
+        if (!this.canBridge()) {
+            this.releaseManagedSneak();
+            return;
+        }
+
         if (!this.findBlock().found()) return;
 
         if (this.tower.get() && this.mc.player.getXRot() < -75.0F) {
@@ -457,6 +467,11 @@ public class Scaffold extends Module {
 
     /** Human-looking Grim profile: edge crouch, visible eased aim, then an unspoofed interaction. */
     private void tickGrim() {
+        if (!this.canBridge()) {
+            this.releaseManagedSneak();
+            return;
+        }
+
         BlockPos target = this.getPlacePos();
         if (target == null || !this.findBlock().found()) {
             this.releaseManagedSneak();
@@ -561,6 +576,11 @@ public class Scaffold extends Module {
         // the block the placement is made against.
         float[] face = this.aimRotation(pos);
 
+        // The module takes the camera while it is bridging. The angle is applied at the head of the
+        // player's tick, after the mouse and before the movement, so the walk the client performs
+        // and the walk the server predicts are the same walk; the mixin is ScaffoldCameraMixin.
+        ScaffoldCamera.take(face[0], face[1]);
+
         this.lastServerYaw = Rotations.serverYaw;
         this.lastServerPitch = Rotations.serverPitch;
 
@@ -571,7 +591,7 @@ public class Scaffold extends Module {
         boolean pending = PreRotate.hasPending(this);
         boolean due = this.placementDue();
 
-        PreRotate.rotateOnly(this, face[0], due || pending ? face[1] : this.mc.player.getXRot());
+        PreRotate.rotateOnly(this, face[0], face[1]);
 
         // The server is told the aim, and the placement goes out one tick later, once the server
         // has actually received that rotation. Grim judges the placement against the rotation the
@@ -1065,6 +1085,23 @@ public class Scaffold extends Module {
     private void debugLog(String message, Object... args) {
         if (!this.debugLogging.get()) return;
         LOG.info("[DEBUG-scf] " + (args.length == 0 ? message : String.format(message, args)));
+    }
+
+    /**
+     * Whether the player is in a state to bridge.
+     *
+     * <p>Fighting counts. A player who is swinging at something is not bridging, and the camera is
+     * the only thing they can aim with, so the module must not take it off them.</p>
+     *
+     * <p>It must not place either. The rotation the server is told has to be the angle the client
+     * walks along, and while the camera is the player's own those are two different angles - the
+     * client would walk the camera's line and the server would predict the module's, and Grim
+     * would report the difference in millimetres of movement every tick.</p>
+     */
+    private boolean canBridge() {
+        if (this.mc.player == null) return false;
+        if (this.mc.options.keyAttack.isDown()) return false;
+        return true;
     }
 
     /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */

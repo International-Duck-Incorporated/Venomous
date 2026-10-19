@@ -53,6 +53,26 @@ public class ScaffoldCameraTest extends SourceGuard {
      * different angle apart, and that is a millimetre of movement difference every tick.</p>
      */
     @Test
+    void theCameraIsTheModulesWhileItBridgesAndThePlayersOtherwise() {
+        String code = squeeze(code(source(SCAFFOLD)));
+
+        assertTrue(code.contains("ScaffoldCamera.take("),
+            "the module takes the camera while it is bridging");
+
+        assertTrue(code.contains("ScaffoldCamera.release()"),
+            "and gives it back the moment it is not - no target, or the player is fighting");
+
+        assertTrue(code.contains("this.canBridge()"),
+            "a player who is swinging at something is not bridging, and the camera is the only "
+                + "thing they can aim with");
+
+        assertFalse(code.contains("setYRot("),
+            "the angle is applied by the mixin, at the head of the player's tick: after the mouse, "
+                + "so the mouse cannot move the camera, and before the movement, so the walk the "
+                + "client performs is along the angle the server is told");
+    }
+
+    @Test
     void theModuleNeverWritesTheCamera() {
         String code = scaffold();
 
