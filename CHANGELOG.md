@@ -6,6 +6,15 @@ All notable changes to Venomous are documented in this file.
 
 ## [7.1.0] - 2026-10-18
 
+- `v-scaffold` no longer snaps out of its crouch the instant a bridge edge clears. All four
+  auto-sneak sites were a bare `if (edge) crouch(); else stand();`, so the crouch came up 50ms after
+  it went down. That is the exact shape AntiCheat-Addition's `Scaffold.parts.Safewalk.Timing` flags
+  for 20 VL — moved within 355ms, stopped within 175ms, and not held sneaking for more than 148ms —
+  and it is also simply how a human does not move, since nobody lands on a new block and stands
+  straight back up. The crouch is now held for a configurable `sneak-delay` (default 200ms, the
+  middle of Vape's 100/200/500 presets) with a 30ms floor so a one-tick edge blip cannot produce a
+  zero-length crouch. The decision lives in the pure, unit-tested `SneakTiming`. GodBridge and
+  Breezily manage their own crouch phase-by-phase and were left alone deliberately.
 - Removed the last GitHub references now that the project lives on GitLab. `fabric.mod.json`'s
   `contact.sources` pointed at a dead `github.com` repository, and `VenomousAddon.getRepo()` still
   declared one — Meteor's addon API can only describe GitHub (`GithubRepo` is a `final record` with

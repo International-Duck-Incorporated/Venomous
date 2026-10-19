@@ -26,6 +26,7 @@ import net.venomous.meteoraddon.utils.AimEase;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
+import net.venomous.meteoraddon.utils.SneakTiming;
 import net.venomous.meteoraddon.utils.RotationGcd;
 
 public class Scaffold extends Module {
@@ -49,6 +50,18 @@ public class Scaffold extends Module {
             .name("auto-sneak")
             .description("Sneak at block edges (Eagle/BridgeAssist).")
             .defaultValue(true)
+            .build()
+    );
+
+    private final Setting<Integer> sneakDelay = this.sgGeneral.add(
+        new IntSetting.Builder()
+            .name("sneak-delay")
+            .description("Milliseconds to stay crouched after clearing a bridge edge. Holding the "
+                + "crouch for a real duration instead of snapping it off on the first clear tick "
+                + "is what keeps the transition from reading as a safe-walk script; see SneakTiming.")
+            .defaultValue(SneakTiming.DEFAULT_SNEAK_DELAY_MS)
+            .range(0, 1000)
+            .sliderMax(500)
             .build()
     );
 
@@ -225,6 +238,7 @@ public class Scaffold extends Module {
     private BlockPos lastAttemptPos = null;
     private int repeatedAttempts = 0;
     private boolean managedSneak = false;
+    private long sneakHeldSinceMs = 0L;
     private boolean previousSneakDown = false;
     private int targetY = -1;
     private Scaffold.Technique lastTechnique = null;
@@ -356,8 +370,8 @@ public class Scaffold extends Module {
 
         // NCP is deliberately conservative: crouch before the edge and visibly aim steeply.
         if (this.technique.get() == Scaffold.Technique.NCPNormal) {
-            if (this.isOverEdge() || this.edgeDistance(this.movementDirection()) < this.jittered(0.32)) this.pressManagedSneak();
-            else this.releaseManagedSneak();
+            this.updateManagedSneak(this.isOverEdge()
+                || this.edgeDistance(this.movementDirection()) < this.jittered(0.32));
             if (!this.rotate.get()) {
                 this.place(placePos, false);
             } else {
@@ -366,8 +380,7 @@ public class Scaffold extends Module {
             return;
         }
 
-        if (this.autoSneak.get() && this.isOverEdge()) this.pressManagedSneak();
-        else this.releaseManagedSneak();
+        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
 
         if (this.technique.get() == Scaffold.Technique.VulcanExpand && this.vulcanExpand.get() > 0) {
             for (int i = this.vulcanExpand.get(); i >= 0; i--) {
@@ -393,9 +406,9 @@ public class Scaffold extends Module {
         }
 
         Vec3 direction = this.movementDirection();
-        boolean nearEdge = this.isOverEdge() || (direction.lengthSqr() > 1.0E-4 && this.edgeDistance(direction) < this.jittered(0.38));
-        if (nearEdge) this.pressManagedSneak();
-        else this.releaseManagedSneak();
+        boolean nearEdge = this.isOverEdge()
+            || (direction.lengthSqr() > 1.0E-4 && this.edgeDistance(direction) < this.jittered(0.38));
+        this.updateManagedSneak(nearEdge);
 
         // A low acceleration curve is intentional: no one-frame 180/90 degree snap.
         if (!this.rotate.get()) {
@@ -774,6 +787,7 @@ public class Scaffold extends Module {
     private void pressManagedSneak() {
         if (!this.managedSneak) {
             this.previousSneakDown = this.mc.options.keyShift.isDown();
+            this.sneakHeldSinceMs = this.nowMs();
         }
 
         this.managedSneak = true;
@@ -787,6 +801,33 @@ public class Scaffold extends Module {
 
         this.managedSneak = false;
         this.previousSneakDown = false;
+        this.sneakHeldSinceMs = 0L;
+    }
+
+    /**
+     * Crouch at the edge, but keep holding for {@code sneak-delay} after the edge clears.
+     *
+     * <p>All four call sites used to be {@code if (edge) press(); else release();}, which releases on
+     * the very first tick the edge is gone. That instant transition is the shape AntiCheat-Addition's
+     * {@code Scaffold.parts.Safewalk.Timing} looks for: movement that stops without a sustained
+     * crouch. The decision itself lives in {@link SneakTiming} so it can be tested without a game.</p>
+     */
+    private void updateManagedSneak(boolean atEdge) {
+        boolean onGround = this.mc.player != null && this.mc.player.onGround();
+        long heldFor = this.managedSneak && this.sneakHeldSinceMs > 0L
+            ? Math.max(0L, nowMs() - this.sneakHeldSinceMs)
+            : 0L;
+
+        if (SneakTiming.shouldHold(atEdge, onGround, this.managedSneak, heldFor, this.sneakDelay.get())) {
+            this.pressManagedSneak();
+        } else {
+            this.releaseManagedSneak();
+        }
+    }
+
+    /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */
+    private static long nowMs() {
+        return System.nanoTime() / 1_000_000L;
     }
 
     private boolean isOverEdge() {
