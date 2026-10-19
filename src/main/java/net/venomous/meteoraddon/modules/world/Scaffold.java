@@ -2,7 +2,6 @@ package net.venomous.meteoraddon.modules.world;
 
 import java.util.List;
 import java.util.Random;
-import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BlockListSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
@@ -17,7 +16,6 @@ import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
-import meteordevelopment.orbit.EventPriority;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.BlockItem;
@@ -28,6 +26,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.GrimRay;
+import net.venomous.meteoraddon.utils.InputCompensation;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
@@ -293,6 +292,7 @@ public class Scaffold extends Module {
         }
 
         this.releaseManagedSneak();
+        InputCompensation.clear();
         this.nextPlaceAtMs = 0L;
         this.smoothedYaw = Float.NaN;
         this.smoothedPitch = Float.NaN;
@@ -503,6 +503,8 @@ public class Scaffold extends Module {
         this.lastServerYaw = Rotations.serverYaw;
         this.lastServerPitch = Rotations.serverPitch;
 
+        this.updateInputCompensation();
+
         // The server is told the aim, and the placement goes out one tick later, once the server
         // has actually received that rotation. Grim judges the placement against the rotation the
         // server holds at that moment, so that is the angle the ray has to be tested against -
@@ -515,26 +517,33 @@ public class Scaffold extends Module {
     }
 
     /**
-     * Puts the camera back on the rotation the server was just told.
+     * Keeps the movement input and the rotation the server is told in step.
      *
-     * <p>Meteor's {@code Rotations} writes the rotation it is sending onto the camera for the
-     * duration of the movement packet and then restores the previous camera angle afterwards - which
-     * is the "the camera snaps back to the normal camera of the user". Restoring it means the
-     * camera no longer matches the packet, and a camera that does not match the packet is a
-     * millimetre of movement difference every tick, which Grim's {@code Simulation} reports.</p>
+     * <p>This is what makes freelook work. The camera is the player's and nothing here writes it;
+     * the rotation the server is told points at the block being placed. The client computes its
+     * movement from the camera and the server predicts it from the packet, so with the two apart the
+     * client walks a line the server did not predict - Grim's {@code Simulation}, which flags at
+     * one millimetre.</p>
      *
-     * <p>So the camera is set here, after that restore, to the angle the server actually received.
-     * The camera and the packet then agree, and the movement the client performs is the movement
-     * the server predicted.</p>
+     * <p>Rotating the input by the angle between them closes the gap: the walk the client performs
+     * becomes the walk the server expects, and the player is free to look wherever they like while
+     * it happens. The mixin that applies it is {@code LocalPlayerMixin}.</p>
      */
-    @EventHandler(priority = EventPriority.HIGHEST)
-    private void onSendMovementPacketsPost(SendMovementPacketsEvent.Post event) {
-        if (!this.isActive() || this.mc.player == null) return;
+    private void updateInputCompensation() {
+        if (this.mc.player == null || !this.rotate.get()) {
+            InputCompensation.clear();
+            return;
+        }
 
-        if (!Float.isFinite(Rotations.serverYaw) || !Float.isFinite(Rotations.serverPitch)) return;
+        float cameraYaw = this.mc.player.getYRot();
+        float serverYaw = Rotations.serverYaw;
 
-        this.mc.player.setYRot(Rotations.serverYaw);
-        this.mc.player.setXRot(Rotations.serverPitch);
+        if (!Float.isFinite(cameraYaw) || !Float.isFinite(serverYaw)) {
+            InputCompensation.clear();
+            return;
+        }
+
+        InputCompensation.set(wrapDegrees(serverYaw - cameraYaw));
     }
 
     /**

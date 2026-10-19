@@ -64,30 +64,51 @@ public class ScaffoldCameraTest extends SourceGuard {
      * <p>So the camera is put back on the sent rotation once the packet has gone out, which is the
      * only moment that value is knowable.</p>
      */
+    /**
+     * The camera is the player's and the module does not write it.
+     *
+     * <p>That is the freelook. The rotation the server is told points at the block being placed;
+     * the camera is left alone, so the player can look wherever they like while it happens.</p>
+     *
+     * <p>It has to be left alone, not just left mostly alone: the module used to write the camera to
+     * the rotation it was asking for, which is the "the camera snaps back to the normal camera of the
+     * user" - the module was fighting the mouse for the view every tick.</p>
+     */
     @Test
-    void theCameraEndsUpHoldingTheRotationTheServerWasSent() {
-        String body = methodBody(source(SCAFFOLD),
-            "private void onSendMovementPacketsPost(SendMovementPacketsEvent.Post event)");
+    void theCameraIsThePlayersAndTheModuleDoesNotWriteIt() {
+        String code = squeeze(code(source(SCAFFOLD)));
 
-        requireAnchor(body, "onSendMovementPacketsPost", "setYRot");
+        assertFalse(code.contains("this.mc.player.setYRot("),
+            "the module must not write the camera; that is what freelook means, and the module "
+                + "fighting the player for the view is what was reported as the camera snapping back");
+
+        assertFalse(code.contains("this.mc.player.setXRot("),
+            "same, for the pitch");
+    }
+
+    /**
+     * The input is compensated for the difference between the two.
+     *
+     * <p>Without it the client walks the camera's line and the server predicts the packet's line,
+     * and Grim's {@code Simulation} reports the gap at a millimetre.</p>
+     */
+    @Test
+    void theMovementInputIsCompensatedForTheRotationTheServerIsTold() {
+        String body = methodBody(source(SCAFFOLD), "private void updateInputCompensation()");
+
+        requireAnchor(body, "updateInputCompensation", "InputCompensation");
 
         String squeezed = squeeze(body);
 
-        assertTrue(squeezed.contains("this.mc.player.setYRot(Rotations.serverYaw);"),
-            "the camera is put on the rotation the server was just told, not on the one that was "
-                + "asked for - Meteor smooths what it sends, so the two are not the same number");
+        assertTrue(squeezed.contains("wrapDegrees(serverYaw-cameraYaw)"),
+            "the compensation is the difference between the two yaws");
 
-        assertTrue(squeezed.contains("this.mc.player.setXRot(Rotations.serverPitch);"),
-            "and the pitch with it");
+        assertTrue(squeezed.contains("InputCompensation.set("),
+            "and it is handed to the mixin that rotates the input");
 
-        assertTrue(squeezed.contains("Float.isFinite(Rotations.serverYaw)")
-                && squeezed.contains("Float.isFinite(Rotations.serverPitch)"),
-            "a non-finite rotation is never written to the camera; the server discards those with "
-                + "\"Invalid entity rotation: NaN, discarding.\" and the module silently stops "
-                + "placing");
-
-        assertTrue(squeezed.contains("!this.isActive()"),
-            "and the camera is only touched while the module is on");
+        assertTrue(squeezed.contains("!Float.isFinite(cameraYaw)||!Float.isFinite(serverYaw)"),
+            "a non-finite rotation must never be compensated with; the server discards those with "
+                + "\"Invalid entity rotation: NaN, discarding.\"");
     }
 
     /**
@@ -112,19 +133,21 @@ public class ScaffoldCameraTest extends SourceGuard {
      * Meteor actually smoothed and sent. The live log caught them three degrees apart. They cannot
      * be reconciled by smoothing, because the one that matters is the one on the wire.</p>
      */
+    /**
+     * The aim is the only thing that is smoothed.
+     *
+     * <p>One smoothed value, handed to Meteor to be sent. It is not written to the camera, because
+     * the camera is the player's.</p>
+     */
     @Test
-    void theCameraAndTheServerAreGivenTheSameSmoothedAngle() {
+    void theAimIsTheOnlySmoothedValue() {
         String code = squeeze(code(source(SCAFFOLD)));
 
-        assertFalse(code.contains("this.mc.player.setYRot(face[0])"),
-            "writing the requested aim to the camera guarantees a mismatch with the packet, "
-                + "because Meteor smooths what it sends");
+        assertTrue(code.contains("wrapDegrees(heading-this.smoothedYaw)"),
+            "the yaw is smoothed by a share of the remaining gap");
 
-        assertFalse(code.contains("this.mc.player.setXRot(face[1])"),
-            "same, for the pitch");
-
-        assertTrue(code.contains("this.mc.player.setYRot(Rotations.serverYaw);"),
-            "the camera takes the rotation the server was sent");
+        assertTrue(code.contains("(pitch-this.smoothedPitch)*AIM_SMOOTH_PITCH"),
+            "and so is the pitch");
     }
 
     /**
@@ -483,7 +506,7 @@ public class ScaffoldCameraTest extends SourceGuard {
     void theConstantRateCameraSweepIsGone() {
         String code = scaffold();
 
-        requireAnchor(code, "Scaffold", "private void onSendMovementPacketsPost(");
+        requireAnchor(code, "Scaffold", "private float[] faceAimAt(BlockPos pos)");
 
         assertFalse(code.contains("setYRot(this.smooth("),
             "the old constant-rate sweep is gone; it moved by an unquantised fixed number of degrees "
