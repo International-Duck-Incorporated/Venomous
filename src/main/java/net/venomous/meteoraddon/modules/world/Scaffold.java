@@ -265,6 +265,21 @@ public class Scaffold extends Module {
     private long nextPlaceAtMs = 0L;
 
     /**
+     * How many ticks of detail to log after a placement.
+     *
+     * <p>Grim's Simulation check compares the movement the client actually performed against the
+     * movement it predicted, and reports the distance between the two vectors. The offset in the
+     * log arrives on the tick of a placement, so the tick-by-tick movement around a placement is
+     * what has to be logged - not the position, and not a per-tick log for the whole session.</p>
+     */
+    private int debugTicksAfterPlacement = 0;
+
+    /** The position on the previous tick, so the movement can be logged the way Grim measures it. */
+    private double debugLastX = Double.NaN;
+    private double debugLastY = Double.NaN;
+    private double debugLastZ = Double.NaN;
+
+    /**
      * The pitch the server is told, smoothed.
      *
      * <p>The yaw is not smoothed because it is not the module's: it is the player's own camera yaw,
@@ -342,6 +357,8 @@ public class Scaffold extends Module {
         this.scaffoldCount++;
 
         if (this.scaffoldCount % 20 == 0) this.debugHeartbeat();
+
+        this.debugTick();
 
         Scaffold.Technique selected = this.technique.get();
         if (selected != this.lastTechnique) {
@@ -743,6 +760,8 @@ public class Scaffold extends Module {
                 Vec3 at = this.mc.player.position();
                 Vec3 vel = this.mc.player.getDeltaMovement();
 
+                this.debugTicksAfterPlacement = 6;
+
                 this.debugLog("place: cell=%s PLACED at %.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f onGround=%s",
                     pos, at.x, at.y, at.z, vel.x, vel.y, vel.z, this.mc.player.onGround());
 
@@ -901,6 +920,47 @@ public class Scaffold extends Module {
      * crouch is down, whether there is a drop in front of them, and what the server is being
      * told.</p>
      */
+    /**
+     * The movement of this tick, in the form Grim measures it.
+     *
+     * <p>Grim's Simulation offset is the distance between the vector the client moved by and the
+     * vector it predicted the client would move by - the position delta, tick by tick. So the
+     * number to log is the delta, and the state around it: the ground, the crouch, and what is
+     * underfoot.</p>
+     *
+     * <p>Only for a few ticks after a placement, because that is when the offset appears, and
+     * because a log that prints every tick is a log that costs the client its frame rate.</p>
+     */
+    private void debugTick() {
+        if (!this.debugLogging.get() || this.mc.player == null) return;
+
+        double x = this.mc.player.getX();
+        double y = this.mc.player.getY();
+        double z = this.mc.player.getZ();
+
+        if (this.debugTicksAfterPlacement > 0) {
+            this.debugTicksAfterPlacement--;
+
+            if (!Double.isNaN(this.debugLastX)) {
+                double dx = x - this.debugLastX;
+                double dy = y - this.debugLastY;
+                double dz = z - this.debugLastZ;
+
+                this.debugLog("tick: moved %.4f,%.4f,%.4f (|%.4f|) vel=%.3f,%.3f,%.3f onGround=%s crouch=%s below=%s",
+                    dx, dy, dz, Math.sqrt(dx * dx + dy * dy + dz * dz),
+                    this.mc.player.getDeltaMovement().x,
+                    this.mc.player.getDeltaMovement().y,
+                    this.mc.player.getDeltaMovement().z,
+                    this.mc.player.onGround(), this.managedSneak,
+                    BlockPos.containing(x, y - 1.0D, z));
+            }
+        }
+
+        this.debugLastX = x;
+        this.debugLastY = y;
+        this.debugLastZ = z;
+    }
+
     private void debugHeartbeat() {
         if (!this.debugLogging.get() || this.mc.player == null) return;
 
