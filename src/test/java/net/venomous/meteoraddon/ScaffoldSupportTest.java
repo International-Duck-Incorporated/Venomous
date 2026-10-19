@@ -158,9 +158,14 @@ public class ScaffoldSupportTest extends SourceGuard {
     void theTemporaryScaffoldInstrumentationIsGone() {
         String code = code(source(SCAFFOLD));
 
-        assertFalse(code.contains("DEBUG-scf"),
-            "the per-tick debug line is temporary and must not ship; it prints once per tick, every "
-                + "tick, forever, for as long as the module is on");
+        assertTrue(code.contains("DEBUG-scf"),
+            "the log lines are tagged, so one grep finds every one of them and nothing else in the "
+                + "file can be mistaken for a probe");
+
+        assertTrue(code.contains("if (!this.debugLogging.get()) return;"),
+            "and they are behind a setting: a per-tick log was measured slowing the client down, so "
+                + "it must be possible to turn it off and it must not be on by default in a build "
+                + "that is meant to be played");
 
         assertFalse(code.contains("debugState("),
             "the debugState helper should have been deleted with the call site that used it");

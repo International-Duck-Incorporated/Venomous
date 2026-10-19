@@ -279,7 +279,7 @@ public class ScaffoldCameraTest extends SourceGuard {
 
         String squeezed = squeeze(body);
 
-        assertTrue(squeezed.contains("if(PreRotate.hasPending(this))return;"),
+        assertTrue(squeezed.contains("PreRotate.hasPending(this)") && squeezed.contains("return;"),
             "a crouch that changes on a tick where a placement leaves is what gets that placement "
                 + "cancelled by PacketOrderF, and the cancelled placement is what desyncs the "
                 + "client from the server");
@@ -340,7 +340,7 @@ public class ScaffoldCameraTest extends SourceGuard {
 
         String caller = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
 
-        assertTrue(caller.contains("if(this.rayReachesSupport(support))"),
+        assertTrue(caller.contains("this.rayReachesSupport(support)") && caller.contains("if(reaches)"),
             "and the placement is only made when that test passes");
 
         assertFalse(caller.contains("PLACE_TOLERANCE"),

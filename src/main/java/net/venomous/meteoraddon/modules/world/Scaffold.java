@@ -10,6 +10,8 @@ import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
@@ -36,6 +38,25 @@ import net.venomous.meteoraddon.utils.SneakTiming;
 public class Scaffold extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
     private final SettingGroup sgAnticheat = this.settings.createGroup("Anticheat");
+
+    /**
+     * Verbose logging of what the module is doing and why.
+     *
+     * <p>Every decision the module makes is a guess about what the anticheat is checking, and the
+     * server only ever says "flagged". The log lines here are what makes that guessable: the
+     * crouch's decision and its inputs, the aim that is being sent, whether the ray reached the
+     * block, and what the client was doing at the moment of the placement.</p>
+     *
+     * <p>Tagged {@code DEBUG-scf} so it can be stripped with one grep when the diagnosis is done.</p>
+     */
+    private final Setting<Boolean> debugLogging = this.sgAnticheat.add(
+        new BoolSetting.Builder()
+            .name("debug-log")
+            .description("Log every decision the module makes: the crouch, the aim, the ray, and "
+                + "the placement. Tagged [DEBUG-scf] so it can be removed in one grep.")
+            .defaultValue(true)
+            .build()
+    );
     private final SettingGroup sgGrim = this.settings.createGroup("Grim");
     private final SettingGroup sgBridge = this.settings.createGroup("Bridge Assist");
     private final SettingGroup sgTower = this.settings.createGroup("Tower");
@@ -320,6 +341,8 @@ public class Scaffold extends Module {
 
         this.scaffoldCount++;
 
+        if (this.scaffoldCount % 20 == 0) this.debugHeartbeat();
+
         Scaffold.Technique selected = this.technique.get();
         if (selected != this.lastTechnique) {
             this.releaseManagedSneak();
@@ -497,7 +520,13 @@ public class Scaffold extends Module {
         // the action is discarded after five ticks, so the bridge would only build while they
         // happened to be holding the mouse still.
         PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
-            if (this.rayReachesSupport(support)) {
+            boolean reaches = this.rayReachesSupport(support);
+
+            this.debugLog("place: cell=%s support=%s side=%s aim=%.2f,%.2f camYaw=%.2f serverHolds=%.2f,%.2f ray=%s",
+                pos, support, side, face[0], face[1], this.mc.player.getYRot(),
+                Rotations.serverYaw, Rotations.serverPitch, reaches);
+
+            if (reaches) {
                 this.place(pos);
             }
         });
@@ -692,11 +721,13 @@ public class Scaffold extends Module {
         // fell off the bridge.
         long now = this.nowMs();
         if (now < this.nextPlaceAtMs) {
+            this.debugLog("place: cell=%s skipped, %dms of cooldown left", pos, this.nextPlaceAtMs - now);
             return false;
         }
 
         FindItemResult block = this.findBlock();
         if (!block.found()) {
+            this.debugLog("place: cell=%s nothing placeable in hand", pos);
             return false;
         }
 
@@ -708,8 +739,19 @@ public class Scaffold extends Module {
                 // Jitter only ever lengthens the gap, never shortens it, so bridging stays at
                 // least as reliable as the fixed cadence while no longer being metronomic.
                 this.nextPlaceAtMs = now + (long) gap;
+
+                Vec3 at = this.mc.player.position();
+                Vec3 vel = this.mc.player.getDeltaMovement();
+
+                this.debugLog("place: cell=%s PLACED at %.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f onGround=%s",
+                    pos, at.x, at.y, at.z, vel.x, vel.y, vel.z, this.mc.player.onGround());
+
                 return true;
             }
+
+            this.debugLog("place: cell=%s the client refused the placement", pos);
+        } else {
+            this.debugLog("place: cell=%s has no support face", pos);
         }
 
         // A failed placement retries sooner than a successful one: the cell may become placeable
@@ -785,6 +827,7 @@ public class Scaffold extends Module {
         if (!this.managedSneak) {
             this.previousSneakDown = this.mc.options.keyShift.isDown();
             this.sneakHeldSinceMs = this.nowMs();
+            this.debugLog("crouch: key down (was %s)", this.previousSneakDown);
         }
 
         this.managedSneak = true;
@@ -794,6 +837,7 @@ public class Scaffold extends Module {
     private void releaseManagedSneak() {
         if (this.managedSneak) {
             this.mc.options.keyShift.setDown(this.previousSneakDown);
+            this.debugLog("crouch: key up (restored to %s)", this.previousSneakDown);
         }
 
         this.managedSneak = false;
@@ -822,18 +866,65 @@ public class Scaffold extends Module {
      * server's view of the crouch is unchanged.</p>
      */
     private void updateManagedSneak(boolean atEdge) {
-        if (PreRotate.hasPending(this)) return;
+        if (PreRotate.hasPending(this)) {
+            this.debugLog("crouch: left alone - a placement is leaving this tick");
+            return;
+        }
 
         boolean onGround = this.mc.player != null && this.mc.player.onGround();
         long heldFor = this.managedSneak && this.sneakHeldSinceMs > 0L
             ? Math.max(0L, nowMs() - this.sneakHeldSinceMs)
             : 0L;
 
-        if (SneakTiming.shouldHold(atEdge, onGround, this.managedSneak, heldFor, this.sneakDelay.get())) {
+        boolean hold = SneakTiming.shouldHold(atEdge, onGround, this.managedSneak, heldFor, this.sneakDelay.get());
+
+        if (hold != this.managedSneak) {
+            this.debugLog("crouch: edge=%s onGround=%s held=%dms -> %s",
+                atEdge, onGround, heldFor, hold ? "press" : "release");
+        }
+
+        if (hold) {
             this.pressManagedSneak();
         } else {
             this.releaseManagedSneak();
         }
+    }
+
+    private static final Logger LOG = LogUtils.getLogger();
+
+    /**
+     * The whole state of the module, once a second.
+     *
+     * <p>The per-tick lines are what the client pays for, and a per-tick log was measured slowing
+     * the client down, so the tick-by-tick detail is left out and this carries the state instead:
+     * where the player is, how fast they are moving, whether they are on the ground, whether the
+     * crouch is down, whether there is a drop in front of them, and what the server is being
+     * told.</p>
+     */
+    private void debugHeartbeat() {
+        if (!this.debugLogging.get() || this.mc.player == null) return;
+
+        Vec3 at = this.mc.player.position();
+        Vec3 vel = this.mc.player.getDeltaMovement();
+        BlockPos below = BlockPos.containing(at.x, at.y - 1.0D, at.z);
+
+        this.debugLog("state: pos=%.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f onGround=%s crouch=%s edge=%s below=%s camYaw=%.1f serverHolds=%.1f,%.1f",
+            at.x, at.y, at.z, vel.x, vel.y, vel.z, this.mc.player.onGround(),
+            this.managedSneak, this.isOverEdge(), below, this.mc.player.getYRot(),
+            Rotations.serverYaw, Rotations.serverPitch);
+    }
+
+    /**
+     * One line of diagnosis, prefixed so it can be found or removed in one grep.
+     *
+     * <p>Everything the module decides is a guess about what the anticheat is checking, and the
+     * server only says "flagged" and how big the difference was. These lines are what turn that
+     * into something answerable: what the crouch decided and why, what angle was sent, whether the
+     * ray reached the block, and where the client was when it placed.</p>
+     */
+    private void debugLog(String message, Object... args) {
+        if (!this.debugLogging.get()) return;
+        LOG.info("[DEBUG-scf] " + message, args);
     }
 
     /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */
