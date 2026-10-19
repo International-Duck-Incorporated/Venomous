@@ -13,6 +13,7 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
@@ -24,14 +25,17 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.AimEase;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
+import net.venomous.meteoraddon.utils.ScaffoldAim;
 import net.venomous.meteoraddon.utils.ScaffoldGates;
 import net.venomous.meteoraddon.utils.SneakTiming;
 
 public class Scaffold extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final SettingGroup sgAnticheat = this.settings.createGroup("Anticheat");
     private final SettingGroup sgGrim = this.settings.createGroup("Grim");
     private final SettingGroup sgBridge = this.settings.createGroup("Bridge Assist");
     private final SettingGroup sgTower = this.settings.createGroup("Tower");
@@ -132,6 +136,20 @@ public class Scaffold extends Module {
             .defaultValue(true)
             .build()
     );
+
+    private final Setting<Double> aimSpeed = this.sgAnticheat.add(
+        new DoubleSetting.Builder()
+            .name("aim-speed")
+            .description("Degrees per tick the server rotation may travel toward the placement "
+                + "face. The move eases in and decelerates into the target, so this is the peak, "
+                + "not the rate it starts or ends at.")
+            .defaultValue(22.0)
+            .min(1.0)
+            .sliderMax(60.0)
+            .build()
+    );
+
+    private static final float CAPTURE_DEGREES = 0.4F;
 
     private final Setting<Integer> placeDelay = this.sgGeneral.add(
         new IntSetting.Builder()
@@ -235,6 +253,8 @@ public class Scaffold extends Module {
     private long sneakHeldSinceMs = 0L;
     private boolean previousSneakDown = false;
     private int targetY = -1;
+    private float aimYawVelocity = 0.0F;
+    private float aimPitchVelocity = 0.0F;
     private Scaffold.Technique lastTechnique = null;
     private Vec3 bridgeHeading = Vec3.ZERO;
     private final Random random = new Random();
@@ -271,6 +291,8 @@ public class Scaffold extends Module {
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
         this.targetY = -1;
+        this.aimYawVelocity = 0.0F;
+        this.aimPitchVelocity = 0.0F;
     }
 
     private boolean isBridgeMode() {
@@ -458,17 +480,89 @@ public class Scaffold extends Module {
      * be identical and hijacked the player's view to achieve it. Now they are independent: look
      * wherever you like, the server angle is spoofed underneath.</p>
      */
+    /**
+     * Eases the server rotation onto the placement face, then places once it has landed.
+     *
+     * <p>Grim's {@code RotationPlace} ray-traces the <em>server</em> rotation and asks whether it
+     * reaches the block being placed; {@code AirLiquidPlace} fires when the resolved position has no
+     * valid support. Both firing together means the aim is landing somewhere the placement cannot
+     * come from. Two changes address that:</p>
+     *
+     * <ul>
+     *   <li>The target is the point on the placement <em>face</em> nearest the eye, not the block
+     *       centre - while bridging the eye is above and behind the cell being filled, so a ray at
+     *       the centre enters through a face the player is not addressing.</li>
+     *   <li>The approach is eased rather than stepped, so the rotation fades in off the old target
+     *       and decelerates onto the face. {@link AimEase} already carries a velocity ramp with
+     *       ease-out near the target, so it is reused instead of adding a second curve.</li>
+     * </ul>
+     */
     private void aimAndPlace(BlockPos pos) {
-        float[] aim = this.aimAt(pos);
+        float[] aim = this.easedAimAt(pos);
+
+        // Only place once the rotation has actually arrived; PreRotate enforces the tolerance and
+        // defers the interaction to SendMovementPacketsEvent.Pre so it leaves before the packet.
         PreRotate.rotateThen(this, aim[0], aim[1], () -> this.place(pos));
     }
 
-    /** Yaw and pitch that would look at {@code pos}, without touching the camera. */
-    private float[] aimAt(BlockPos pos) {
+    /**
+     * Next eased rotation toward the placement face, or the exact aim when already on it.
+     *
+     * <p>Returns the destination rather than a partial step: {@link PreRotate} defers the placement
+     * until the server rotation matches this value, so handing over a mid-flight angle each tick
+     * produces a smooth arrival instead of a single jump.</p>
+     */
+    private float[] easedAimAt(BlockPos pos) {
+        float[] target = this.faceAimAt(pos);
+        float yaw = Rotations.serverYaw;
+        float pitch = Rotations.serverPitch;
+
+        float yawDelta = wrapDegrees(target[0] - yaw);
+        float pitchDelta = target[1] - pitch;
+
+        // Close enough that easing further would only add latency; hand over the exact angle so
+        // PreRotate's tolerance is met this tick rather than several ticks from now.
+        if (Math.abs(yawDelta) < 0.5F && Math.abs(pitchDelta) < 0.5F) {
+            return target;
+        }
+
+        float yawStep = AimEase.step(yawDelta, this.maxAimStep(), this.aimYawVelocity,
+            CAPTURE_DEGREES, this.aimNoise());
+        float pitchStep = AimEase.step(pitchDelta, this.maxAimStep() * 0.5F, this.aimPitchVelocity,
+            CAPTURE_DEGREES, this.aimNoise() * 0.5F);
+
+        this.aimYawVelocity = AimEase.nextVelocity(yawDelta, this.maxAimStep(), this.aimYawVelocity,
+            CAPTURE_DEGREES, 0.0F);
+        this.aimPitchVelocity = AimEase.nextVelocity(pitchDelta, this.maxAimStep() * 0.5F,
+            this.aimPitchVelocity, CAPTURE_DEGREES, 0.0F);
+
+        return new float[] {yaw + yawStep, pitch + pitchStep};
+    }
+
+    /**
+     * Yaw and pitch onto the placement face nearest the eye, without touching the camera.
+     *
+     * <p>Uses Meteor's own side resolution so the face is the one the placement would actually use.
+     * See {@link ScaffoldAim}.</p>
+     */
+    private float[] faceAimAt(BlockPos pos) {
         Vec3 eyes = this.mc.player.getEyePosition();
-        double dx = pos.getX() + 0.5 - eyes.x;
-        double dy = pos.getY() + 0.5 - eyes.y;
-        double dz = pos.getZ() + 0.5 - eyes.z;
+        Direction side = BlockUtils.getPlaceSide(pos);
+
+        double[] normal = {
+            side.getStepX(),
+            side.getStepY(),
+            side.getStepZ()
+        };
+
+        double[] face = ScaffoldAim.sharedFaceCentre(
+            pos.getX() - normal[0], pos.getY() - normal[1], pos.getZ() - normal[2], normal, 0.5);
+
+        double[] point = ScaffoldAim.nearestPointOnFace(face, normal, eyes.x, eyes.y, eyes.z, 0.4);
+
+        double dx = point[0] - eyes.x;
+        double dy = point[1] - eyes.y;
+        double dz = point[2] - eyes.z;
         double horizontal = Math.sqrt(dx * dx + dz * dz);
 
         return new float[] {
@@ -486,6 +580,15 @@ public class Scaffold extends Module {
      * quantise for this reason; scaffold wrote straight to {@code setYRot}, so its sweep moved by
      * exactly 7 degrees per tick for as long as it lasted.</p>
      */
+
+    private float maxAimStep() {
+        return (float) (double) this.aimSpeed.get();
+    }
+
+    /** Signed jitter for the easing, so a sweep never runs at an exactly constant rate. */
+    private float aimNoise() {
+        return (float) (this.random.nextGaussian() * 0.25);
+    }
 
     /** Signed jitter, used to break up constant-rate sweeps. */
 
