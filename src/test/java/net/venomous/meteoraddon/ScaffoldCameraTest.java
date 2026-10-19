@@ -222,17 +222,17 @@ public class ScaffoldCameraTest extends SourceGuard {
     void theAimForwardsARealPlacementSideToTheHelper() {
         String body = methodBody(source(SCAFFOLD), "private float[] aimRotation(BlockPos pos)");
 
-        requireAnchor(body, "aimRotation", "ScaffoldAim.aimPoint(");
+        requireAnchor(body, "aimRotation", "getPlaceSide");
 
         String squeezed = squeeze(body);
 
-        assertFalse(squeezed.contains("ScaffoldAim.aimPoint(pos.getX(),pos.getY(),pos.getZ(),null,"),
-            "the aim is passing a null normal, so the helper silently falls back to the block "
-                + "centre and the ray stops being aimed at the face");
+        assertTrue(squeezed.contains("side==null?pos:pos.relative(side)"),
+            "the aim is worked out against the block the placement is made against, so the side has "
+                + "to be resolved rather than assumed");
 
-        assertTrue(squeezed.contains("side==null?null:")
-                || squeezed.contains("side = BlockUtils.getPlaceSide(pos);"),
-            "the normal must be derived from BlockUtils.getPlaceSide(pos)");
+        assertTrue(squeezed.contains("support.getX()+0.5D"),
+            "and the aim point is the top of that block, not a point on the ground below the "
+                + "player, whose elevation swings as the player walks across their cell");
     }
 
     /**

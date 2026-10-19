@@ -49,6 +49,24 @@ public class Scaffold extends Module {
      *
      * <p>Tagged {@code DEBUG-scf} so it can be stripped with one grep when the diagnosis is done.</p>
      */
+    /**
+     * The per-tick movement log, off by default.
+     *
+     * <p>Six lines per placement is enough to see the movement, and it is enough to make the client
+     * miss its own packet deadlines: the live log filled with Grim's Timer check, which is the
+     * server saying the client's packets were late. The place and state lines are cheap and are
+     * the ones that say anything; this one is for when the movement itself is the question.</p>
+     */
+    private final Setting<Boolean> debugMovement = this.sgAnticheat.add(
+        new BoolSetting.Builder()
+            .name("debug-movement")
+            .description("Log the movement of every tick for six ticks after a placement. This is "
+                + "what the server's Simulation check measures, but it prints enough to make the "
+                + "client's packets late, so it is off by default.")
+            .defaultValue(false)
+            .build()
+    );
+
     private final Setting<Boolean> debugLogging = this.sgAnticheat.add(
         new BoolSetting.Builder()
             .name("debug-log")
@@ -611,9 +629,29 @@ public class Scaffold extends Module {
             side.getStepX(), side.getStepY(), side.getStepZ()
         };
 
-        double[] point = ScaffoldAim.aimPoint(pos.getX(), pos.getY(), pos.getZ(), normal, 0.5);
+        // The aim point is the top of the block the placement is made against, not the centre of
+        // the face the two blocks share.
+        //
+        // The shared face's centre is a point on the ground that is almost directly below the
+        // player, so the elevation to it swings by fifteen degrees as the player walks across their
+        // own cell - the live log shows the pitch going 81.3, 82.4, 84.4, 86.4 and back within a
+        // second. A pitch that swings is a rotation that moves faster than a hand can, and a chat
+        // player watching the bridge called it out. The top of the support is a whole block wide,
+        // so the same ray still reaches it from a wide range of pitches and the aim can hold
+        // still.
+        BlockPos support = side == null ? pos : pos.relative(side);
+        double[] point = new double[] {
+            support.getX() + 0.5D, support.getY() + 1.0D, support.getZ() + 0.5D
+        };
 
         float pitch = ScaffoldAim.pitchToPoint(eyes.x, eyes.y, eyes.z, point[0], point[1], point[2]);
+
+        // And it is held inside a band. The ray has to reach the block, and the block is a block
+        // wide and about two blocks away, so anything from about fifty to eighty degrees reaches
+        // it; outside that band the ray misses and the placement is refused. Holding the pitch
+        // inside the band means the rotation does not swing, and a rotation that does not swing is
+        // a rotation that does not look like a mouse.
+        pitch = clamp(pitch, 50.0F, 82.0F);
 
         // The yaw is the player's own, exactly as the camera has it.
         float yaw = this.mc.player.getYRot();
@@ -974,7 +1012,7 @@ public class Scaffold extends Module {
      * because a log that prints every tick is a log that costs the client its frame rate.</p>
      */
     private void debugTick() {
-        if (!this.debugLogging.get() || this.mc.player == null) return;
+        if (!this.debugLogging.get() || !this.debugMovement.get() || this.mc.player == null) return;
 
         double x = this.mc.player.getX();
         double y = this.mc.player.getY();
