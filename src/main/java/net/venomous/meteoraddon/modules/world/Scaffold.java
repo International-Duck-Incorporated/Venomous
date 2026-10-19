@@ -2,11 +2,9 @@ package net.venomous.meteoraddon.modules.world;
 
 import java.util.List;
 import java.util.Random;
-import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BlockListSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
-import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -17,7 +15,6 @@ import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
-import meteordevelopment.orbit.EventPriority;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.BlockItem;
@@ -28,7 +25,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.GrimRay;
-import net.venomous.meteoraddon.utils.InputCompensation;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
@@ -140,43 +136,39 @@ public class Scaffold extends Module {
     private final Setting<Boolean> rotate = this.sgGeneral.add(
         new BoolSetting.Builder()
             .name("rotate")
-            .description("Rotate towards the placement block.")
+            .description("Spoof the pitch so the ray the server traces reaches the block the "
+                + "placement is made against. The yaw is always yours either way - that is what "
+                + "keeps the server's movement prediction matching the walk you actually perform, "
+                + "and it is why the camera is never taken off you. With this off the placement is "
+                + "judged against your own look, which the server will flag.")
             .defaultValue(true)
             .build()
     );
 
-    private final Setting<Double> cameraSpeed = this.sgAnticheat.add(
-        new DoubleSetting.Builder()
-            .name("camera-speed")
-            .description("Degrees per tick the camera may travel toward the placement face. The "
-                + "move eases in and decelerates into the target, so this is the peak, not the rate "
-                + "it starts or ends at. The camera and the rotation sent to the server are the "
-                + "same angle - that is what keeps the server's movement prediction matching the "
-                + "movement the client actually performs.")
-            .defaultValue(22.0)
-            .min(1.0)
-            .sliderMax(60.0)
-            .build()
-    );
+    /**
+     * Share of the remaining gap the pitch closes each tick.
+     *
+     * <p>The pitch is the only axis the module spends: the yaw belongs to the player, because
+     * Grim's movement prediction rotates its candidate movement directions by the yaw in the
+     * movement packet, and the client walks along its camera's yaw. The two have to be the same
+     * angle or the client walks a line the server did not predict - Grim's {@code Simulation},
+     * which flags at one millimetre and teleports the player back past ten.</p>
+     */
+    private static final float AIM_SMOOTH_PITCH = 0.5F;
 
     /**
-     * Share of the remaining gap the aim closes each tick.
+     * How far the pitch wobbles, in degrees.
      *
-     * <p>This is where the smoothing lives. It used to be in the camera, which was the mistake:
-     * the camera was eased toward the target while the server was told the camera's lagged value,
-     * so the two were never the same angle, and Meteor writes the server's angle onto the camera
-     * for the movement packet and puts the camera back afterwards. A camera holding a different
-     * angle from the one being sent was therefore snapped to it and back on every single tick -
-     * the "the camera snaps back to the normal camera of the user" that was reported.</p>
+     * <p>Grim's {@code AimDuplicateLook} flags a rotation packet that repeats the previous one
+     * exactly. A player standing still on a settled bridge would otherwise send the same yaw and
+     * the same pitch every tick, and be flagged for it - fourteen flags in one session, the last
+     * time this happened, before there was a wobble.</p>
      *
-     * <p>One smoothed value now feeds both, so Meteor's snap writes the value that is already
-     * there and its restore puts back the same one. The motion is still a continuous function of
-     * where the player is, which is what a smooth view is.</p>
+     * <p>It moves the landing point on the face by a fraction of a millimetre, and it is a sine
+     * rather than a random number so the deltas stay smooth and the rotation still looks like
+     * something a hand produced.</p>
      */
-    private static final float AIM_SMOOTH = 0.35F;
-
-    /** The pitch is smoothed more gently; it is the axis that moves most as the player walks. */
-    private static final float AIM_SMOOTH_PITCH = 0.5F;
+    private static final float PITCH_WOBBLE = 0.08F;
 
     /**
      * How long to wait before retrying a placement that did not go through.
@@ -252,12 +244,17 @@ public class Scaffold extends Module {
     private long nextPlaceAtMs = 0L;
 
     /**
-     * The smoothed aim. One value feeds both the camera and the server, so the two can never
-     * disagree - which is what made Meteor's snap to the server's angle visible as the camera
-     * snapping and snapping back every tick.
+     * The pitch the server is told, smoothed.
+     *
+     * <p>The yaw is not smoothed because it is not the module's: it is the player's own camera yaw,
+     * sent unchanged, because Grim's movement prediction compares the walk the client performed
+     * against the walk the server predicted from the yaw in the packet, and the two have to be the
+     * same angle. The pitch does not enter that prediction, so it is free to be eased, and it has
+     * to be: the face being clicked is nearly underfoot, and the elevation to it moves as the
+     * player walks.</p>
      */
-    private float smoothedYaw = Float.NaN;
     private float smoothedPitch = Float.NaN;
+
     private boolean managedSneak = false;
     private long sneakHeldSinceMs = 0L;
     private boolean previousSneakDown = false;
@@ -294,9 +291,7 @@ public class Scaffold extends Module {
         }
 
         this.releaseManagedSneak();
-        InputCompensation.clear();
         this.nextPlaceAtMs = 0L;
-        this.smoothedYaw = Float.NaN;
         this.smoothedPitch = Float.NaN;
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
@@ -448,29 +443,13 @@ public class Scaffold extends Module {
      * placement sent with that same angle and no server rotation at all, which forced the two to
      * be identical and hijacked the player's view to achieve it. Now they are independent: look
      * wherever you like, the server angle is spoofed underneath.</p>
-     */
-    /**
-     * Eases the server rotation onto the placement face, then places once it has landed.
      *
-     * <p>Grim's {@code RotationPlace} ray-traces the <em>server</em> rotation and asks whether it
-     * reaches the block being placed; {@code AirLiquidPlace} fires when the resolved position has no
-     * valid support. Both firing together means the aim is landing somewhere the placement cannot
-     * come from. Two changes address that:</p>
-     *
-     * <ul>
-     *   <li>The target is the centre of the placement face rather than the centre of the block.
-     *       While bridging, the eye is above and behind the cell being filled, so a ray at the block
-     *       centre enters through a face the player is not addressing and the click resolves to
-     *       air.</li>
-     *   <li>The target does not slide toward the eye. Sliding was tried and reverted: as the player
-     *       crossed the block the point flipped to the opposite edge of the face, swinging the
-     *       target by most of 180 degrees. The debug log caught it - the face pitch alternated
-     *       between 62.5 and 56.9 on alternating ticks, and every one of those flips lined up with
-     *       a {@code RotationPlace} flag.</li>
-     *   <li>Only the camera eases. The server rotation is snapped to the face, because
-     *       AntiCheat-Addition's {@code ScaffoldRotation} scores rotation variance and a multi-tick
-     *       approach reads as random aiming. See {@link #serverAimAt}.</li>
-     * </ul>
+     * <p>Two Grim checks shape what the aim can be. {@code RotationPlace} ray-traces the
+     * <em>server</em> rotation and asks whether it reaches the block being placed, so the aim has
+     * to point at that block - and {@code AirLiquidPlace} fires when the resolved position has no
+     * valid support, so a cell with no support face must not be clicked at all. The target is
+     * therefore the centre of the face being placed against, and the placement waits for the ray
+     * to actually reach the block rather than for an angle to come close enough.</p>
      */
     private void aimAndPlace(BlockPos pos) {
         // A cell that is free but has no supporting face is not a placement target. canPlace
@@ -488,24 +467,25 @@ public class Scaffold extends Module {
         // is that plus the face normal.
         BlockPos support = pos.relative(side);
 
-        // The aim is computed and smoothed here, and handed to Meteor. The camera is NOT written
-        // here: Meteor smooths the rotation it actually sends, so the angle that reaches the server
-        // is not the angle that was asked for. The live log showed it plainly - the camera at 81
-        // degrees, the server at 87, the raw aim at 89 - and that gap is Grim's Simulation.
+        // The aim is handed to Meteor, and it is the player's own yaw with one thing changed: the
+        // pitch is spent on aiming at the face the placement clicks.
         //
-        // Grim's OffsetHandler flags when the client's position differs from the server's
-        // prediction by more than a millimetre. The client computes the movement from the camera's
-        // yaw; the server predicts it from the yaw in the movement packet. If those differ, the
-        // client walks a slightly different line and the difference is the flag.
+        // The yaw is the player's because Grim's movement prediction insists on it. Grim
+        // brute-forces the nine possible key combinations, rotates each of them by the yaw in the
+        // movement packet, and asks which of the results is closest to where the client actually
+        // ended up. So the client's movement has to run along one of the eight directions around
+        // the server's yaw - and the client walks along its camera's yaw. If the camera's yaw and
+        // the server's yaw differ, the client walks a line the server did not predict, and the
+        // difference is Grim's Simulation: it flags at one millimetre, and past ten it teleports
+        // the player back, which reads as being frozen in place.
         //
-        // So the camera has to hold the rotation the server was just told, and that is only knowable
-        // after the packet has gone out. onSendMovementPacketsPost puts the camera back to it.
-        float[] face = this.faceAimAt(pos);
+        // The pitch is free, because the pitch does not enter the movement prediction at all. So
+        // the pitch is spent on the one thing that needs it: making the ray the server traces reach
+        // the block the placement is made against.
+        float[] face = this.aimRotation(pos);
 
         this.lastServerYaw = Rotations.serverYaw;
         this.lastServerPitch = Rotations.serverPitch;
-
-        this.updateInputCompensation();
 
         // The server is told the aim, and the placement goes out one tick later, once the server
         // has actually received that rotation. Grim judges the placement against the rotation the
@@ -519,85 +499,62 @@ public class Scaffold extends Module {
     }
 
     /**
-     * Frees the camera, and compensates the movement input for the rotation the server is told.
+     * The rotation the server is told: the player's own yaw, and a pitch aimed at the face.
      *
-     * <p>Off by default, and the reason is worth recording. With it on, the camera is entirely the
-     * player's and the rotation the server is told points at the block being placed - which is
-     * behind the player whenever they bridge backwards. The movement input is then rotated by the
-     * difference so the walk still matches the server's prediction.</p>
+     * <p>The yaw is read straight off the camera and sent unchanged. Nothing here writes the
+     * camera, so the player keeps their view, their mouse and their direction - which is the
+     * whole point of the module, and what the "the camera snaps back to the normal camera of the
+     * user" complaint was about.</p>
      *
-     * <p>The first attempt at that applied the rotation inside {@code LocalPlayer.modifyInput},
-     * which ViaFabricPlus redirects, so on some frames the input was rotated more than once. The
-     * offsets went from 0.009 to 0.156 - ten times worse - and past Grim's immediate-setback
-     * threshold, which teleports the player back: the "frozen in place" and the flood of flags.
-     * The rotation is now applied where it happens exactly once per tick.</p>
+     * <p>There is a price, and it is worth stating plainly rather than discovering it later: the
+     * block the placement is made against is the one behind the player, so the ray only reaches it
+     * while the player is looking roughly that way. Holding S and looking forward is exactly that
+     * case - the camera faces the block the player is walking away from - so the bridge works and
+     * the view is the player's. Turn to face the other way and the placement waits for the look to
+     * come back, rather than the camera being dragged round to follow.</p>
      *
-     * <p>It is opt-in because it is the less certain of the two designs. The default keeps the
-     * camera on the rotation the server is told, which is known to work and is known to be
-     * comfortable to play, at the cost of the camera following the placement.</p>
+     * <p>The pitch is smoothed, because the face is nearly underfoot and the elevation to it moves
+     * as the player walks, and a pitch that jumps is a pitch no mouse produced. It also carries a
+     * very small wobble, because Grim's {@code AimDuplicateLook} flags a rotation that repeats
+     * exactly, and a player standing still with a settled aim would otherwise send the same
+     * rotation every tick.</p>
      */
-    private final Setting<Boolean> freelook = this.sgGeneral.add(
-        new BoolSetting.Builder()
-            .name("freelook")
-            .description("Leave the camera entirely to you and compensate the movement input for "
-                + "the rotation the server is told, so you can look wherever you like while "
-                + "bridging. Off by default: the camera follows the placement instead, which is "
-                + "known to work.")
-            .defaultValue(false)
-            .build()
-    );
+    private float[] aimRotation(BlockPos pos) {
+        Vec3 eyes = this.mc.player.getEyePosition();
 
-    /**
-     * Keeps the movement input and the rotation the server is told in step.
-     *
-     * <p>This is what makes freelook work. The camera is the player's and nothing here writes it;
-     * the rotation the server is told points at the block being placed. The client computes its
-     * movement from the camera and the server predicts it from the packet, so with the two apart the
-     * client walks a line the server did not predict - Grim's {@code Simulation}, which flags at
-     * one millimetre and teleports the player back past ten.</p>
-     *
-     * <p>Rotating the input by the angle between them closes the gap: the walk the client performs
-     * becomes the walk the server expects, and the player is free to look wherever they like while
-     * it happens. The mixin that applies it is {@code LocalPlayerMixin}.</p>
-     */
-    private void updateInputCompensation() {
-        if (this.mc.player == null || !this.rotate.get() || !this.freelook.get()) {
-            InputCompensation.clear();
-            return;
+        // getPlaceSide returns null when no face of pos has support, which is routine mid-jump and
+        // when a bridge is first extended. ScaffoldAim.aimPoint handles that by falling back to the
+        // block centre, so this never dereferences a null Direction.
+        Direction side = BlockUtils.getPlaceSide(pos);
+        double[] normal = side == null ? null : new double[] {
+            side.getStepX(), side.getStepY(), side.getStepZ()
+        };
+
+        double[] point = ScaffoldAim.aimPoint(pos.getX(), pos.getY(), pos.getZ(), normal, 0.5);
+
+        float pitch = ScaffoldAim.pitchToPoint(eyes.x, eyes.y, eyes.z, point[0], point[1], point[2]);
+
+        // The yaw is the player's own, exactly as the camera has it.
+        float yaw = this.mc.player.getYRot();
+
+        // The first-call test has to be Float.isNaN and not an equality comparison. NaN is not
+        // equal to itself, so `smoothedPitch == Float.NaN` is never true, the initialisation never
+        // ran, and the pitch was NaN from the first tick onwards.
+        if (Float.isNaN(this.smoothedPitch)) {
+            this.smoothedPitch = pitch;
+        } else {
+            this.smoothedPitch = this.smoothedPitch
+                + (pitch - this.smoothedPitch) * AIM_SMOOTH_PITCH;
         }
 
-        float cameraYaw = this.mc.player.getYRot();
-        float serverYaw = Rotations.serverYaw;
+        // The wobble. Small enough that it moves the landing point by a fraction of a millimetre,
+        // and it keeps the rotation from ever repeating exactly.
+        this.smoothedPitch = clamp(this.smoothedPitch
+            + PITCH_WOBBLE * (float) Math.sin(this.scaffoldCount * 0.7D), -90.0F, 90.0F);
 
-        if (!Float.isFinite(cameraYaw) || !Float.isFinite(serverYaw)) {
-            InputCompensation.clear();
-            return;
-        }
-
-        InputCompensation.set(wrapDegrees(serverYaw - cameraYaw));
+        return new float[] {yaw, this.smoothedPitch};
     }
 
-    /**
-     * Puts the camera on the rotation the server was just told.
-     *
-     * <p>Only when freelook is off. With freelook on the camera is left alone and the movement
-     * input is compensated instead.</p>
-     *
-     * <p>Meteor's {@code Rotations} writes the rotation it is sending onto the camera for the
-     * duration of the movement packet and then restores the previous camera angle afterwards.
-     * Left alone, the camera would no longer match the packet, and a camera that does not match
-     * the packet is a millimetre of movement difference every tick.</p>
-     */
-    @EventHandler(priority = EventPriority.HIGHEST)
-    private void onSendMovementPacketsPost(SendMovementPacketsEvent.Post event) {
-        if (!this.isActive() || this.mc.player == null) return;
-        if (this.freelook.get()) return;
-
-        if (!Float.isFinite(Rotations.serverYaw) || !Float.isFinite(Rotations.serverPitch)) return;
-
-        this.mc.player.setYRot(Rotations.serverYaw);
-        this.mc.player.setXRot(Rotations.serverPitch);
-    }
 
     /**
      * Whether the ray the server is currently being told actually reaches the block being placed
@@ -626,99 +583,6 @@ public class Scaffold extends Module {
             support.getX() + 1.0D, support.getY() + 1.0D, support.getZ() + 1.0D);
     }
 
-    /**
-     * Eases the camera onto the placement face.
-     *
-     * <p>Runs well below the server rotation's rate so the view visibly leads into a placement
-     * rather than locking onto it, and every delta is quantised to the sensitivity GCD - an
-     * arbitrary float written straight to {@code setYRot} is an angle no mouse could produce,
-     * which is precisely what rotation checks fingerprint.</p>
-     */
-    /**
-     /**
-             /**
-     * Yaw and pitch onto the face the placement clicks, smoothed.
-     *
-     * <p>Uses Meteor's own side resolution so the face is the one the placement would actually use.
-     * See {@link ScaffoldAim}, which documents the direction convention this depends on.</p>
-     *
-     * <p>The yaw is the heading of the support's side rather than the geometric angle to the click
-     * point. The point is half a block from the player's feet, so the angle to it is measured
-     * against a horizontal offset of a few tenths of a block and swings ten to seventeen degrees
-     * for a fraction of a block of movement. Since the camera is what the movement is computed
-     * from, a camera chasing that swings with it, and the two chase each other: the live log
-     * caught the result as a pendulum, thirty degrees either side of the target, one swing every
-     * ten ticks. The support's side does not move while the player walks, so the camera settles on
-     * it instead.</p>
-     *
-     * <p>The result is smoothed rather than exact, and the smoothing is what makes the view smooth.
-     * It has to be here rather than in the camera, because the camera and the rotation the server
-     * is told have to be the same angle - Meteor writes the server's angle onto the camera for the
-     * movement packet and puts the camera back afterwards, so any difference between the two shows
-     * up as the camera snapping and snapping back. One value, smoothed once, feeds both.</p>
-     */
-    private float[] faceAimAt(BlockPos pos) {
-        Vec3 eyes = this.mc.player.getEyePosition();
-
-        // getPlaceSide returns null when no face of pos has support, which is routine mid-jump and
-        // when a bridge is first extended. ScaffoldAim.aimPoint handles that by falling back to the
-        // block centre, so this never dereferences a null Direction.
-        Direction side = BlockUtils.getPlaceSide(pos);
-        double[] normal = side == null ? null : new double[] {
-            side.getStepX(), side.getStepY(), side.getStepZ()
-        };
-
-        double[] point = ScaffoldAim.aimPoint(pos.getX(), pos.getY(), pos.getZ(), normal, 0.5);
-
-        double dx = point[0] - eyes.x;
-        double dy = point[1] - eyes.y;
-        double dz = point[2] - eyes.z;
-
-        // A vertical face has no heading of its own, so the current one is kept; a horizontal one
-        // gets the stable heading of the support's side.
-        float heading = ScaffoldAim.headingFor(normal);
-        if (Float.isNaN(heading)) {
-            heading = this.mc.player.getYRot();
-        }
-
-        float pitch = ScaffoldAim.pitchAlong(heading, dx, dy, dz);
-
-        // The smoothing. A share of the remaining gap, so the result can never overshoot, and the
-        // motion is a continuous function of where the player is rather than a fresh target every
-        // tick - which, at the frame rates this client actually runs, is the difference between a
-        // view that glides and one that jumps.
-        //
-        // The first-call test has to be Float.isNaN and not an equality comparison. NaN is not
-        // equal to itself, so `smoothedYaw == Float.NaN` is never true, the initialisation never
-        // ran, and the aim was NaN from the first tick onwards. The server discarded every
-        // rotation - "Invalid entity rotation: NaN, discarding." - so the module stopped placing
-        // blocks entirely and the camera sat wherever the player had left it.
-        if (Float.isNaN(this.smoothedYaw)) {
-            this.smoothedYaw = heading;
-            this.smoothedPitch = pitch;
-        } else {
-            this.smoothedYaw = this.smoothedYaw
-                + wrapDegrees(heading - this.smoothedYaw) * AIM_SMOOTH;
-            this.smoothedPitch = this.smoothedPitch
-                + (pitch - this.smoothedPitch) * AIM_SMOOTH_PITCH;
-        }
-
-        return new float[] {this.smoothedYaw, this.smoothedPitch};
-    }
-
-    /**
-     * Writes a look change a real mouse could have produced.
-     *
-     * <p>Every yaw and pitch delta a genuine mouse emits is an exact multiple of the sensitivity
-     * GCD. Writing the camera directly with an arbitrary float produces a delta no human could
-     * generate, which is precisely what rotation checks fingerprint. Aimbot and KillAura already
-     * quantise for this reason; scaffold wrote straight to {@code setYRot}, so its sweep moved by
-     * exactly 7 degrees per tick for as long as it lasted.</p>
-     */
-
-    private float maxAimStep() {
-        return (float) (double) this.cameraSpeed.get();
-    }
 
     /** Threshold with per-evaluation variance, so the crouch is not metronomic. */
     private double jittered(double base) {

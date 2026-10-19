@@ -1,20 +1,18 @@
 package net.venomous.meteoraddon.utils;
 
 /**
- * [DEBUG-scf] TEMPORARY - remove. A local replica of the geometry Grim's scaffolding checks use.
+ * A local replica of the geometry Grim's scaffolding checks use.
  *
  * <p>This exists because the server only says "flagged", never why, and guessing from angles was
  * wrong twice already. Reproducing the check on the client turns "Grim says RotationPlace" into
  * "this ray misses this box, and here is the angle that would have hit it", which is answerable
- * without a round trip.</p>
+ * without a round trip. It is what the placement is gated on, so it is part of the module rather
+ * than instrumentation.</p>
  *
  * <p>The slab method and its comparisons are transcribed from Grim's
  * {@code ReachUtils.calculateIntercept} (1.8 branch), which the 2.0 scaffolding checks still call.
  * The candidate set matches {@code RotationPlace}: the current rotation, the previous yaw with the
  * current pitch, and the fully previous rotation - any one hitting is a pass.</p>
- *
- * <p>Tagged {@code DEBUG-scf} for single-grep removal, like the instrumentation that found the
- * air-place.</p>
  */
 public final class GrimRay {
     private GrimRay() {

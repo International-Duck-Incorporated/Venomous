@@ -96,40 +96,6 @@ public final class MovementMath {
         return tick % period == 0 ? pulseMotion : 0.0;
     }
 
-    /**
-     * Rotates the movement input so the walk matches the rotation the server is being told.
-     *
-     * <p>The client computes its movement from the camera's yaw. The server predicts that movement
-     * from the yaw in the movement packet, which a scaffold spoofs to point at the block being
-     * placed. When the two differ the client walks a different line from the one the server
-     * predicted, and the difference is Grim's {@code Simulation} - which flags at one millimetre.</p>
-     *
-     * <p>So the input is pre-rotated by the angle between them. If the server is told a yaw of
-     * {@code S} and the camera is at {@code C}, the input is rotated by {@code S - C}: the client
-     * then produces exactly the world-space movement the server expects, while the player is still
-     * looking wherever they like.</p>
-     *
-     * <p>The convention is the game's own. Minecraft turns a yaw of {@code 0} to face {@code +Z},
-     * and the forward vector is {@code (-sin, cos)} while the left vector - the one a strafe of
-     * {@code +1} moves towards - is {@code (cos, sin)}. A strafe is {@code +1} for the left key:
-     * {@code KeyboardInput} builds the vector as {@code new Vec2(strafe, forward)} from
-     * {@code calculateImpulse(left, right)} and {@code calculateImpulse(forward, backward)}.</p>
-     *
-     * @param strafe   sideways input, {@code +1} for the left key
-     * @param forward  forwards input, {@code +1} for the up key
-     * @param deltaYaw the server's yaw minus the camera's yaw, in degrees
-     * @return the compensated input as {@code {strafe, forward}}
-     */
-    public static float[] compensateInput(float strafe, float forward, float deltaYaw) {
-        double radians = Math.toRadians(deltaYaw);
-        double cos = Math.cos(radians);
-        double sin = Math.sin(radians);
-
-        return new float[] {
-            (float) (strafe * cos - forward * sin),
-            (float) (strafe * sin + forward * cos)
-        };
-    }
 
     /** Clamps a value into the inclusive range. */
     public static double clamp(double value, double min, double max) {

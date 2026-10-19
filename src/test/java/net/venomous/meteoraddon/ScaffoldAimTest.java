@@ -133,17 +133,31 @@ public class ScaffoldAimTest {
     }
 
     /**
-     * The pitch is measured along the heading, not straight at the point.
+     * The pitch is the elevation of the point from the eye.
      *
-     * <p>For a vertical face that is the perpendicular distance to the face plane, which is what
-     * decides whether the ray lands on the face or slides off it.</p>
+     * <p>It does not depend on the yaw, and that is the point of it. A ray is a yaw and a pitch
+     * together: the yaw fixes the horizontal direction and the pitch fixes how far down it goes.
+     * The elevation of a point is the same however the head is turned, so the module can aim at
+     * the block being placed without touching the player's yaw - which it cannot touch, because
+     * Grim's movement prediction rotates its candidate directions by the yaw in the packet and the
+     * client walks along the camera's yaw.</p>
      */
     @Test
-    void thePitchIsMeasuredAlongTheHeading() {
-        float pitch = ScaffoldAim.pitchAlong(180.0F, 0.0D, -2.0D, -0.3333D);
+    void thePitchIsTheElevationFromTheEye() {
+        float pitch = ScaffoldAim.pitchToPoint(0.0D, 2.0D, 0.0D, 0.0D, 0.0D, -0.3333D);
 
         assertTrue(pitch > 80.0F && pitch < 82.0F,
-            "looking north at a face just in front of the player is nearly straight down, got " + pitch);
+            "looking at a face just in front of the player is nearly straight down, got " + pitch);
+    }
+
+    @Test
+    void theElevationIsMeasuredFromTheEyeAndNotAlongTheDirectionOfTravel() {
+        assertEquals(90.0F, ScaffoldAim.pitchToPoint(0, 5, 0, 0, 0, 0), 1.0E-4F,
+            "a point straight below is straight down");
+        assertEquals(0.0F, ScaffoldAim.pitchToPoint(0, 5, 0, 5, 5, 0), 1.0E-4F,
+            "a point at the same height is level");
+        assertEquals(-45.0F, ScaffoldAim.pitchToPoint(0, 5, 0, 5, 10, 0), 1.0E-4F,
+            "a point five up and five across is forty-five up");
     }
 
     @Test

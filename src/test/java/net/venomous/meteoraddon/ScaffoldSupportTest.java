@@ -120,7 +120,7 @@ public class ScaffoldSupportTest extends SourceGuard {
         requireAnchor(body, "aimAndPlace", "getPlaceSide");
 
         int guard = squeeze(body).indexOf("Directionside=BlockUtils.getPlaceSide(pos);");
-        int face = squeeze(body).indexOf("float[]face=this.faceAimAt(pos);");
+        int face = squeeze(body).indexOf("float[]face=this.aimRotation(pos);");
 
         assertTrue(guard >= 0 && face > guard,
             "the cell has to be resolved - and refused if it has no support - before the aim is "

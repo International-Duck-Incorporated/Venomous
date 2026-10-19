@@ -127,21 +127,32 @@ public final class ScaffoldAim {
     }
 
     /**
-     * The pitch that looks at a point along a given heading.
+     * The pitch that looks at a point, from an eye.
      *
-     * <p>The horizontal distance is measured <em>along the heading</em>, not as the straight-line
-     * distance to the point. For a vertical face that is the perpendicular distance to the face
-     * plane, which is what decides whether the ray lands on the face or slides off it, and it is
-     * stable however the player is positioned across the face.</p>
+     * <p>Independent of the yaw, which is the point of it. A ray is a yaw and a pitch together: the
+     * yaw fixes the horizontal direction and the pitch fixes how far down it goes. The elevation of
+     * a point does not depend on which way the head is turned - only whether the head is turned
+     * <em>at</em> it - so the pitch that aims at a point is the same whatever the yaw is.</p>
+     *
+     * <p>That matters because the yaw belongs to the player. Grim's movement prediction rotates its
+     * candidate movement directions by the yaw in the movement packet, so the client's movement has
+     * to run along the camera's yaw for the server's prediction to match; the pitch is the only
+     * axis the module can spend on aiming at the block being placed.</p>
+     *
+     * @return the pitch in degrees, positive when looking down, as Minecraft stores it
      */
-    public static float pitchAlong(double yaw, double dx, double dy, double dz) {
-        double radians = Math.toRadians(yaw);
-        double forwardX = -Math.sin(radians);
-        double forwardZ = Math.cos(radians);
+    public static float pitchToPoint(double eyeX, double eyeY, double eyeZ,
+                                      double pointX, double pointY, double pointZ) {
+        double dx = pointX - eyeX;
+        double dy = pointY - eyeY;
+        double dz = pointZ - eyeZ;
 
-        double along = dx * forwardX + dz * forwardZ;
-        if (Math.abs(along) < 1.0E-6D) along = Math.copySign(1.0E-6D, along);
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        if (horizontal < 1.0E-6D) {
+            // Straight up or straight down: there is no horizontal direction to speak of.
+            return dy > 0.0D ? -90.0F : 90.0F;
+        }
 
-        return (float) -Math.toDegrees(Math.atan2(dy, along));
+        return (float) -Math.toDegrees(Math.atan2(dy, horizontal));
     }
 }
