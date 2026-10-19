@@ -31,6 +31,7 @@ import net.venomous.meteoraddon.utils.ScaffoldCamera;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
+import net.venomous.meteoraddon.utils.ScaffoldEdge;
 import net.venomous.meteoraddon.utils.RotationGcd;
 import net.venomous.meteoraddon.utils.ScaffoldAim;
 import net.venomous.meteoraddon.utils.ScaffoldGates;
@@ -449,7 +450,11 @@ public class Scaffold extends Module {
 
         BlockPos placePos = this.getPlacePos();
         if (placePos == null) {
-            this.releaseManagedSneak();
+            // No target, but the crouch is not dropped here. The setting asks for it to be held for
+            // the delay after the edge clears, and a crouch that comes and goes changes the
+            // client's speed by seventy per cent every time - the server only learns about it a
+            // tick later, which is worth more than the placement offset it is trying to avoid.
+            this.updateManagedSneak(false);
             return;
         }
 
@@ -477,7 +482,7 @@ public class Scaffold extends Module {
 
         BlockPos target = this.getPlacePos();
         if (target == null || !this.findBlock().found()) {
-            this.releaseManagedSneak();
+            this.updateManagedSneak(false);
             return;
         }
 
@@ -625,15 +630,23 @@ public class Scaffold extends Module {
                 return;
             }
 
-            this.debugLog("place: cell=%s support=%s side=%s aim=%.2f,%.2f camYaw=%.2f serverHolds=%.2f,%.2f",
-                pos, support, side, face[0], face[1], this.mc.player.getYRot(),
-                Rotations.serverYaw, Rotations.serverPitch);
+            // One line per placement: the aim, the angle the server is holding, and what the
+            // placement did. It used to be two lines here and three more from the crouch, and a
+            // log that heavy is enough to make the client miss its own packet deadlines - which
+            // Grim's Timer check reports as the game running too fast.
+            boolean placed = this.place(pos);
 
-            this.place(pos);
+            Vec3 at = this.mc.player.position();
+            Vec3 vel = this.mc.player.getDeltaMovement();
+
+            this.debugLog("place: cell=%s support=%s side=%s aim=%.2f,%.2f camYaw=%.2f "
+                    + "serverHolds=%.2f,%.2f -> %s at %.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f onGround=%s",
+                pos, support, side, face[0], face[1], this.mc.player.getYRot(),
+                Rotations.serverYaw, Rotations.serverPitch, placed ? "PLACED" : "FAILED",
+                at.x, at.y, at.z, vel.x, vel.y, vel.z, this.mc.player.onGround());
         });
         }
     }
-
     /**
      * The rotation the server is told: the player's own yaw, and a pitch aimed at the face.
      *
@@ -807,7 +820,10 @@ public class Scaffold extends Module {
     private void doTower() {
         BlockPos below = BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ());
         if (this.mc.level.getBlockState(below).isAir()) {
-            this.place(below);
+            if (this.place(below)) {
+                this.debugLog("tower: cell=%s PLACED at %.2f,%.2f,%.2f",
+                    below, this.mc.player.getX(), this.mc.player.getY(), this.mc.player.getZ());
+            }
         }
 
         this.towerTicks++;
@@ -865,13 +881,7 @@ public class Scaffold extends Module {
                 // least as reliable as the fixed cadence while no longer being metronomic.
                 this.nextPlaceAtMs = now + (long) gap;
 
-                Vec3 at = this.mc.player.position();
-                Vec3 vel = this.mc.player.getDeltaMovement();
-
                 this.debugTicksAfterPlacement = 6;
-
-                this.debugLog("place: cell=%s PLACED at %.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f onGround=%s",
-                    pos, at.x, at.y, at.z, vel.x, vel.y, vel.z, this.mc.player.onGround());
 
                 return true;
             }
@@ -1132,8 +1142,34 @@ public class Scaffold extends Module {
         return System.nanoTime() / 1_000_000L;
     }
 
+    /**
+     * Whether the player is at the edge of something.
+     *
+     * <p>The edge is the cell in the direction they are walking, not the cell under them. The old
+     * test asked about the cell underfoot, which is not the edge - it is the moment after the
+     * player has already stepped off it. On a bridge it flickers: true for a tick after the player
+     * walks onto a cell, false again the moment the block lands under them, because the module
+     * fills the cell they are standing on and not the one in front of them.</p>
+     *
+     * <p>The live log showed the crouch going down and coming straight back up on every
+     * placement, never held for longer than a tick. The player never saw themselves crouch, and
+     * every one of those changes moved the client's speed by seventy per cent, which the server
+     * only learns about a tick later - worth more than the placement offset the crouch was there
+     * to avoid.</p>
+     *
+     * <p>The cell in the direction of travel is empty for the whole of a bridge, so the crouch is
+     * held steadily while bridging and let go when the player stops walking or turns away from the
+     * drop. The geometry is in {@link ScaffoldEdge} so it can be tested without a world.</p>
+     */
     private boolean isOverEdge() {
-        return this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ())).isAir();
+        if (this.mc.level == null || this.mc.player == null) return false;
+
+        Vec3 dir = this.movementDirection();
+
+        return ScaffoldEdge.overEdge(
+            this.mc.player.getX(), this.mc.player.getY(), this.mc.player.getZ(),
+            dir.x, dir.z,
+            (x, y, z) -> this.mc.level.getBlockState(new BlockPos(x, y, z)).isAir());
     }
 
     @Override

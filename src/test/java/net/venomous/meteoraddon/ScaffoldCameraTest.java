@@ -2,6 +2,7 @@ package net.venomous.meteoraddon;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -330,6 +331,84 @@ public class ScaffoldCameraTest extends SourceGuard {
 
         assertTrue(squeeze(scaffold()).contains("this.autoSneak.get()&&this.isOverEdge()"),
             "edge sneaking should be reachable, but only when the player asked for it");
+    }
+
+    /**
+     * The crouch must survive a tick with no target.
+     *
+     * <p>This is the bug the live log caught, and it is worth a guard of its own because the
+     * symptom was not a crash but a crouch that came and went.</p>
+     *
+     * <p>The log shows the crouch going down and coming straight back up on every single
+     * placement: "crouch: key down (was false)" immediately followed by "crouch: key up (restored
+     * to false)". The cause is the no-target path. The module fills the cell the player is standing
+     * on, so for the tick after a placement there is no cell left to place and the module took the
+     * "nothing to do" branch - and that branch released the crouch outright. The crouch was
+     * therefore on for about a tick at a time, which the player never saw, and every one of those
+     * changes moved the client's speed by seventy per cent, which the server only learns about a
+     * tick later.</p>
+     *
+     * <p>The no-target path has to hand the crouch to the timing decision instead, so the
+     * {@code sneak-delay} is honoured and the crouch is held for a real duration.</p>
+     */
+    @Test
+    void theCrouchSurvivesATickWithNoTarget() {
+        for (String method : new String[] {"private void tickStandardMode()",
+                                           "private void tickGrim()"}) {
+            String body = code(methodBody(source(SCAFFOLD), method));
+
+            requireAnchor(body, method, "updateManagedSneak");
+
+            String squeezed = squeeze(body);
+
+            assertTrue(squeezed.contains("this.updateManagedSneak(false);"),
+                method + " has to hand the crouch to the timing decision when there is no target, "
+                    + "not drop it: the module fills the cell the player is standing on, so there is "
+                    + "no target for a tick after every placement, and dropping the crouch there "
+                    + "made it come and go on every placement");
+
+            assertEquals(1, countOccurrences(squeezed, "this.releaseManagedSneak();"),
+                method + " may only release the crouch where the player is not bridging at all - "
+                    + "fighting - and nowhere else");
+        }
+    }
+
+    /** How many times a needle appears in a haystack. */
+    private static int countOccurrences(String haystack, String needle) {
+        int count = 0;
+        int at = haystack.indexOf(needle);
+
+        while (at >= 0) {
+            count++;
+            at = haystack.indexOf(needle, at + needle.length());
+        }
+
+        return count;
+    }
+
+    /**
+     * The edge has to be the cell in the direction of travel.
+     *
+     * <p>Asserted on the wiring because the decision itself lives in {@link net.venomous.meteoraddon.utils.ScaffoldEdge}
+     * and is tested there; what this guards is that the module actually asks that question, and
+     * that the old question - is the cell <em>under</em> the player air - has not come back.</p>
+     */
+    @Test
+    void theEdgeIsTheCellInTheDirectionOfTravel() {
+        String body = code(methodBody(source(SCAFFOLD), "private boolean isOverEdge()"));
+
+        requireAnchor(body, "isOverEdge", "ScaffoldEdge.overEdge");
+
+        String squeezed = squeeze(body);
+
+        assertTrue(squeezed.contains("this.movementDirection()"),
+            "the edge is the cell the player is walking into, so the direction of travel has to be "
+                + "part of the question");
+
+        assertFalse(body.contains("BlockPos.containing(this.mc.player.getX()"),
+            "the cell under the player is not the edge - it is the moment after they have already "
+                + "stepped off it, and it flickers on every placement, which is what made the "
+                + "crouch come and go");
     }
 
     /**
