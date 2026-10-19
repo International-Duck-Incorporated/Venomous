@@ -32,25 +32,50 @@ public class ScaffoldSupportTest extends SourceGuard {
         "src/main/java/net/venomous/meteoraddon/modules/world/Scaffold.java";
 
     /**
-     * The targeting itself. A candidate that is not {@link #isSupported} must be skipped, so the
-     * module walks on to the next one instead of locking onto a cell it can never fill.
+     * The targeting itself.
+     *
+     * <p>Only the cell underfoot is a candidate, and only when it can hold a block. The sideways
+     * candidates that used to be here were the expand technique - asked for removal once and left
+     * in - and they are what Grim's {@code PositionPlace} ("Placed a block against a hidden face")
+     * fires on, because placing the cell beside the bridge means clicking the support's far face
+     * while standing on the near side of it.</p>
      */
     @Test
-    void theTargetSelectorOnlyReturnsCellsThatCanHoldABlock() {
+    void theTargetSelectorOnlyReturnsTheCellUnderfoot() {
         String body = squeeze(methodBody(source(SCAFFOLD), "private BlockPos getPlacePos()"));
 
         requireAnchor(body, "getPlacePos", "isSupported");
 
-        assertFalse(body.contains(".isAir())"),
+        assertTrue(body.contains("BlockPos.containing(this.mc.player.getX(),y,this.mc.player.getZ())"),
+            "the target is the cell directly beneath the player");
+
+        assertTrue(matches("returnthis\\.isSupported\\(below\\)\\?below:null;", body),
+            "and it is returned only when it has a supporting face, otherwise null so the caller "
+                + "does nothing this tick");
+
+        assertFalse(body.contains(".isAir()"),
             "isAir() is the check that started all of this: a free cell can still have nothing to "
                 + "place against, and the cell has to be screened on having a support face");
+    }
 
-        assertTrue(matches("if\\(this\\.isSupported\\(below\\)\\)", body),
-            "the cell directly below the player must be screened on support, not on emptiness");
+    /**
+     * The sideways candidates must not come back.
+     *
+     * <p>This is the expand technique. It is worth a guard of its own because it is invisible: the
+     * method still compiles, still returns a {@code BlockPos}, and still places blocks - it just
+     * places them where the player cannot see the face being clicked, which is a silent flag rather
+     * than a broken module.</p>
+     */
+    @Test
+    void theExpandTechniqueIsNotReintroducedIntoTargeting() {
+        String body = squeeze(methodBody(source(SCAFFOLD), "private BlockPos getPlacePos()"));
 
-        assertTrue(matches("if\\(!this\\.isSupported\\(check\\)\\)", body),
-            "the sideways candidates must be screened the same way, and skipped rather than "
-                + "returned when they fail");
+        assertFalse(body.contains("Direction.NORTH") || body.contains("Direction.EAST"),
+            "sweeping the four horizontal neighbours is the expand technique; it places a cell whose "
+                + "clicked face is hidden from the eye, which is Grim's PositionPlace");
+
+        assertFalse(body.contains(".relative("),
+            "no candidate may be offset from the cell underfoot");
     }
 
     /**
@@ -92,13 +117,37 @@ public class ScaffoldSupportTest extends SourceGuard {
     void theRotationIsNotWorkedOutForACellThatWillBeRefused() {
         String body = methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)");
 
-        requireAnchor(body, "aimAndPlace", "ScaffoldAim.hasSupport");
+        requireAnchor(body, "aimAndPlace", "getPlaceSide");
 
-        int guard = squeeze(body).indexOf("ScaffoldAim.hasSupport(");
+        int guard = squeeze(body).indexOf("Directionside=BlockUtils.getPlaceSide(pos);");
         int face = squeeze(body).indexOf("float[]face=this.faceAimAt(pos);");
 
         assertTrue(guard >= 0 && face > guard,
-            "the support screen has to come before the aim is worked out, not after it");
+            "the cell has to be resolved - and refused if it has no support - before the aim is "
+                + "worked out, not after it");
+    }
+
+    /**
+     * The bridge level must hold while the player is in the air.
+     *
+     * <p>It used to follow the jump key, and that is half of why jumping while bridging dropped
+     * the player off the bridge: the module built a column upwards instead of the next cell of the
+     * row, so the row stopped growing while the player kept walking backwards along it. The live
+     * log caught it - the target's Y climbed 83, 84, 85, 87 while the player was airborne.</p>
+     */
+    @Test
+    void theBridgeLevelHoldsWhileThePlayerIsInTheAir() {
+        String code = squeeze(code(source(SCAFFOLD)));
+
+        assertFalse(code.contains("keyJump.isDown()"),
+            "the jump key must not raise the level of the row; the module would build a column "
+                + "instead of the bridge and the player would walk off the end of the row");
+
+        assertTrue(squeeze(code).contains("this.mc.player.onGround()"),
+            "the level follows the player while they are on the ground");
+
+        assertTrue(squeeze(code).contains("!this.sameY.get()"),
+            "and follows them in the air only when the player has asked for that behaviour");
     }
 
     /**

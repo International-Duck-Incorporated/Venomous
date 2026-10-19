@@ -13,12 +13,32 @@ public class ScaffoldAimTest {
     private static final double[] NORTH = {0, 0, -1};
 
     @Test
-    void theSharedFaceSitsHalfABlockFromTheSupportCentre() {
-        double[] face = ScaffoldAim.sharedFaceCentre(10, 64, 20, DOWN, 0.5);
+    void theClickPointIsHalfABlockFromTheBlockCentreAlongTheSide() {
+        // Placing into (10, 64, 20) with the support below it: Meteor's getPlaceSide returns DOWN.
+        double[] point = ScaffoldAim.clickPoint(10, 64, 20, DOWN, 0.5);
 
-        assertEquals(10.5, face[0], 1e-9);
-        assertEquals(64.0, face[1], 1e-9, "placing on top of a block puts the face at the support's top");
-        assertEquals(20.5, face[2], 1e-9);
+        assertEquals(10.5, point[0], 1e-9);
+        assertEquals(64.0, point[1], 1e-9, "half a block below the centre, so on the shared face");
+        assertEquals(20.5, point[2], 1e-9);
+    }
+
+    /**
+     * The direction convention that was wrong for a long time.
+     *
+     * <p>{@code BlockUtils.getPlaceSide} skips neighbours that are air, so the direction it
+     * returns points at a <em>solid</em> neighbour: the support. Treating it as support-to-block put
+     * the aim a full block out on the empty side of the target, which is why Grim's
+     * {@code RotationPlace} fired on nearly every placement.</p>
+     */
+    @Test
+    void theSidePointsFromTheBlockTowardsItsSupport() {
+        double[] point = ScaffoldAim.aimPoint(10, 64, 20, DOWN, 0.5);
+
+        assertEquals(64.0, point[1], 1e-9,
+            "the aim must be on the placed block's lower face - the shared face with the support "
+                + "below - never inside the support itself");
+        assertFalse(Math.abs(point[1] - 63.0) < 1e-9,
+            "y = 63 would be aiming a full block too low, which is what the inverted normal did");
     }
 
     /**
@@ -27,16 +47,13 @@ public class ScaffoldAimTest {
      * player is not addressing and Grim resolves a position with no valid support.
      */
     @Test
-    void theAimPointIsTheSharedFaceNotTheBlockCentre() {
-        // Placing onto the top of the block at (10, 64, 20) means the face is its top surface.
-        double[] face = ScaffoldAim.sharedFaceCentre(10, 64, 20, DOWN, 0.5);
-        double[] point = ScaffoldAim.aimPoint(10, 64, 20, UP, 0.5);
+    void theAimPointIsTheClickedFaceNotTheBlockCentre() {
+        double[] point = ScaffoldAim.aimPoint(10, 64, 20, DOWN, 0.5);
 
-        assertEquals(face[0], point[0], 1e-9);
-        assertEquals(face[1], point[1], 1e-9, "the point must sit on the face, one below the block centre");
-        assertEquals(face[2], point[2], 1e-9);
-        assertEquals(64.0, point[1], 1e-9);
-        assertFalse(Math.abs(point[1] - 64.5) < 1e-9, "and explicitly NOT at the block centre, which is 64.5");
+        assertEquals(10.5, point[0], 1e-9);
+        assertEquals(20.5, point[2], 1e-9);
+        assertFalse(Math.abs(point[1] - 64.5) < 1e-9,
+            "the point must NOT be the block centre, which is 64.5");
     }
 
     /**
@@ -99,6 +116,36 @@ public class ScaffoldAimTest {
      * "is there something to place against". Grim's {@code AirLiquidPlace} fired on precisely the
      * ticks the debug log recorded {@code side=NULL, canPlace=true}.</p>
      */
+    @Test
+    void theHeadingOfAHorizontalFaceIsItsSide() {
+        assertEquals(180.0F, ScaffoldAim.headingFor(NORTH), 1e-6, "north");
+        assertEquals(0.0F, ScaffoldAim.headingFor(new double[] {0, 0, 1}), 1e-6, "south");
+        assertEquals(-90.0F, ScaffoldAim.headingFor(new double[] {1, 0, 0}), 1e-6, "east");
+        assertEquals(90.0F, ScaffoldAim.headingFor(new double[] {-1, 0, 0}), 1e-6, "west");
+    }
+
+    @Test
+    void aVerticalFaceHasNoHeadingOfItsOwn() {
+        assertTrue(Float.isNaN(ScaffoldAim.headingFor(UP)),
+            "looking straight down has no heading; the caller keeps the current one");
+        assertTrue(Float.isNaN(ScaffoldAim.headingFor(DOWN)));
+        assertTrue(Float.isNaN(ScaffoldAim.headingFor(null)));
+    }
+
+    /**
+     * The pitch is measured along the heading, not straight at the point.
+     *
+     * <p>For a vertical face that is the perpendicular distance to the face plane, which is what
+     * decides whether the ray lands on the face or slides off it.</p>
+     */
+    @Test
+    void thePitchIsMeasuredAlongTheHeading() {
+        float pitch = ScaffoldAim.pitchAlong(180.0F, 0.0D, -2.0D, -0.3333D);
+
+        assertTrue(pitch > 80.0F && pitch < 82.0F,
+            "looking north at a face just in front of the player is nearly straight down, got " + pitch);
+    }
+
     @Test
     void aFreeCellWithNoSupportFaceIsNotAPlacementTarget() {
         assertTrue(ScaffoldAim.hasSupport(true, true), "free cell with a support face: place it");

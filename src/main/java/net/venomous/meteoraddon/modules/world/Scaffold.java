@@ -25,7 +25,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
-import net.venomous.meteoraddon.utils.AimEase;
+import net.venomous.meteoraddon.utils.GrimRay;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
@@ -109,7 +109,11 @@ public class Scaffold extends Module {
     private final Setting<Boolean> sameY = this.sgGeneral.add(
         new BoolSetting.Builder()
             .name("same-y")
-            .description("Keep placing at the same Y level.")
+            .description("Hold the level of the row while you are in the air. On by default: the "
+                + "level used to follow the jump key, which made a jump build a column instead of "
+                + "the next cell of the row - the row stopped growing and you walked off the end of "
+                + "it. Turn this off to follow the player up mid-jump, which is the jump-bridging "
+                + "technique and builds a staircase rather than a bridge.")
             .defaultValue(true)
             .build()
     );
@@ -143,27 +147,52 @@ public class Scaffold extends Module {
             .name("camera-speed")
             .description("Degrees per tick the camera may travel toward the placement face. The "
                 + "move eases in and decelerates into the target, so this is the peak, not the rate "
-                + "it starts or ends at. This drives what you see only; the rotation the server is "
-                + "told is snapped to the face, because AntiCheat-Addition's ScaffoldRotation "
-                + "scores rotation variance and a multi-tick approach reads as random aiming.")
+                + "it starts or ends at. The camera and the rotation sent to the server are the "
+                + "same angle - that is what keeps the server's movement prediction matching the "
+                + "movement the client actually performs.")
             .defaultValue(22.0)
             .min(1.0)
             .sliderMax(60.0)
             .build()
     );
 
-    private final Setting<Boolean> cameraFollow = this.sgGeneral.add(
-        new BoolSetting.Builder()
-            .name("camera-follow")
-            .description("Ease the camera onto the placement face. Your view tracks what you are "
-                + "building, as it does when bridging by hand, but it is eased and GCD-quantised "
-                + "rather than snapping. The server rotation is still spoofed independently "
-                + "through PreRotate, so the two are no longer forced to be identical.")
-            .defaultValue(true)
-            .build()
-    );
+    /**
+     * Share of the remaining gap the aim closes each tick.
+     *
+     * <p>This is where the smoothing lives. It used to be in the camera, which was the mistake:
+     * the camera was eased toward the target while the server was told the camera's lagged value,
+     * so the two were never the same angle, and Meteor writes the server's angle onto the camera
+     * for the movement packet and puts the camera back afterwards. A camera holding a different
+     * angle from the one being sent was therefore snapped to it and back on every single tick -
+     * the "the camera snaps back to the normal camera of the user" that was reported.</p>
+     *
+     * <p>One smoothed value now feeds both, so Meteor's snap writes the value that is already
+     * there and its restore puts back the same one. The motion is still a continuous function of
+     * where the player is, which is what a smooth view is.</p>
+     */
+    private static final float AIM_SMOOTH = 0.35F;
 
-    private static final float CAPTURE_DEGREES = 0.4F;
+    /** The pitch is smoothed more gently; it is the axis that moves most as the player walks. */
+    private static final float AIM_SMOOTH_PITCH = 0.5F;
+
+    /**
+     * How long to wait before retrying a placement that did not go through.
+     *
+     * <p>Short, because a cell can become placeable the moment the block arrives, and a jump is
+     * not long.</p>
+     */
+    private static final long RETRY_DELAY_MS = 50L;
+
+    /**
+     * The pitch tracks much more closely than the yaw, and it has to.
+     *
+     * <p>The yaw's target is the discrete heading of the support's side, so it is steady and can be
+     * eased slowly without consequence. The pitch's target moves by several degrees every tick,
+     * because the face is nearly underfoot and the eye's distance to it changes as the player walks
+     * - and the ray is steep enough that a couple of degrees of lag moves the landing point half a
+     * block, from the middle of the face to its top edge. So the pitch is smoothed more gently,
+     * to keep up with a target that moves faster.</p>
+     */
 
     private final Setting<Integer> placeDelay = this.sgGeneral.add(
         new IntSetting.Builder()
@@ -175,53 +204,6 @@ public class Scaffold extends Module {
             .defaultValue(ScaffoldCadence.DEFAULT_PLACE_DELAY)
             .range(1, 10)
             .sliderMax(10)
-            .build()
-    );
-
-    private final Setting<Double> bridgeEdgeThreshold = this.sgBridge.add(
-        new DoubleSetting.Builder()
-            .name("edge-threshold")
-            .description("Distance from a block edge before Bridge Assist sneaks.")
-            .defaultValue(0.24)
-            .range(0.05, 0.49)
-            .sliderMax(0.4)
-            .visible(this::isBridgeMode)
-            .build()
-    );
-
-    private final Setting<Boolean> bridgePlaceAssist = this.sgBridge.add(
-        new BoolSetting.Builder()
-            .name("place-assist")
-            .description("Automatically place blocks below or ahead while bridging.")
-            .defaultValue(true)
-            .visible(this::isBridgeMode)
-            .build()
-    );
-
-    private final Setting<Boolean> bridgeCameraStabilisation = this.sgBridge.add(
-        new BoolSetting.Builder()
-            .name("camera-stabilisation")
-            .description("Restore visual camera rotation immediately after bridge placement.")
-            .defaultValue(true)
-            .visible(() -> this.technique.get() == Scaffold.Technique.BridgeMacro || this.technique.get() == Scaffold.Technique.VapeBridge)
-            .build()
-    );
-
-    private final Setting<Boolean> bridgePitchAssist = this.sgBridge.add(
-        new BoolSetting.Builder()
-            .name("pitch-assist")
-            .description("Automatically pitch down towards placement face when nearing block edges (bypasses Vulcan/NCP pitch checks).")
-            .defaultValue(true)
-            .visible(this::isBridgeMode)
-            .build()
-    );
-
-    private final Setting<Boolean> bridgeStrafeAssist = this.sgBridge.add(
-        new BoolSetting.Builder()
-            .name("strafe-assist")
-            .description("Smooth strafe lock along bridge vector (keeps movement aligned).")
-            .defaultValue(false)
-            .visible(this::isBridgeMode)
             .build()
     );
 
@@ -252,23 +234,35 @@ public class Scaffold extends Module {
             .build()
     );
 
-    /** Distance at which a slew is treated as arrived and the last fraction is snapped. */
-
-    /** Extra ticks a placement may be held back by, on top of the configured delay. */
-    private static final int CADENCE_JITTER_TICKS = ScaffoldCadence.CADENCE_JITTER_TICKS;
-
     private int prevSlot = -1;
     private int towerTicks = 0;
     private int scaffoldCount = 0;
-    private int placeCooldown = 0;
-    private BlockPos lastAttemptPos = null;
-    private int repeatedAttempts = 0;
+
+    /**
+     * Wall-clock deadline for the next placement, in milliseconds.
+     *
+     * <p>Not a tick count. A tick-counted cooldown assumes 20 TPS, and this client does not run at
+     * 20: five ticks is 250ms at 20 FPS and 1250ms at 4 FPS, and a jump is over long before that.
+     * The live log caught what that costs - the player jumped while bridging, the block underneath
+     * was still inside the cooldown from the previous placement, and they fell off the bridge.</p>
+     */
+    private long nextPlaceAtMs = 0L;
+
+    /**
+     * The smoothed aim. One value feeds both the camera and the server, so the two can never
+     * disagree - which is what made Meteor's snap to the server's angle visible as the camera
+     * snapping and snapping back every tick.
+     */
+    private float smoothedYaw = Float.NaN;
+    private float smoothedPitch = Float.NaN;
     private boolean managedSneak = false;
     private long sneakHeldSinceMs = 0L;
     private boolean previousSneakDown = false;
     private int targetY = -1;
-    private float camYawVelocity = 0.0F;
-    private float camPitchVelocity = 0.0F;
+
+    /** The rotation the server held on the previous tick, which Grim also tests against. */
+    private float lastServerYaw = 0.0F;
+    private float lastServerPitch = 0.0F;
     private Scaffold.Technique lastTechnique = null;
     private Vec3 bridgeHeading = Vec3.ZERO;
     private final Random random = new Random();
@@ -282,9 +276,7 @@ public class Scaffold extends Module {
         this.prevSlot = -1;
         this.towerTicks = 0;
         this.scaffoldCount = 0;
-        this.placeCooldown = 0;
-        this.lastAttemptPos = null;
-        this.repeatedAttempts = 0;
+        this.nextPlaceAtMs = 0L;
         this.managedSneak = false;
         this.previousSneakDown = false;
         this.lastTechnique = null;
@@ -299,14 +291,12 @@ public class Scaffold extends Module {
         }
 
         this.releaseManagedSneak();
-        this.placeCooldown = 0;
-        this.lastAttemptPos = null;
-        this.repeatedAttempts = 0;
+        this.nextPlaceAtMs = 0L;
+        this.smoothedYaw = Float.NaN;
+        this.smoothedPitch = Float.NaN;
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
         this.targetY = -1;
-        this.camYawVelocity = 0.0F;
-        this.camPitchVelocity = 0.0F;
     }
 
     private boolean isBridgeMode() {
@@ -330,18 +320,26 @@ public class Scaffold extends Module {
         if (this.mc.player == null || this.mc.level == null) return;
 
         this.scaffoldCount++;
-        if (this.placeCooldown > 0) this.placeCooldown--;
 
         Scaffold.Technique selected = this.technique.get();
         if (selected != this.lastTechnique) {
             this.releaseManagedSneak();
             this.bridgeHeading = Vec3.ZERO;
-            this.lastAttemptPos = null;
-            this.repeatedAttempts = 0;
+            this.nextPlaceAtMs = 0L;
             this.lastTechnique = selected;
         }
 
-        if (this.mc.options.keyJump.isDown() || (int)Math.floor(this.mc.player.getY() - 1.0) > this.targetY) {
+        // The level the row is built at.
+        //
+        // It used to be raised the instant the jump key went down, and that is the second half of
+        // the fall the live log caught: the module built a column upwards instead of the next cell
+        // of the row, so the row stopped growing while the player - who was walking backwards along
+        // it - kept moving, and they walked off the end of it. The log shows the target's Y
+        // climbing 83, 84, 85, 87 while the player was airborne and nothing being placed in the row.
+        //
+        // Holding the level while airborne fixes that. Climbing a ledge still works: the player
+        // lands on it, and the level follows on the landing tick.
+        if (this.targetY == -1 || this.mc.player.onGround() || !this.sameY.get()) {
             this.targetY = (int)Math.floor(this.mc.player.getY() - 1.0);
         }
 
@@ -353,8 +351,7 @@ public class Scaffold extends Module {
     }
 
     private void tickStandardMode() {
-        FindItemResult block = this.findBlock();
-        if (!block.found()) return;
+        if (!this.findBlock().found()) return;
 
         if (this.tower.get() && this.mc.player.getXRot() < -75.0F) {
             this.doTower();
@@ -367,18 +364,10 @@ public class Scaffold extends Module {
             return;
         }
 
-        // NCP is deliberately conservative: crouch before the edge and visibly aim steeply.
-        if (this.technique.get() == Scaffold.Technique.NCPNormal) {
-            this.updateManagedSneak(this.isOverEdge()
-                || this.edgeDistance(this.movementDirection()) < this.jittered(0.32));
-            if (!this.rotate.get()) {
-                this.place(placePos);
-            } else {
-                this.aimAndPlace(placePos);
-            }
-            return;
-        }
-
+        // Sneaking at the edge is now strictly opt-in. It used to be forced on by the NCP profile
+        // and by the bridge modes, and it put "sneaking=true" on every Grim packet-order flag:
+        // PacketOrderE reports any held-item change while a flag is set, and PacketOrderF reports
+        // placing while it is set. A flag the player did not ask for, on every placement.
         this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
 
         // Expand/VulcanExpand were removed: they placed extra blocks per tick, which no cadence
@@ -398,12 +387,9 @@ public class Scaffold extends Module {
             return;
         }
 
-        Vec3 direction = this.movementDirection();
-        boolean nearEdge = this.isOverEdge()
-            || (direction.lengthSqr() > 1.0E-4 && this.edgeDistance(direction) < this.jittered(0.38));
-        this.updateManagedSneak(nearEdge);
+        // Also opt-in now, for the same reason as tickStandardMode.
+        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
 
-        // A low acceleration curve is intentional: no one-frame 180/90 degree snap.
         if (!this.rotate.get()) {
             this.place(target);
         } else {
@@ -412,55 +398,20 @@ public class Scaffold extends Module {
     }
 
     private void tickBridgeMode() {
-        Vec3 dir = this.movementDirection();
-        if (dir.lengthSqr() < 1.0E-4) {
-            this.releaseManagedSneak();
-            return;
-        }
-
-        if (this.bridgeStrafeAssist.get()) {
-            float yaw = this.mc.player.getYRot();
-            float snappedYaw = Math.round(yaw / 45.0F) * 45.0F;
-            if (Math.abs(yaw - snappedYaw) < 15.0F) {
-                this.mc.player.setYRot(snappedYaw);
-            }
-        }
-
-        boolean edge = this.edgeDistance(dir) <= this.jittered(this.bridgeEdgeThreshold.get());
-        Scaffold.Technique tech = this.technique.get();
-
-        if (!edge) {
-            this.releaseManagedSneak();
-        } else {
-            if (!this.mc.player.onGround()) {
-                this.pressManagedSneak();
-            }
-
-            boolean shouldPlace = this.bridgePlaceAssist.get();
-            if (shouldPlace) {
-                BlockPos target = BlockPos.containing(this.mc.player.getX() + dir.x * 0.65, this.blockY(), this.mc.player.getZ() + dir.z * 0.65);
-                float oldYaw = this.mc.player.getYRot();
-                float oldPitch = this.mc.player.getXRot();
-
-                if (this.bridgePitchAssist.get() && (tech == Scaffold.Technique.VapeBridge)) {
-                    if (this.mc.player.getXRot() < 65.0F && !this.rotate.get()) {
-                        this.mc.player.setXRot(75.5F);
-                    }
-                }
-
-                boolean placed = this.place(target);
-                if (this.bridgeCameraStabilisation.get() && (tech == Scaffold.Technique.BridgeMacro || tech == Scaffold.Technique.VapeBridge)) {
-                    this.mc.player.setYRot(oldYaw);
-                    this.mc.player.setXRot(oldPitch);
-                    this.mc.player.yRotO = oldYaw;
-                    this.mc.player.xRotO = oldPitch;
-                }
-
-                if (placed && (tech == Scaffold.Technique.BridgeMacro || tech == Scaffold.Technique.VapeBridge)) {
-                    this.releaseManagedSneak();
-                }
-            }
-        }
+        // Nothing left here, deliberately.
+        //
+        // This used to snap the player's yaw to the nearest 45 degrees, force pitch to 75.5, place
+        // a cell 0.65 blocks AHEAD of the player rather than the one underfoot, and then restore
+        // the old yaw and pitch in the same tick. It also called place() directly, skipping the
+        // rotation that Grim validates, and force-pressed sneak while doing it.
+        //
+        // Four separate problems, all reported by the player as one: the camera was being fought
+        // over, holding S did not walk in a straight line because the yaw kept snapping, correcting
+        // it by hand produced wild rotations, and the forced sneak put "sneaking=true" on every
+        // single Grim packet-order flag.
+        //
+        // Every technique now places the cell underfoot through the same path.
+        this.tickStandardMode();
     }
 
     private Vec3 movementDirection() {
@@ -512,9 +463,9 @@ public class Scaffold extends Module {
      *       target by most of 180 degrees. The debug log caught it - the face pitch alternated
      *       between 62.5 and 56.9 on alternating ticks, and every one of those flips lined up with
      *       a {@code RotationPlace} flag.</li>
-     *   <li>The approach is eased rather than stepped, so the rotation fades in off the old target
-     *       and decelerates onto the face. {@link AimEase} already carries a velocity ramp with
-     *       ease-out near the target, so it is reused instead of adding a second curve.</li>
+     *   <li>Only the camera eases. The server rotation is snapped to the face, because
+     *       AntiCheat-Addition's {@code ScaffoldRotation} scores rotation variance and a multi-tick
+     *       approach reads as random aiming. See {@link #serverAimAt}.</li>
      * </ul>
      */
     private void aimAndPlace(BlockPos pos) {
@@ -523,21 +474,61 @@ public class Scaffold extends Module {
         // and clicking anyway is exactly what Grim's AirLiquidPlace reports. The per-tick debug
         // log showed those two facts side by side - "side=NULL canPlace=true" on the very ticks
         // the flag arrived - and also showed the module retrying the same dead cell forever.
-        if (!ScaffoldAim.hasSupport(BlockUtils.canPlace(pos), BlockUtils.getPlaceSide(pos) != null)) {
+        Direction side = BlockUtils.getPlaceSide(pos);
+        if (side == null || !BlockUtils.canPlace(pos)) {
             return;
         }
 
-        // The camera follows the same face aim, eased and slower than the server rotation so it
-        // reads as a look rather than a lock. GCD-quantised, because every delta a real mouse
-        // emits is a whole multiple of the sensitivity grid.
+        // The block the placement is made against. Grim's RotationPlace ray-traces against this
+        // one: Grim's BlockPlace.position is the block that was clicked, and the one being placed
+        // is that plus the face normal.
+        BlockPos support = pos.relative(side);
+
+        // The camera is the rotation, and the server is told the same angle. Whatever the camera
+        // holds is what the server is told, so the movement the client computes and the movement
+        // the server predicts are the same movement.
         float[] face = this.faceAimAt(pos);
         this.easeCameraOnto(face);
 
-        float[] aim = this.serverAimAt(pos);
+        this.lastServerYaw = Rotations.serverYaw;
+        this.lastServerPitch = Rotations.serverPitch;
 
-        // Only place once the rotation has actually arrived; PreRotate enforces the tolerance and
-        // defers the interaction to SendMovementPacketsEvent.Pre so it leaves before the packet.
-        PreRotate.rotateThen(this, aim[0], aim[1], () -> this.place(pos));
+        // The server is told the aim, and the placement goes out one tick later, once the server
+        // has actually received that rotation. Grim judges the placement against the rotation the
+        // server holds at that moment, so that is the angle the ray has to be tested against -
+        // and it is tested at that moment rather than guessed at here.
+        PreRotate.rotateThen(this, face[0], face[1], () -> {
+            if (this.rayReachesSupport(support)) {
+                this.place(pos);
+            }
+        });
+    }
+
+    /**
+     * Whether the ray the server is currently being told actually reaches the block being placed
+     * against.
+     *
+     * <p>Grim's {@code RotationPlace} ray-traces along the server's rotation and asks whether the
+     * ray reaches the block that was clicked - and Grim's {@code BlockPlace.position} is the block
+     * that was clicked, not the one being placed. So this is the same question Grim asks, asked at
+     * the moment Grim would ask it.</p>
+     *
+     * <p>An angle tolerance cannot express it. The face is nearly underfoot - the eye about 1.6
+     * blocks above it and a third of a block away - so the ray is very steep and a couple of
+     * degrees of pitch error moves the landing point half a block, from the middle of the face to
+     * its top edge. Grim's own escape hatch is no help either: its movement threshold is 0.0002
+     * blocks on 1.9+ clients, so the eye-box overlap that lets a near miss through is worth
+     * nothing.</p>
+     */
+    private boolean rayReachesSupport(BlockPos support) {
+        if (this.mc.player == null) return false;
+
+        Vec3 eye = this.mc.player.getEyePosition();
+
+        return GrimRay.rotationPlaceWouldPass(eye.x, eye.z, this.mc.player.getY(),
+            Rotations.serverYaw, Rotations.serverPitch, this.lastServerYaw, this.lastServerPitch,
+            support.getX(), support.getY(), support.getZ(),
+            support.getX() + 1.0D, support.getY() + 1.0D, support.getZ() + 1.0D);
     }
 
     /**
@@ -548,76 +539,83 @@ public class Scaffold extends Module {
      * arbitrary float written straight to {@code setYRot} is an angle no mouse could produce,
      * which is precisely what rotation checks fingerprint.</p>
      */
-    private void easeCameraOnto(float[] face) {
-        if (!this.cameraFollow.get() || this.mc.player == null) return;
+    /**
+     * Eases the camera onto the placement face and returns the angle it landed on.
+     *
+     * <p>This is now the single source of truth for the rotation, and that is the whole point of the
+     * change. Meteor's own {@code Rotations} does this:</p>
+     *
+     * <pre>{@code
+     *   private static void setClientRotation(Rotation rotation) {
+     *       preYaw = mc.player.getYRot();      // remember the player's own camera
+     *       mc.player.setYRot(rotation.yaw);   // snap the camera onto the spoofed rotation
+     *       mc.player.setXRot(rotation.pitch);
+     *   }
+     * }</pre>
+     *
+     * <p>and restores {@code preYaw} once the packet is away. So Meteor moved the camera to the
+     * placement angle for the movement packet and then put the player's own angle back - the "the
+     * camera snaps back to the normal camera of the user" that was reported. The consequence is
+     * worse than it looks: {@code aiStep} computes the player's movement from the camera
+     * <em>after</em> that restore, while the movement packet carries the spoofed angle. The server
+     * predicts from one angle and the client walks according to another, and Grim reports the
+     * difference as {@code Simulation}. Seventy-four of them in the run that found this.</p>
+     *
+     * <p>So the camera is written here, once, and the same angle is what the server is told. The
+     * camera is already the value Meteor is about to write, so its snap is a no-op, and the value
+     * it restores is the one just written, so that is a no-op too. The camera and the packet agree
+     * at every moment of the tick, which is what the movement prediction needs.</p>
+     *
+     * <p>The approach itself takes a fixed share of the remaining gap, which cannot overshoot,
+     * reverse or oscillate - each tick leaves exactly {@code 1 - AIM_SMOOTH} of the error behind.
+     * Ease-in and ease-out both fall out of the gap shrinking, and there is no velocity state left
+     * to carry, reset or get wrong.</p>
+     *
+     * @return the yaw and pitch the camera now holds, which is also what the server is told
+     */
+    private float[] easeCameraOnto(float[] face) {
+        if (this.mc.player == null) return face;
 
-        float yaw = this.mc.player.getYRot();
-        float pitch = this.mc.player.getXRot();
-        float yawDelta = wrapDegrees(face[0] - yaw);
-        float pitchDelta = face[1] - pitch;
+        // The camera is written to exactly the angle the server is told.
+        //
+        // It used to be eased separately, and that was the "the camera snaps back to the normal
+        // camera of the user". Meteor's Rotations writes the server's angle onto the camera for
+        // the movement packet and puts the camera back afterwards, so a camera that held a
+        // different angle from the one being sent was snapped to it and back on every single
+        // tick. The live log showed the three values apart - the camera at 81 degrees, the server
+        // at 87, the raw aim at 89 - and the camera could never settle because it was being
+        // overwritten from two directions at once.
+        //
+        // So there is one angle now, smoothed once where it is computed, and the camera and the
+        // server are both given it. Meteor's snap is then a no-op, because it is writing the value
+        // that is already there.
+        this.mc.player.setYRot(face[0]);
+        this.mc.player.setXRot(face[1]);
 
-        float yawStep = AimEase.step(yawDelta, this.maxAimStep() * 0.6F, this.camYawVelocity,
-            CAPTURE_DEGREES, this.aimNoise());
-        float pitchStep = AimEase.step(pitchDelta, this.maxAimStep() * 0.35F, this.camPitchVelocity,
-            CAPTURE_DEGREES, this.aimNoise());
-
-        this.camYawVelocity = AimEase.nextVelocity(yawDelta, this.maxAimStep() * 0.6F,
-            this.camYawVelocity, CAPTURE_DEGREES, 0.0F);
-        this.camPitchVelocity = AimEase.nextVelocity(pitchDelta, this.maxAimStep() * 0.35F,
-            this.camPitchVelocity, CAPTURE_DEGREES, 0.0F);
-
-        double sensitivity = this.mc.options.sensitivity().get();
-
-        // The yaw is written UNWRAPPED, deliberately. Grim's AimModulo360 is not a range check: it flags
-        // |yaw| < 360 together with |deltaYaw| > 320 in a single tick, i.e. a client that reports a
-        // wrapped value where vanilla would report an unwrapped one. Entity.turn never wraps yaw;
-        // only pitch is clamped. Wrapping here would manufacture exactly the +-360 jump that check
-        // exists to catch, so the eased value is stored as-is and wrapDegrees is applied to the
-        // remaining error instead - which is what makes the approach take the short way round.
-        this.mc.player.setYRot(yaw + RotationGcd.quantize(sensitivity, yawStep));
-        this.mc.player.setXRot(clamp(pitch + pitchStep, -90.0F, 90.0F));
+        return face;
     }
-
     /**
      /**
-     * The exact yaw and pitch of the placement face, for the server.
-     *
-     * <p>Snapped, not eased, and deliberately so. Easing the <em>server</em> rotation was tried and
-     * reverted against a live run. Two independent pieces of evidence say it costs more than it
-     * buys:</p>
-     *
-     * <ul>
-     *   <li>AntiCheat-Addition's {@code ScaffoldRotation} scores rotation <em>variance</em> - a change
-     *       of 35 degrees or more inside two ticks, more than 360 degrees of summed change, or a
-     *       variance above 70, which its own source comments describe as "sending random rotations
-     *       <em>or is perfectly aiming at blocks</em>". An eased approach spends several ticks inside
-     *       that window on every single block. The debug log from that run showed the face pitch
-     *       alternating 62.5 then 56.9 on consecutive ticks with yaw moving 22 to 24 degrees per
-     *       tick, which is precisely the pattern the check scores.</li>
-     *   <li>Grim's {@code RotationPlace} retries on the tick <em>before</em> the place while the
-     *       rotation is still moving. A slow approach keeps the ray off the block for longer, which
-     *       is how it went from firing once to firing on every placement.</li>
-     * </ul>
-     *
-     * <p>Both reference implementations agree: Meteor's scaffold sends
-     * {@code Mth.wrapDegrees(target - current)} directly, and LiquidBounce's
-     * {@code FaceTargetPositionFactory} returns a point on the face with no smoothing at all. Grim
-     * explicitly tolerates rotation and place in the same tick - {@code CheckManagerListener} adopts
-     * a rotation packet that arrives within 15 ms of the place - which is what {@link PreRotate}
-     * already arranges.</p>
-     *
-     * <p>The visible easing the player cares about is not lost; it moved to the camera, which is
-     * what they actually see. See {@link #easeCameraOnto}.</p>
-     */
-    private float[] serverAimAt(BlockPos pos) {
-        return this.faceAimAt(pos);
-    }
-
-    /**
-     * Yaw and pitch onto the centre of the placement face, without touching the camera.
+             /**
+     * Yaw and pitch onto the face the placement clicks, smoothed.
      *
      * <p>Uses Meteor's own side resolution so the face is the one the placement would actually use.
-     * See {@link ScaffoldAim}.</p>
+     * See {@link ScaffoldAim}, which documents the direction convention this depends on.</p>
+     *
+     * <p>The yaw is the heading of the support's side rather than the geometric angle to the click
+     * point. The point is half a block from the player's feet, so the angle to it is measured
+     * against a horizontal offset of a few tenths of a block and swings ten to seventeen degrees
+     * for a fraction of a block of movement. Since the camera is what the movement is computed
+     * from, a camera chasing that swings with it, and the two chase each other: the live log
+     * caught the result as a pendulum, thirty degrees either side of the target, one swing every
+     * ten ticks. The support's side does not move while the player walks, so the camera settles on
+     * it instead.</p>
+     *
+     * <p>The result is smoothed rather than exact, and the smoothing is what makes the view smooth.
+     * It has to be here rather than in the camera, because the camera and the rotation the server
+     * is told have to be the same angle - Meteor writes the server's angle onto the camera for the
+     * movement packet and puts the camera back afterwards, so any difference between the two shows
+     * up as the camera snapping and snapping back. One value, smoothed once, feeds both.</p>
      */
     private float[] faceAimAt(BlockPos pos) {
         Vec3 eyes = this.mc.player.getEyePosition();
@@ -630,17 +628,42 @@ public class Scaffold extends Module {
             side.getStepX(), side.getStepY(), side.getStepZ()
         };
 
-        double[] point = ScaffoldAim.aimPoint(pos.getX(), pos.getY(), pos.getZ(), normal, 0.4);
+        double[] point = ScaffoldAim.aimPoint(pos.getX(), pos.getY(), pos.getZ(), normal, 0.5);
 
         double dx = point[0] - eyes.x;
         double dy = point[1] - eyes.y;
         double dz = point[2] - eyes.z;
-        double horizontal = Math.sqrt(dx * dx + dz * dz);
 
-        return new float[] {
-            (float)Math.toDegrees(Math.atan2(-dx, dz)),
-            (float)-Math.toDegrees(Math.atan2(dy, horizontal))
-        };
+        // A vertical face has no heading of its own, so the current one is kept; a horizontal one
+        // gets the stable heading of the support's side.
+        float heading = ScaffoldAim.headingFor(normal);
+        if (Float.isNaN(heading)) {
+            heading = this.mc.player.getYRot();
+        }
+
+        float pitch = ScaffoldAim.pitchAlong(heading, dx, dy, dz);
+
+        // The smoothing. A share of the remaining gap, so the result can never overshoot, and the
+        // motion is a continuous function of where the player is rather than a fresh target every
+        // tick - which, at the frame rates this client actually runs, is the difference between a
+        // view that glides and one that jumps.
+        //
+        // The first-call test has to be Float.isNaN and not an equality comparison. NaN is not
+        // equal to itself, so `smoothedYaw == Float.NaN` is never true, the initialisation never
+        // ran, and the aim was NaN from the first tick onwards. The server discarded every
+        // rotation - "Invalid entity rotation: NaN, discarding." - so the module stopped placing
+        // blocks entirely and the camera sat wherever the player had left it.
+        if (Float.isNaN(this.smoothedYaw)) {
+            this.smoothedYaw = heading;
+            this.smoothedPitch = pitch;
+        } else {
+            this.smoothedYaw = this.smoothedYaw
+                + wrapDegrees(heading - this.smoothedYaw) * AIM_SMOOTH;
+            this.smoothedPitch = this.smoothedPitch
+                + (pitch - this.smoothedPitch) * AIM_SMOOTH_PITCH;
+        }
+
+        return new float[] {this.smoothedYaw, this.smoothedPitch};
     }
 
     /**
@@ -656,13 +679,6 @@ public class Scaffold extends Module {
     private float maxAimStep() {
         return (float) (double) this.cameraSpeed.get();
     }
-
-    /** Signed jitter for the easing, so a sweep never runs at an exactly constant rate. */
-    private float aimNoise() {
-        return (float) (this.random.nextGaussian() * 0.25);
-    }
-
-    /** Signed jitter, used to break up constant-rate sweeps. */
 
     /** Threshold with per-evaluation variance, so the crouch is not metronomic. */
     private double jittered(double base) {
@@ -681,38 +697,28 @@ public class Scaffold extends Module {
     }
 
     private int blockY() {
-        return (this.sameY.get() && this.targetY != -1) ? this.targetY : (int)Math.floor(this.mc.player.getY() - 1.0);
+        return this.targetY != -1 ? this.targetY : (int)Math.floor(this.mc.player.getY() - 1.0);
     }
 
     private BlockPos getPlacePos() {
         int y = this.blockY();
         BlockPos below = BlockPos.containing(this.mc.player.getX(), y, this.mc.player.getZ());
-        if (this.isSupported(below)) {
-            return below;
-        }
 
-        for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
-            BlockPos check = below.relative(dir);
-            if (!this.isSupported(check)) {
-                continue;
-            }
-
-            double px = this.mc.player.getX() - Math.floor(this.mc.player.getX());
-            double pz = this.mc.player.getZ() - Math.floor(this.mc.player.getZ());
-
-            boolean near = switch (dir) {
-                case NORTH -> pz < 0.3;
-                case SOUTH -> pz > 0.7;
-                case EAST -> px > 0.7;
-                case WEST -> px < 0.3;
-                default -> false;
-            };
-            if (near) {
-                return check;
-            }
-        }
-
-        return null;
+        // Only the cell directly underfoot. Sideways candidates used to be considered here, and
+        // that was the expand technique - it was asked for removal once and survived anyway.
+        //
+        // It is also what Grim's PositionPlace reports, "Placed a block against a hidden face".
+        // The check asks whether the eye is on the outward side of the face that was clicked:
+        //
+        //   NORTH -> eye.minZ > box.minZ      SOUTH -> eye.maxZ < box.maxZ
+        //   EAST  -> eye.maxX < box.maxX      WEST  -> eye.minX > box.minX
+        //
+        // Placing the cell north of the bridge means clicking the support's south face while
+        // standing north of it, which is exactly that condition, and the live log showed
+        // side=north on nearly every tick alongside eleven PositionPlace flags. Filling the cell
+        // underfoot always clicks a downward face, which the eye is always above, so it cannot
+        // fail this check at all.
+        return this.isSupported(below) ? below : null;
     }
 
     /**
@@ -766,7 +772,17 @@ public class Scaffold extends Module {
  * be reintroduced by a call site that forgets.</p>
  */
     private boolean place(BlockPos pos) {
-        if (this.mc.player == null || this.mc.level == null || this.placeCooldown > 0) {
+        if (this.mc.player == null || this.mc.level == null) {
+            return false;
+        }
+
+        // Wall-clock, not ticks. A tick-counted cooldown assumes 20 TPS, and this client does not
+        // run at 20: five ticks is 250ms at 20 FPS and 1250ms at 4 FPS, and a jump is over long
+        // before that. The live log caught the consequence - the player jumped while bridging,
+        // the block underneath was still inside the cooldown from the previous placement, and they
+        // fell off the bridge.
+        long now = this.nowMs();
+        if (now < this.nextPlaceAtMs) {
             return false;
         }
 
@@ -775,29 +791,21 @@ public class Scaffold extends Module {
             return false;
         }
 
-        if (pos.equals(this.lastAttemptPos)) {
-            this.repeatedAttempts++;
-        } else {
-            this.lastAttemptPos = pos;
-            this.repeatedAttempts = 0;
-        }
-
         int delay = this.techniqueDelay();
-        if (this.repeatedAttempts > 0 && this.repeatedAttempts % delay != 0) {
-            return false;
-        }
+        double gap = ScaffoldCadence.delayMillis(delay, this.random.nextInt(ScaffoldCadence.CADENCE_JITTER_MS + 1));
 
         if (this.isSupported(pos)) {
             if (BlockUtils.place(pos, block, false, 10, this.swing.get(), true)) {
                 // Jitter only ever lengthens the gap, never shortens it, so bridging stays at
                 // least as reliable as the fixed cadence while no longer being metronomic.
-                this.placeCooldown = ScaffoldCadence.cooldownTicks(
-                    delay, this.random.nextInt(CADENCE_JITTER_TICKS + 1), CADENCE_JITTER_TICKS);
+                this.nextPlaceAtMs = now + (long) gap;
                 return true;
             }
         }
 
-        this.placeCooldown = Math.max(1, delay / 2);
+        // A failed placement retries sooner than a successful one: the cell may become placeable
+        // as soon as the block arrives, and a jump is not long.
+        this.nextPlaceAtMs = now + RETRY_DELAY_MS;
         return false;
     }
 

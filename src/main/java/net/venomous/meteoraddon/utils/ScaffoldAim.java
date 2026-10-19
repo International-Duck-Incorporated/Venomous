@@ -43,8 +43,8 @@ public final class ScaffoldAim {
      * crashed the client with a NullPointerException.</p>
      *
      * @param blockX/Y/Z the block being placed, in block coordinates
-     * @param normal     unit face normal from the support towards the new block, or {@code null}
-     * @param halfExtent 0.5 for a full block; the face spans {@code [-half, +half]} per axis
+     * @param normal     unit face normal from the placed block towards its support, or {@code null}
+     * @param halfExtent 0.5 for a full block; 0 aims at the block's centre instead
      */
     public static double[] aimPoint(double blockX, double blockY, double blockZ, double[] normal,
                                     double halfExtent) {
@@ -54,8 +54,7 @@ public final class ScaffoldAim {
             return new double[] {blockX + 0.5, blockY + 0.5, blockZ + 0.5};
         }
 
-        return sharedFaceCentre(
-            blockX - normal[0], blockY - normal[1], blockZ - normal[2], normal, halfExtent);
+        return clickPoint(blockX, blockY, blockZ, normal, halfExtent);
     }
 
     /**
@@ -71,17 +70,78 @@ public final class ScaffoldAim {
     }
 
     /**
-     * The face centre shared by a support block and the block being placed against it.
+     * The centre of the face of {@code pos} that the placement clicks.
      *
-     * <p>{@code support} is the existing block; {@code normal} points from the support towards the
-     * new block. The shared face sits half a block along the normal from the support's centre.</p>
+     * <p>{@code normal} is Meteor's {@code BlockUtils.getPlaceSide} result, which points
+     * <em>from the block being placed towards the block supporting it</em>. That direction is the
+     * one thing about this call that has to be exactly right, and it was wrong for a long time: the
+     * support is {@code pos + normal}, not {@code pos - normal}, so treating the normal as
+     * support-to-block put the aim a full block past the target, out on the empty side.
+     * {@code BlockUtils.place} builds its hit position as {@code atCenterOf(pos)} plus half a
+     * block along that same normal, and this is that expression.</p>
+     *
+     * <p>The point sits on the face the placement shares with its support, which is also the point
+     * a person clicks and the first thing the ray leaves the eye towards.</p>
      */
-    public static double[] sharedFaceCentre(double supportX, double supportY, double supportZ,
-                                            double[] normal, double halfExtent) {
+    public static double[] clickPoint(double blockX, double blockY, double blockZ, double[] normal,
+                                      double halfExtent) {
         return new double[] {
-            supportX + 0.5 + normal[0] * halfExtent,
-            supportY + 0.5 + normal[1] * halfExtent,
-            supportZ + 0.5 + normal[2] * halfExtent
+            blockX + 0.5 + normal[0] * halfExtent,
+            blockY + 0.5 + normal[1] * halfExtent,
+            blockZ + 0.5 + normal[2] * halfExtent
         };
+    }
+
+    /**
+     * The yaw to look at a face whose normal is horizontal.
+     *
+     * <p>This is the heading of the support's side, and it is deliberately a discrete answer rather
+     * than a computed angle. The placement face is half a block from the player's feet, so the
+     * angle to it is measured against a horizontal offset of a few tenths of a block: the
+     * geometric yaw to it swings by ten to seventeen degrees for a fraction of a block of movement,
+     * and it swings in whichever direction the player happens to be drifting.</p>
+     *
+     * <p>That matters because the camera and the rotation the server is told are the same angle,
+     * and the camera is what the movement is computed from. A camera that chases a noisy target is
+     * a feedback loop: the camera turns, the player walks a different way, the target moves, the
+     * camera turns further. The live log caught that loop as a pendulum swinging thirty degrees
+     * either side of the target, one swing every ten ticks.</p>
+     *
+     * <p>The side of the support does not move as the player walks - it only changes when the
+     * bridge advances a block - so this heading is stable, and the camera settles on it instead
+     * of chasing itself.</p>
+     *
+     * @param normal the face normal, as returned by Meteor's place-side resolution
+     * @return the yaw that faces that normal, in Minecraft's convention
+     */
+    public static float headingFor(double[] normal) {
+        if (normal == null || normal[1] != 0.0D) {
+            // A vertical face has no heading of its own; the caller keeps the current one.
+            return Float.NaN;
+        }
+
+        if (normal[2] < 0.0D) return 180.0F;   // north
+        if (normal[2] > 0.0D) return 0.0F;     // south
+        if (normal[0] > 0.0D) return -90.0F;   // east
+        return 90.0F;                          // west
+    }
+
+    /**
+     * The pitch that looks at a point along a given heading.
+     *
+     * <p>The horizontal distance is measured <em>along the heading</em>, not as the straight-line
+     * distance to the point. For a vertical face that is the perpendicular distance to the face
+     * plane, which is what decides whether the ray lands on the face or slides off it, and it is
+     * stable however the player is positioned across the face.</p>
+     */
+    public static float pitchAlong(double yaw, double dx, double dy, double dz) {
+        double radians = Math.toRadians(yaw);
+        double forwardX = -Math.sin(radians);
+        double forwardZ = Math.cos(radians);
+
+        double along = dx * forwardX + dz * forwardZ;
+        if (Math.abs(along) < 1.0E-6D) along = Math.copySign(1.0E-6D, along);
+
+        return (float) -Math.toDegrees(Math.atan2(dy, along));
     }
 }

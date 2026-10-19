@@ -53,7 +53,12 @@ public class ScaffoldPlacementOrderTest {
     void blockUtilsIsNeverAskedToRotate() throws IOException {
         String code = code(scaffoldSource());
 
-        Matcher matcher = Pattern.compile("BlockUtils\\.place\\s*\\(([^;]*?)\\)\\s*;").matcher(code);
+        // The argument list ends at the first ')' that is followed by the end of the statement -
+        // a ';' for an expression, a '{' for an if. Matching on ');' alone was how this guard
+        // passed for the wrong reason: it ran on to a ');' somewhere later in the method and only
+        // matched because that happened to exist. The call is now an if-block, and the call has to
+        // be found where it is rather than wherever a stray semicolon turned up.
+        Matcher matcher = Pattern.compile("BlockUtils\\.place\\s*\\(([^;{}]*?)\\)\\s*[;{]").matcher(code);
 
         int calls = 0;
         while (matcher.find()) {
@@ -86,7 +91,7 @@ public class ScaffoldPlacementOrderTest {
     void rotationAndPlaceGoesThroughPreRotate() throws IOException {
         String code = code(scaffoldSource());
 
-        assertTrue(code.contains("PreRotate.rotateThen(this, aim[0], aim[1], () -> this.place(pos))"),
+        assertTrue(code.contains("PreRotate.rotateThen(this, face[0], face[1], () -> {"),
             "aimAndPlace must defer the placement through PreRotate so it leaves before the "
                 + "movement packet, not after it.");
     }

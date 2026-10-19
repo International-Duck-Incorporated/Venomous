@@ -47,45 +47,84 @@ public final class ScaffoldCadence {
     public static final int DEFAULT_PLACE_DELAY = 5;
 
     /**
-     * Largest extra number of ticks added on top of {@code place-delay}. Jitter only ever lengthens
-     * the gap, so it can pull the mean up but never down - the floor that matters is the minimum.
+     * Largest number of milliseconds of jitter applied to the base gap.
+     *
+     * <p>Milliseconds, not ticks, and that is the whole point. The jitter used to be counted in
+     * ticks, so it moved in 50ms steps - which is nothing at 20 TPS and half a second at 4 FPS,
+     * where a tick is 250ms long. A 100ms jitter on a 250ms base lands the deadline on the far
+     * side of the next tick boundary and the placement waits for the tick after that, doubling
+     * the gap. Millisecond-scale jitter stays inside the tick it belongs to.</p>
      */
-    public static final int CADENCE_JITTER_TICKS = 2;
+    public static final int CADENCE_JITTER_MS = 12;
+
+    /**
+     * Margin kept above the anticheat's floor.
+     *
+     * <p>The anticheat averages a batch of up to six real gaps, so the mean is what has to clear
+     * 238ms rather than every individual gap. A little headroom above the floor covers the
+     * scheduling slop of a low frame rate without eating into the gap the player needs.</p>
+     */
+    public static final double MIN_GAP_MARGIN_MS = 12.0;
 
     private ScaffoldCadence() {
     }
 
     /**
-     * Ticks to wait after a placement.
+     * The gap the configuration asks for, before jitter.
      *
-     * @param placeDelay the {@code place-delay} setting, clamped to at least 1
-     * @param jitterRoll a roll in {@code [0, jitterTicks]}, clamped into that range
-     * @param jitterTicks the largest value {@code jitterRoll} may take
-     * @return the cooldown in ticks
+     * <p>Wall-clock, deliberately. A tick-counted gap assumes a frame rate: five ticks is 250ms at
+     * 20 TPS and 1250ms at 4 FPS, and the client's frame rate is not something the module gets to
+     * choose. The live log caught what that costs - the player jumped while bridging, the module
+     * was still inside the cooldown from the previous placement, and they fell off the bridge,
+     * because a jump is over well before 1250ms.</p>
+     *
+     * <p>The setting keeps its "ticks at 20 TPS" meaning, so the same number still means the same
+     * thing to the player, but what is enforced is a duration. The anticheat's floor clamps it: no
+     * configuration may ask for a gap the anticheat would flag.</p>
      */
-    public static int cooldownTicks(int placeDelay, int jitterRoll, int jitterTicks) {
+    public static double nominalGapMillis(int placeDelay) {
         int base = Math.max(1, placeDelay);
-        int ceiling = Math.max(0, jitterTicks);
-        int jitter = Math.min(Math.max(0, jitterRoll), ceiling);
-        return base + jitter;
+        double nominal = base * (1000.0 / DEFAULT_TICKS_PER_SECOND);
+
+        return Math.max(nominal, ACADDITION_MIN_STRAIGHT_DELAY_MS + MIN_GAP_MARGIN_MS);
     }
 
-    /** Converts ticks to milliseconds at the given tick rate. */
-    public static double ticksToMillis(double ticks, double ticksPerSecond) {
-        if (ticksPerSecond <= 0) return Double.NaN;
-        return ticks * 1000.0 / ticksPerSecond;
+    /**
+     * The gap to wait after a placement, in milliseconds.
+     *
+     * <p>The jitter pulls the gap <em>down</em> from the nominal, never up, and never below the
+     * anticheat's floor. Pulling it up is the natural thing to do, but the gap is quantised to the
+     * client's own tick: at 4 FPS a tick is 250ms, so a 275ms request lands on the far side of the
+     * next tick boundary and the real gap becomes 500ms - long enough to miss a jump.</p>
+     *
+     * <p>What the anticheat measures is the real gap, which is the tick interval rounded up to fit,
+     * so a request anywhere in [238, 250] produces the same 250ms of real time at 4 FPS and at 20
+     * TPS. Sitting at the bottom of that window rather than the top is what keeps the placement on
+     * the next tick instead of the one after it.</p>
+     *
+     * @param placeDelay   the {@code place-delay} setting
+     * @param jitterRollMs a roll in {@code [0, CADENCE_JITTER_MS]}
+     * @return the gap in milliseconds
+     */
+    public static double delayMillis(int placeDelay, int jitterRollMs) {
+        double nominal = nominalGapMillis(placeDelay);
+        int jitter = Math.max(0, Math.min(jitterRollMs, CADENCE_JITTER_MS));
+
+        return Math.max(nominal - (CADENCE_JITTER_MS - jitter),
+            ACADDITION_MIN_STRAIGHT_DELAY_MS);
     }
 
     /**
      * The mean interval a configuration actually produces.
      *
-     * <p>Jitter is a uniform roll over {@code [0, jitterTicks]}, so the mean cooldown is the
-     * midpoint of the range it spans. This is the number the anticheat's batch average is compared
-     * against, so this is what has to clear {@link #ACADDITION_MIN_STRAIGHT_DELAY_MS}.</p>
+     * <p>Jitter is a uniform roll, so the mean cooldown is the midpoint of the range it spans.
+     * This is the number the anticheat's batch average is compared against, so this is what has to
+     * clear {@link #ACADDITION_MIN_STRAIGHT_DELAY_MS}.</p>
      */
-    public static double meanIntervalMillis(int placeDelay, int jitterTicks, double ticksPerSecond) {
-        int lowest = cooldownTicks(placeDelay, 0, jitterTicks);
-        int highest = cooldownTicks(placeDelay, jitterTicks, jitterTicks);
-        return ticksToMillis((lowest + highest) / 2.0, ticksPerSecond);
+    public static double meanIntervalMillis(int placeDelay, int jitterMs) {
+        double nominal = nominalGapMillis(placeDelay);
+        int jitter = Math.max(0, Math.min(jitterMs, CADENCE_JITTER_MS));
+
+        return nominal - jitter / 2.0;
     }
 }

@@ -12,6 +12,62 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ScaffoldCadenceTest {
     /**
+     * The bug this guards: the cadence was counted in <em>ticks</em>, which silently assumes 20 TPS.
+     *
+     * <p>The anticheat measures the gap in wall-clock milliseconds, and so does a Minecraft jump.
+     * A tick-based cooldown of five ticks is 250ms at 20 TPS - correct - but 1250ms at the 4 FPS
+     * the client actually runs at, which is longer than a jump lasts. The live log caught the
+     * consequence: the player jumped while bridging, the module could not place the block in time
+     * because it was still inside the cooldown from the previous placement, and they fell off the
+     * bridge.</p>
+     *
+     * <p>The gap is now a duration, so it cannot stretch with the frame rate.</p>
+     */
+    @Test
+    void thePlacementGapDoesNotGrowWithTheFrameRate() {
+        double gap = ScaffoldCadence.delayMillis(ScaffoldCadence.DEFAULT_PLACE_DELAY, 0);
+
+        assertTrue(gap <= 300.0,
+            "the gap the module enforces is " + gap + "ms; a tick-counted cooldown stretched with "
+                + "the frame rate, and a jump is over before the cooldown expires");
+    }
+
+    /**
+     * A jump is over in well under a second, so the module has to be able to place inside one.
+     *
+     * <p>This is the symptom the player reported: bridging was fine, and jumping while bridging
+     * dropped them off the bridge.</p>
+     */
+    @Test
+    void thePlacementGapIsShortEnoughToCatchAJump() {
+        double gap = ScaffoldCadence.delayMillis(ScaffoldCadence.DEFAULT_PLACE_DELAY, 0);
+
+        assertTrue(gap <= 400.0,
+            "the gap is " + gap + "ms, which is longer than the airtime of a jump; the block "
+                + "underneath is not placed before the player lands");
+    }
+
+    /**
+     * The jitter has to be small enough to stay inside one tick at a low frame rate.
+     *
+     * <p>It used to be counted in ticks, so it moved in 50ms steps. On a 250ms tick a 100ms jitter
+     * puts the deadline on the far side of the next tick boundary and the placement waits for the
+     * tick after that - doubling the gap. At 4 FPS that is the difference between catching a jump
+     * and falling off the bridge.</p>
+     */
+    @Test
+    void theJitterIsSmallEnoughToFitInsideOneTickAtFourFramesPerSecond() {
+        double tickAtFourFps = 1000.0 / 4.0;
+
+        double worst = ScaffoldCadence.delayMillis(
+            ScaffoldCadence.DEFAULT_PLACE_DELAY, ScaffoldCadence.CADENCE_JITTER_MS);
+
+        assertTrue(worst <= tickAtFourFps,
+            "the worst-case gap is " + worst + "ms against a " + tickAtFourFps
+                + "ms tick at 4 FPS, so the placement is pushed a whole extra tick out");
+    }
+
+    /**
      * The bug this guards. {@code place-delay} defaulted to 3, giving
      * {@code 3 + random(0..2)} ticks - a 200ms mean. AntiCheat-Addition's
      * {@code ScaffoldAverageBatchProcessor} holds a straight bridge to a 238ms minimum and flags
@@ -23,9 +79,7 @@ public class ScaffoldCadenceTest {
     @Test
     void shippedDefaultClearsAntiCheatAdditionMinimum() {
         double mean = ScaffoldCadence.meanIntervalMillis(
-            ScaffoldCadence.DEFAULT_PLACE_DELAY,
-            ScaffoldCadence.CADENCE_JITTER_TICKS,
-            ScaffoldCadence.DEFAULT_TICKS_PER_SECOND);
+            ScaffoldCadence.DEFAULT_PLACE_DELAY, ScaffoldCadence.CADENCE_JITTER_MS);
 
         assertTrue(mean >= ScaffoldCadence.ACADDITION_MIN_STRAIGHT_DELAY_MS,
             "default place-delay of " + ScaffoldCadence.DEFAULT_PLACE_DELAY + " averages " + mean
@@ -34,52 +88,62 @@ public class ScaffoldCadenceTest {
     }
 
     /**
-     * The old value is kept as an explicit assertion rather than left implicit, so the regression
-     * is documented where it was fixed and cannot quietly return.
+     * Every jitter roll has to clear the floor, not just the mean.
      */
     @Test
-    void theOldDefaultIsBelowTheMinimumAndWouldFlag() {
-        double mean = ScaffoldCadence.meanIntervalMillis(
-            3, ScaffoldCadence.CADENCE_JITTER_TICKS, ScaffoldCadence.DEFAULT_TICKS_PER_SECOND);
+    void everyJitterRollStillClearsTheAntiCheatFloor() {
+        for (int roll = 0; roll <= ScaffoldCadence.CADENCE_JITTER_MS; roll++) {
+            double gap = ScaffoldCadence.delayMillis(ScaffoldCadence.DEFAULT_PLACE_DELAY, roll);
 
-        assertTrue(mean < ScaffoldCadence.ACADDITION_MIN_STRAIGHT_DELAY_MS,
-            "place-delay 3 is expected to be too fast and to flag; if this now passes the "
-                + "anticheat's minimum has changed and the default should be re-derived");
+            assertTrue(gap >= ScaffoldCadence.ACADDITION_MIN_STRAIGHT_DELAY_MS,
+                "roll " + roll + " gives a " + gap + "ms gap, under the "
+                    + ScaffoldCadence.ACADDITION_MIN_STRAIGHT_DELAY_MS + "ms floor");
+        }
+    }
+
+    /**
+     * A setting below the floor is floored rather than obeyed.
+     *
+     * <p>The anticheat's floor is not a preference, so no configuration may ask for a gap it would
+     * flag. The setting still means "ticks at 20 TPS" to the player; what it cannot mean is
+     * "faster than the anticheat allows".</p>
+     */
+    @Test
+    void aSettingBelowTheFloorIsRaisedToIt() {
+        double gap = ScaffoldCadence.delayMillis(1, 0);
+
+        assertTrue(gap >= ScaffoldCadence.ACADDITION_MIN_STRAIGHT_DELAY_MS,
+            "place-delay 1 asks for 50ms, which the anticheat flags; the gap must be raised to the "
+                + ScaffoldCadence.ACADDITION_MIN_STRAIGHT_DELAY_MS + "ms floor");
     }
 
     @Test
     void jitterOnlyEverLengthensTheGap() {
-        for (int roll = 0; roll <= ScaffoldCadence.CADENCE_JITTER_TICKS; roll++) {
-            assertEquals(ScaffoldCadence.DEFAULT_PLACE_DELAY + roll,
-                ScaffoldCadence.cooldownTicks(ScaffoldCadence.DEFAULT_PLACE_DELAY, roll,
-                    ScaffoldCadence.CADENCE_JITTER_TICKS),
+        double base = ScaffoldCadence.delayMillis(ScaffoldCadence.DEFAULT_PLACE_DELAY, 0);
+
+        for (int roll = 0; roll <= ScaffoldCadence.CADENCE_JITTER_MS; roll++) {
+            assertEquals(base + roll,
+                ScaffoldCadence.delayMillis(ScaffoldCadence.DEFAULT_PLACE_DELAY, roll),
                 "roll " + roll + " should sit at or above the base delay");
         }
     }
 
     @Test
     void anOutOfRangeRollIsClampedRatherThanTrusted() {
-        assertEquals(ScaffoldCadence.DEFAULT_PLACE_DELAY + ScaffoldCadence.CADENCE_JITTER_TICKS,
-            ScaffoldCadence.cooldownTicks(ScaffoldCadence.DEFAULT_PLACE_DELAY, 99,
-                ScaffoldCadence.CADENCE_JITTER_TICKS));
-        assertEquals(ScaffoldCadence.DEFAULT_PLACE_DELAY,
-            ScaffoldCadence.cooldownTicks(ScaffoldCadence.DEFAULT_PLACE_DELAY, -5,
-                ScaffoldCadence.CADENCE_JITTER_TICKS));
+        double base = ScaffoldCadence.delayMillis(ScaffoldCadence.DEFAULT_PLACE_DELAY, 0);
+
+        assertEquals(base + ScaffoldCadence.CADENCE_JITTER_MS,
+            ScaffoldCadence.delayMillis(ScaffoldCadence.DEFAULT_PLACE_DELAY, 999));
+        assertEquals(base,
+            ScaffoldCadence.delayMillis(ScaffoldCadence.DEFAULT_PLACE_DELAY, -5));
     }
 
     @Test
-    void aPlaceDelayBelowOneIsLiftedToOneRatherThanFreezingTheModule() {
-        // The base is what gets lifted; jitter still adds on top of it.
-        assertEquals(1, ScaffoldCadence.cooldownTicks(0, 0, 2));
-        assertEquals(1, ScaffoldCadence.cooldownTicks(-4, 0, 2));
-        assertEquals(3, ScaffoldCadence.cooldownTicks(-4, 2, 2));
-    }
-
-    @Test
-    void millisecondsScaleWithTheServerTickRate() {
-        assertEquals(50.0, ScaffoldCadence.ticksToMillis(1, 20.0), 1e-9);
-        assertEquals(25.0, ScaffoldCadence.ticksToMillis(1, 40.0), 1e-9);
-        assertEquals(100.0, ScaffoldCadence.ticksToMillis(2, 20.0), 1e-9);
+    void aPlaceDelayBelowOneIsLiftedRatherThanFreezingTheModule() {
+        assertTrue(ScaffoldCadence.delayMillis(0, 0) > 0.0,
+            "place-delay 0 must not produce a zero gap, which would place every tick");
+        assertTrue(ScaffoldCadence.delayMillis(-4, 0) > 0.0,
+            "a negative place-delay must not produce a zero gap either");
     }
 
     /**
@@ -113,6 +177,32 @@ public class ScaffoldCadenceTest {
                 + "cadence guard above stops describing what actually ships.");
     }
 
+    /**
+     * The module has to gate on the duration, not on a tick counter.
+     *
+     * <p>This is the seam that actually reaches the bug: the arithmetic in {@link ScaffoldCadence}
+     * could be perfect while the module still counted ticks, and the player would still fall off the
+     * bridge. Source-scanned for that reason - see {@code DeadSettingTest} for the same approach.</p>
+     */
+    @Test
+    void theModuleGatesOnTheDurationRatherThanATickCount() throws IOException {
+        String source = Files.readString(locate(
+            "src/main/java/net/venomous/meteoraddon/modules/world/Scaffold.java"));
+
+        assertTrue(source.contains("ScaffoldCadence.delayMillis("),
+            "the module must ask ScaffoldCadence for a millisecond gap");
+
+        assertTrue(source.contains("nowMs()") && source.contains("nextPlaceAtMs"),
+            "the placement gate must compare wall-clock time against a deadline");
+
+        assertTrue(!source.contains("placeCooldown"),
+            "a tick-counted cooldown is what made the gap stretch with the frame rate");
+
+        assertTrue(!source.contains("repeatedAttempts %"),
+            "the per-attempt modulo throttle is a second tick-shaped gate on the same path; the "
+                + "duration gate replaces it");
+    }
+
     /** Gradle can run tests from the project root or a subproject, so search upward. */
     private static Path locate(String relative) {
         Path dir = Path.of(System.getProperty("user.dir")).toAbsolutePath();
@@ -120,6 +210,7 @@ public class ScaffoldCadenceTest {
         while (dir != null) {
             Path candidate = dir.resolve(relative);
             if (Files.isRegularFile(candidate)) return candidate;
+
             dir = dir.getParent();
         }
 
