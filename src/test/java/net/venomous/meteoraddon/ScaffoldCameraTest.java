@@ -360,7 +360,8 @@ public class ScaffoldCameraTest extends SourceGuard {
 
         String caller = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
 
-        assertTrue(caller.contains("this.rayReachesSupport(support,face[0],face[1])") && caller.contains("if(reaches)"),
+        assertTrue(caller.contains("this.rayReachesSupport(support,face[0],face[1])")
+                && caller.contains("if(!reaches)") && caller.contains("this.place(pos);"),
             "and the placement is only made when that test passes");
 
         assertFalse(caller.contains("PLACE_TOLERANCE"),

@@ -292,6 +292,9 @@ public class Scaffold extends Module {
      */
     private boolean pendingSneak = false;
 
+    /** Whether the crouch is currently being deferred, so the deferral is logged once. */
+    private boolean crouchDeferred = false;
+
     /**
      * Whether the cooldown allows a placement right now.
      *
@@ -606,13 +609,27 @@ public class Scaffold extends Module {
         PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
             boolean reaches = this.rayReachesSupport(support, face[0], face[1]);
 
-            this.debugLog("place: cell=%s support=%s side=%s aim=%.2f,%.2f camYaw=%.2f serverHolds=%.2f,%.2f ray=%s",
-                pos, support, side, face[0], face[1], this.mc.player.getYRot(),
-                Rotations.serverYaw, Rotations.serverPitch, reaches);
+            if (!reaches) {
+                // The ray missed the block, so wait the normal cadence before trying again. Left
+                // alone the module re-tests the ray every tick, because the cooldown only moves
+                // when a block actually goes down - and a line of log per tick is enough to make
+                // the client miss its own packet deadlines, which Grim's Timer check reports.
+                this.nextPlaceAtMs = this.nowMs()
+                    + (long)ScaffoldCadence.delayMillis(this.techniqueDelay(), 0);
 
-            if (reaches) {
-                this.place(pos);
+                this.debugLog("place: cell=%s support=%s side=%s aim=%.2f,%.2f camYaw=%.2f "
+                        + "serverHolds=%.2f,%.2f - the ray missed the block",
+                    pos, support, side, face[0], face[1], this.mc.player.getYRot(),
+                    Rotations.serverYaw, Rotations.serverPitch);
+
+                return;
             }
+
+            this.debugLog("place: cell=%s support=%s side=%s aim=%.2f,%.2f camYaw=%.2f serverHolds=%.2f,%.2f",
+                pos, support, side, face[0], face[1], this.mc.player.getYRot(),
+                Rotations.serverYaw, Rotations.serverPitch);
+
+            this.place(pos);
         });
         }
     }
@@ -992,10 +1009,16 @@ public class Scaffold extends Module {
         // movement packet, and a placement inside that window is denied by Grim's PacketOrderF.
         // The change is deferred to the next tick with no placement, not dropped.
         if (PreRotate.hasPending(this)) {
-            this.debugLog("crouch: deferred to %s - a placement is leaving this tick",
-                hold ? "press" : "release");
+            if (!this.crouchDeferred) {
+                this.crouchDeferred = true;
+                this.debugLog("crouch: deferred to %s - a placement is leaving this tick",
+                    hold ? "press" : "release");
+            }
+
             return;
         }
+
+        this.crouchDeferred = false;
 
         if (hold != this.managedSneak) {
             this.debugLog("crouch: edge=%s onGround=%s held=%dms -> %s",
