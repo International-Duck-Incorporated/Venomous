@@ -510,11 +510,22 @@ public class Scaffold extends Module {
         // waiting for the yaw would hold the placement back every time they looked around - and
         // the action is discarded after five ticks, so the bridge would only build while they
         // happened to be holding the mouse still.
-        PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
-            if (this.rayReachesSupport(support, face[0], face[1])) {
-                this.place(pos);
-            }
-        });
+        // The rotation goes out every tick, whether or not a placement is due: the pitch is
+        // smoothed, and the server needs the current one for the movement prediction.
+        PreRotate.rotateOnly(this, face[0], face[1]);
+
+        // The action is queued only when a placement is actually due. Queueing it every tick
+        // would fill the queue every tick, and the crouch - which must not change on a tick where
+        // a placement leaves, or Grim's PacketOrderF denies the placement - would then never be
+        // allowed to change at all. The 7.18.0 build did exactly that and the crouch never came
+        // on at all.
+        if (this.placementDue()) {
+            PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
+                if (this.rayReachesSupport(support, face[0], face[1])) {
+                    this.place(pos);
+                }
+            });
+        }
     }
 
     /**
@@ -714,7 +725,7 @@ public class Scaffold extends Module {
         // the block underneath was still inside the cooldown from the previous placement, and they
         // fell off the bridge.
         long now = this.nowMs();
-        if (now < this.nextPlaceAtMs) {
+        if (!this.placementDue()) {
             return false;
         }
 
@@ -857,6 +868,16 @@ public class Scaffold extends Module {
         } else {
             this.releaseManagedSneak();
         }
+    }
+
+    /**
+     * Whether the cooldown allows a placement right now.
+     *
+     * <p>Wall clock, not ticks: a tick-counted cooldown assumes 20 TPS, and this client does not
+     * run at 20.</p>
+     */
+    private boolean placementDue() {
+        return this.nowMs() >= this.nextPlaceAtMs;
     }
 
     /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */

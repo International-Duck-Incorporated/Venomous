@@ -286,6 +286,27 @@ public class ScaffoldCameraTest extends SourceGuard {
     }
 
     /**
+     * The action is queued only when a placement is due.
+     *
+     * <p>The crouch must not change on a tick where a placement leaves, or Grim's PacketOrderF
+     * denies the placement. But if the action is queued on every tick - the aim is worked out every
+     * tick - the queue is never empty, the crouch is never allowed to change, and it never comes on
+     * at all. The 7.18.0 build did exactly that.</p>
+     */
+    @Test
+    void theActionIsQueuedOnlyWhenAPlacementIsDue() {
+        String body = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
+
+        assertTrue(body.contains("if(this.placementDue()){"),
+            "the action is queued only when a placement is due, so the queue is empty on the other "
+                + "ticks and the crouch is free to change on them");
+
+        assertTrue(body.contains("PreRotate.rotateOnly(this,face[0],face[1]);"),
+            "the rotation still goes out every tick - the pitch is smoothed and the server needs "
+                + "the current one");
+    }
+
+    /**
      * Sneaking is opt-in.
      *
      * <p>It used to be forced by two of the technique profiles, and every single Grim
