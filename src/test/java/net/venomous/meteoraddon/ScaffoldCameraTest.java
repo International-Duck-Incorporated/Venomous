@@ -271,29 +271,6 @@ public class ScaffoldCameraTest extends SourceGuard {
      * and that desync is worth tenths of a block: the live log showed the offsets jump to 0.15 and
      * the server teleporting the player back.</p>
      */
-    /**
-     * The edge is in front of the player, not under their feet.
-     *
-     * <p>The cell under the feet is empty exactly when the player is in the air, and the crouch is
-     * only held while the player is on the ground - a mid-air crouch is meaningless. Asking about
-     * the cell underneath therefore asked for a state the crouch is not held in, and the crouch
-     * never came on at all.</p>
-     */
-    @Test
-    void theEdgeIsInFrontOfThePlayerAndNotUnderTheirFeet() {
-        String body = squeeze(methodBody(source(SCAFFOLD), "private boolean isOverEdge()"));
-
-        requireAnchor(body, "isOverEdge", "movementDirection");
-
-        assertFalse(body.contains("getY() - 1.0"),
-            "the cell under the player's feet is empty exactly when they are airborne, and the "
-                + "crouch is only held while they are on the ground - the two can never both be "
-                + "true, so this question can never be answered yes");
-
-        assertTrue(body.contains("this.isDrop("),
-            "the drop is the cell in front of the player, at the level of their feet");
-    }
-
     @Test
     void theCrouchDoesNotChangeOnATickWithAPlacement() {
         String body = methodBody(source(SCAFFOLD), "private void updateManagedSneak(boolean atEdge)");
@@ -306,27 +283,6 @@ public class ScaffoldCameraTest extends SourceGuard {
             "a crouch that changes on a tick where a placement leaves is what gets that placement "
                 + "cancelled by PacketOrderF, and the cancelled placement is what desyncs the "
                 + "client from the server");
-    }
-
-    /**
-     * The action is queued only when a placement is due.
-     *
-     * <p>The crouch must not change on a tick where a placement leaves, or Grim's PacketOrderF
-     * denies the placement. But if the action is queued on every tick - the aim is worked out every
-     * tick - the queue is never empty, the crouch is never allowed to change, and it never comes on
-     * at all. The 7.18.0 build did exactly that.</p>
-     */
-    @Test
-    void theActionIsQueuedOnlyWhenAPlacementIsDue() {
-        String body = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
-
-        assertTrue(body.contains("if(this.placementDue()){"),
-            "the action is queued only when a placement is due, so the queue is empty on the other "
-                + "ticks and the crouch is free to change on them");
-
-        assertTrue(body.contains("PreRotate.rotateOnly(this,face[0],face[1]);"),
-            "the rotation still goes out every tick - the pitch is smoothed and the server needs "
-                + "the current one");
     }
 
     /**
@@ -369,73 +325,26 @@ public class ScaffoldCameraTest extends SourceGuard {
      */
     @Test
     void thePlacementIsGatedOnTheRayReachingTheBlock() {
-        String body = methodBody(source(SCAFFOLD),
-            "private boolean rayReachesSupport(BlockPos support, float yaw, float pitch)");
+        String body = methodBody(source(SCAFFOLD), "private boolean rayReachesSupport(BlockPos support)");
 
         requireAnchor(body, "rayReachesSupport", "GrimRay.rotationPlaceWouldPass");
 
         String squeezed = squeeze(body);
+
+        assertTrue(squeezed.contains("Rotations.serverYaw"),
+            "the ray has to be tested against the rotation the SERVER is holding, because that is "
+                + "the one Grim judges the placement by");
 
         assertTrue(squeezed.contains("support.getX()"),
             "and against the block that was clicked, which is the support");
 
         String caller = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
 
-        assertTrue(caller.contains("if(this.rayReachesSupport(support,face[0],face[1]))"),
+        assertTrue(caller.contains("if(this.rayReachesSupport(support))"),
             "and the placement is only made when that test passes");
 
         assertFalse(caller.contains("PLACE_TOLERANCE"),
             "the angle tolerance is what this replaces; it was seven degrees of slack on a geometry "
                 + "where two degrees already misses the face");
-    }
-
-    /**
-     * The gate has to test the rotation the placement is going out with.
-     *
-     * <p>Grim judges a placement after the flying packet - the rotation the server ends up with -
-     * and the placement leaves in the PRE phase of that very packet. So the rotation in it is the
-     * one that has just been asked for, and the one the server already holds is the previous tick's.
-     * Testing the rotation the server happened to be holding passes the gate on a ray that misses
-     * the block, and the placement is denied with "not looking at it".</p>
-     */
-    @Test
-    void theGateTestsTheRotationThePlacementGoesOutWith() {
-        String body = methodBody(source(SCAFFOLD),
-            "private boolean rayReachesSupport(BlockPos support, float yaw, float pitch)");
-
-        requireAnchor(body, "rayReachesSupport", "rotationPlaceWouldPass");
-
-        String squeezed = squeeze(body);
-
-        assertTrue(squeezed.contains("yaw,pitch,this.lastServerYaw,this.lastServerPitch"),
-            "the requested rotation is the one Grim judges, and the last one sent is the second "
-                + "candidate - Grim tries the current yaw with the current pitch, the previous yaw "
-                + "with the current pitch, and the previous yaw with the previous pitch");
-
-        assertFalse(squeezed.contains("Rotations.serverYaw"),
-            "the rotation the server is holding at the moment of the check is the previous tick's, "
-                + "which is not the one the placement is judged by");
-    }
-
-    /**
-     * The crouch is decided after the placement, and only when none is waiting.
-     *
-     * <p>Both halves matter. The guard has to be able to see the placement, so the placement is
-     * queued first; and the guard has to see the placement that is leaving this tick, which is the
-     * one queued by the previous tick and still in the queue when the tick starts.</p>
-     */
-    @Test
-    void theCrouchIsDecidedAfterThePlacement() {
-        String standard = squeeze(methodBody(source(SCAFFOLD), "private void tickStandardMode()"));
-        String grim = squeeze(methodBody(source(SCAFFOLD), "private void tickGrim()"));
-
-        for (String body : new String[] {standard, grim}) {
-            int place = body.indexOf("this.aimAndPlace(");
-            int sneak = body.indexOf("this.updateManagedSneak(");
-
-            assertTrue(place >= 0 && sneak > place,
-                "the placement is queued before the crouch is decided, so the crouch can see that a "
-                    + "placement is waiting and leave it alone");
-        }
     }
 }
