@@ -521,13 +521,41 @@ public class Scaffold extends Module {
         // The camera follows the same face aim, eased and slower than the server rotation so it
         // reads as a look rather than a lock. GCD-quantised, because every delta a real mouse
         // emits is a whole multiple of the sensitivity grid.
-        this.easeCameraOnto(this.faceAimAt(pos));
+        float[] face = this.faceAimAt(pos);
+        this.easeCameraOnto(face);
 
         float[] aim = this.easedAimAt(pos);
+
+        // [DEBUG-scf] TEMPORARY - remove. Answers whether Meteor is actually applying our rotation
+        // or whether Rotations.serverYaw is lying, which is the difference between "the camera is
+        // slow" and "the server never saw the angle".
+        this.debugState(pos, face, aim);
 
         // Only place once the rotation has actually arrived; PreRotate enforces the tolerance and
         // defers the interaction to SendMovementPacketsEvent.Pre so it leaves before the packet.
         PreRotate.rotateThen(this, aim[0], aim[1], () -> this.place(pos));
+    }
+
+    /** [DEBUG-scf] TEMPORARY - remove. One line per tick, tagged for a single-grep cleanup. */
+    private void debugState(BlockPos pos, float[] face, float[] aim) {
+        if (this.mc.player == null) return;
+
+        Direction side = BlockUtils.getPlaceSide(pos);
+        float yawErr = wrapDegrees(aim[0] - Rotations.serverYaw);
+        float pitchErr = aim[1] - Rotations.serverPitch;
+
+        VenomousAddon.LOG.info(String.format(
+            "[DEBUG-scf] pos=%s side=%s canPlace=%b | cam yaw=%.1f pitch=%.1f | srv yaw=%.1f pitch=%.1f "
+                + "| face yaw=%.1f pitch=%.1f | req yaw=%.1f pitch=%.1f | err yaw=%.1f pitch=%.1f | rot=%b",
+            pos.toShortString(),
+            side == null ? "NULL" : side.getName(),
+            BlockUtils.canPlace(pos),
+            this.mc.player.getYRot(), this.mc.player.getXRot(),
+            Rotations.serverYaw, Rotations.serverPitch,
+            face[0], face[1],
+            aim[0], aim[1],
+            yawErr, pitchErr,
+            this.rotate.get()));
     }
 
     /**

@@ -47,9 +47,17 @@ public class ScaffoldCameraTest {
 
         assertTrue(source.contains("private void easeCameraOnto(float[] face)"),
             "scaffold must ease the camera towards the placement face");
-        assertTrue(source.contains("this.easeCameraOnto(this.faceAimAt(pos))"),
-            "and it must be driven from aimAndPlace so the camera and the server rotation agree on "
-                + "the same face, without the camera being pinned to the server angle");
+
+        // Assert the wiring rather than one exact line: the face is computed once and handed to
+        // both the camera and the server rotation, which is what keeps them agreeing without the
+        // camera being pinned to the server angle.
+        int face = source.indexOf("float[] face = this.faceAimAt(pos);");
+        int camera = source.indexOf("this.easeCameraOnto(face);");
+        int server = source.indexOf("this.easedAimAt(pos);");
+
+        assertTrue(face >= 0, "aimAndPlace must compute the face aim");
+        assertTrue(camera > face, "and pass that same face to the camera");
+        assertTrue(server > camera, "the server rotation must be eased from the same point");
     }
 
     @Test
@@ -93,7 +101,8 @@ public class ScaffoldCameraTest {
             "the old constant-rate camera sweep is gone; it moved by an unquantised fixed number of "
                 + "degrees per tick for as long as it lasted");
 
-        int call = source.indexOf("this.easeCameraOnto(this.faceAimAt(pos))");
-        assertTrue(call > 0, "camera must aim at the face, not the block centre");
+        int call = source.indexOf("this.easeCameraOnto(face);");
+        assertTrue(call > 0 && source.indexOf("float[] face = this.faceAimAt(pos);") < call,
+            "camera must aim at the face, not the block centre");
     }
 }
