@@ -75,15 +75,20 @@ public class ScaffoldCameraTest extends SourceGuard {
      * user" - the module was fighting the mouse for the view every tick.</p>
      */
     @Test
-    void theCameraIsThePlayersAndTheModuleDoesNotWriteIt() {
-        String code = squeeze(code(source(SCAFFOLD)));
+    void theCameraIsOnlyWrittenWhenFreelookIsOff() {
+        String body = methodBody(source(SCAFFOLD),
+            "private void onSendMovementPacketsPost(SendMovementPacketsEvent.Post event)");
 
-        assertFalse(code.contains("this.mc.player.setYRot("),
-            "the module must not write the camera; that is what freelook means, and the module "
-                + "fighting the player for the view is what was reported as the camera snapping back");
+        requireAnchor(body, "onSendMovementPacketsPost", "setYRot");
 
-        assertFalse(code.contains("this.mc.player.setXRot("),
-            "same, for the pitch");
+        String squeezed = squeeze(body);
+
+        assertTrue(squeezed.contains("if(this.freelook.get())return;"),
+            "with freelook on the camera is the player's and must not be written at all");
+
+        assertTrue(squeezed.contains("this.mc.player.setYRot(Rotations.serverYaw);"),
+            "and with it off the camera is put back on the rotation the server was told, so the "
+                + "camera and the packet agree");
     }
 
     /**

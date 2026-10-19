@@ -2,6 +2,7 @@ package net.venomous.meteoraddon.modules.world;
 
 import java.util.List;
 import java.util.Random;
+import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BlockListSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
@@ -16,6 +17,7 @@ import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
+import meteordevelopment.orbit.EventPriority;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.BlockItem;
@@ -517,20 +519,49 @@ public class Scaffold extends Module {
     }
 
     /**
+     * Frees the camera, and compensates the movement input for the rotation the server is told.
+     *
+     * <p>Off by default, and the reason is worth recording. With it on, the camera is entirely the
+     * player's and the rotation the server is told points at the block being placed - which is
+     * behind the player whenever they bridge backwards. The movement input is then rotated by the
+     * difference so the walk still matches the server's prediction.</p>
+     *
+     * <p>The first attempt at that applied the rotation inside {@code LocalPlayer.modifyInput},
+     * which ViaFabricPlus redirects, so on some frames the input was rotated more than once. The
+     * offsets went from 0.009 to 0.156 - ten times worse - and past Grim's immediate-setback
+     * threshold, which teleports the player back: the "frozen in place" and the flood of flags.
+     * The rotation is now applied where it happens exactly once per tick.</p>
+     *
+     * <p>It is opt-in because it is the less certain of the two designs. The default keeps the
+     * camera on the rotation the server is told, which is known to work and is known to be
+     * comfortable to play, at the cost of the camera following the placement.</p>
+     */
+    private final Setting<Boolean> freelook = this.sgGeneral.add(
+        new BoolSetting.Builder()
+            .name("freelook")
+            .description("Leave the camera entirely to you and compensate the movement input for "
+                + "the rotation the server is told, so you can look wherever you like while "
+                + "bridging. Off by default: the camera follows the placement instead, which is "
+                + "known to work.")
+            .defaultValue(false)
+            .build()
+    );
+
+    /**
      * Keeps the movement input and the rotation the server is told in step.
      *
      * <p>This is what makes freelook work. The camera is the player's and nothing here writes it;
      * the rotation the server is told points at the block being placed. The client computes its
      * movement from the camera and the server predicts it from the packet, so with the two apart the
      * client walks a line the server did not predict - Grim's {@code Simulation}, which flags at
-     * one millimetre.</p>
+     * one millimetre and teleports the player back past ten.</p>
      *
      * <p>Rotating the input by the angle between them closes the gap: the walk the client performs
      * becomes the walk the server expects, and the player is free to look wherever they like while
      * it happens. The mixin that applies it is {@code LocalPlayerMixin}.</p>
      */
     private void updateInputCompensation() {
-        if (this.mc.player == null || !this.rotate.get()) {
+        if (this.mc.player == null || !this.rotate.get() || !this.freelook.get()) {
             InputCompensation.clear();
             return;
         }
@@ -544,6 +575,28 @@ public class Scaffold extends Module {
         }
 
         InputCompensation.set(wrapDegrees(serverYaw - cameraYaw));
+    }
+
+    /**
+     * Puts the camera on the rotation the server was just told.
+     *
+     * <p>Only when freelook is off. With freelook on the camera is left alone and the movement
+     * input is compensated instead.</p>
+     *
+     * <p>Meteor's {@code Rotations} writes the rotation it is sending onto the camera for the
+     * duration of the movement packet and then restores the previous camera angle afterwards.
+     * Left alone, the camera would no longer match the packet, and a camera that does not match
+     * the packet is a millimetre of movement difference every tick.</p>
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    private void onSendMovementPacketsPost(SendMovementPacketsEvent.Post event) {
+        if (!this.isActive() || this.mc.player == null) return;
+        if (this.freelook.get()) return;
+
+        if (!Float.isFinite(Rotations.serverYaw) || !Float.isFinite(Rotations.serverPitch)) return;
+
+        this.mc.player.setYRot(Rotations.serverYaw);
+        this.mc.player.setXRot(Rotations.serverPitch);
     }
 
     /**

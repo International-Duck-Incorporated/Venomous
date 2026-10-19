@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -39,17 +40,43 @@ public class LocalPlayerMixinTest {
         return Files.readString(path, StandardCharsets.UTF_8);
     }
 
+    /** The source without its comments, so a name in the prose is not mistaken for code. */
+    private static String code(String source) {
+        StringBuilder out = new StringBuilder();
+        for (String line : source.split("\n")) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("*") || trimmed.startsWith("/*") || trimmed.startsWith("//")) {
+                continue;
+            }
+            out.append(line).append('\n');
+        }
+        return out.toString();
+    }
+
     /**
-     * The injection has to be cancellable, or replacing the return value throws.
+     * The rotation has to be applied where it happens exactly once per tick.
+     *
+     * <p>Injecting into {@code LocalPlayer.modifyInput} was wrong, and it cost a session. ViaFabricPlus
+     * redirects that method, so the injection could fire more than once in a tick and rotate the
+     * input more than once. The offsets went from 0.009 to 0.156 - ten times worse - and past
+     * Grim's immediate-setback threshold, which teleports the player back every tick: frozen in
+     * place, with the flags to show for it.</p>
      */
     @Test
-    void theInjectionIsCancellableSoTheReturnValueCanBeReplaced() throws IOException {
-        String source = mixin();
+    void theRotationIsAppliedWhereItHappensOncePerTick() throws IOException {
+        String source = code(mixin());
 
-        assertTrue(source.contains("cancellable = true"),
-            "setReturnValue on a CallbackInfoReturnable throws \"the call modifyInput is not "
-                + "cancellable\" without cancellable = true, and that is a hard client crash on the "
-                + "first tick rather than a warning");
+        assertTrue(source.contains("@Redirect"),
+            "the compensation has to be a redirect on the call that produces the movement input, "
+                + "not an injection into a method another mod redirects");
+
+        assertTrue(source.contains("getMoveVector"),
+            "getMoveVector is called exactly once by LocalPlayer.applyInput, so redirecting it "
+                + "applies the rotation exactly once per tick");
+
+        assertFalse(source.contains("modifyInput"),
+            "modifyInput is redirected by ViaFabricPlus, so a rotation applied there can be applied "
+                + "more than once in a tick");
     }
 
     /**
