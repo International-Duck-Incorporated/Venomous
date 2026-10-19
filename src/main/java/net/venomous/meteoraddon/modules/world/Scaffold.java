@@ -2,6 +2,7 @@ package net.venomous.meteoraddon.modules.world;
 
 import java.util.List;
 import java.util.Random;
+import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BlockListSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
@@ -16,6 +17,7 @@ import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
+import meteordevelopment.orbit.EventPriority;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.BlockItem;
@@ -484,11 +486,19 @@ public class Scaffold extends Module {
         // is that plus the face normal.
         BlockPos support = pos.relative(side);
 
-        // The camera is the rotation, and the server is told the same angle. Whatever the camera
-        // holds is what the server is told, so the movement the client computes and the movement
-        // the server predicts are the same movement.
+        // The aim is computed and smoothed here, and handed to Meteor. The camera is NOT written
+        // here: Meteor smooths the rotation it actually sends, so the angle that reaches the server
+        // is not the angle that was asked for. The live log showed it plainly - the camera at 81
+        // degrees, the server at 87, the raw aim at 89 - and that gap is Grim's Simulation.
+        //
+        // Grim's OffsetHandler flags when the client's position differs from the server's
+        // prediction by more than a millimetre. The client computes the movement from the camera's
+        // yaw; the server predicts it from the yaw in the movement packet. If those differ, the
+        // client walks a slightly different line and the difference is the flag.
+        //
+        // So the camera has to hold the rotation the server was just told, and that is only knowable
+        // after the packet has gone out. onSendMovementPacketsPost puts the camera back to it.
         float[] face = this.faceAimAt(pos);
-        this.easeCameraOnto(face);
 
         this.lastServerYaw = Rotations.serverYaw;
         this.lastServerPitch = Rotations.serverPitch;
@@ -502,6 +512,29 @@ public class Scaffold extends Module {
                 this.place(pos);
             }
         });
+    }
+
+    /**
+     * Puts the camera back on the rotation the server was just told.
+     *
+     * <p>Meteor's {@code Rotations} writes the rotation it is sending onto the camera for the
+     * duration of the movement packet and then restores the previous camera angle afterwards - which
+     * is the "the camera snaps back to the normal camera of the user". Restoring it means the
+     * camera no longer matches the packet, and a camera that does not match the packet is a
+     * millimetre of movement difference every tick, which Grim's {@code Simulation} reports.</p>
+     *
+     * <p>So the camera is set here, after that restore, to the angle the server actually received.
+     * The camera and the packet then agree, and the movement the client performs is the movement
+     * the server predicted.</p>
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    private void onSendMovementPacketsPost(SendMovementPacketsEvent.Post event) {
+        if (!this.isActive() || this.mc.player == null) return;
+
+        if (!Float.isFinite(Rotations.serverYaw) || !Float.isFinite(Rotations.serverPitch)) return;
+
+        this.mc.player.setYRot(Rotations.serverYaw);
+        this.mc.player.setXRot(Rotations.serverPitch);
     }
 
     /**
@@ -539,61 +572,6 @@ public class Scaffold extends Module {
      * arbitrary float written straight to {@code setYRot} is an angle no mouse could produce,
      * which is precisely what rotation checks fingerprint.</p>
      */
-    /**
-     * Eases the camera onto the placement face and returns the angle it landed on.
-     *
-     * <p>This is now the single source of truth for the rotation, and that is the whole point of the
-     * change. Meteor's own {@code Rotations} does this:</p>
-     *
-     * <pre>{@code
-     *   private static void setClientRotation(Rotation rotation) {
-     *       preYaw = mc.player.getYRot();      // remember the player's own camera
-     *       mc.player.setYRot(rotation.yaw);   // snap the camera onto the spoofed rotation
-     *       mc.player.setXRot(rotation.pitch);
-     *   }
-     * }</pre>
-     *
-     * <p>and restores {@code preYaw} once the packet is away. So Meteor moved the camera to the
-     * placement angle for the movement packet and then put the player's own angle back - the "the
-     * camera snaps back to the normal camera of the user" that was reported. The consequence is
-     * worse than it looks: {@code aiStep} computes the player's movement from the camera
-     * <em>after</em> that restore, while the movement packet carries the spoofed angle. The server
-     * predicts from one angle and the client walks according to another, and Grim reports the
-     * difference as {@code Simulation}. Seventy-four of them in the run that found this.</p>
-     *
-     * <p>So the camera is written here, once, and the same angle is what the server is told. The
-     * camera is already the value Meteor is about to write, so its snap is a no-op, and the value
-     * it restores is the one just written, so that is a no-op too. The camera and the packet agree
-     * at every moment of the tick, which is what the movement prediction needs.</p>
-     *
-     * <p>The approach itself takes a fixed share of the remaining gap, which cannot overshoot,
-     * reverse or oscillate - each tick leaves exactly {@code 1 - AIM_SMOOTH} of the error behind.
-     * Ease-in and ease-out both fall out of the gap shrinking, and there is no velocity state left
-     * to carry, reset or get wrong.</p>
-     *
-     * @return the yaw and pitch the camera now holds, which is also what the server is told
-     */
-    private float[] easeCameraOnto(float[] face) {
-        if (this.mc.player == null) return face;
-
-        // The camera is written to exactly the angle the server is told.
-        //
-        // It used to be eased separately, and that was the "the camera snaps back to the normal
-        // camera of the user". Meteor's Rotations writes the server's angle onto the camera for
-        // the movement packet and puts the camera back afterwards, so a camera that held a
-        // different angle from the one being sent was snapped to it and back on every single
-        // tick. The live log showed the three values apart - the camera at 81 degrees, the server
-        // at 87, the raw aim at 89 - and the camera could never settle because it was being
-        // overwritten from two directions at once.
-        //
-        // So there is one angle now, smoothed once where it is computed, and the camera and the
-        // server are both given it. Meteor's snap is then a no-op, because it is writing the value
-        // that is already there.
-        this.mc.player.setYRot(face[0]);
-        this.mc.player.setXRot(face[1]);
-
-        return face;
-    }
     /**
      /**
              /**

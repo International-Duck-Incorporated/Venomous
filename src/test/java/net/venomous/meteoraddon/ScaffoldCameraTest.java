@@ -37,17 +37,57 @@ public class ScaffoldCameraTest extends SourceGuard {
     void theCameraIsEasedOntoTheFaceAimAndNotPinnedToTheServerAngle() {
         String body = methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)");
 
-        requireAnchor(body, "aimAndPlace",
-            "float[] face = this.faceAimAt(pos);",
-            "this.easeCameraOnto(face);");
+        requireAnchor(body, "aimAndPlace", "float[] face = this.faceAimAt(pos);");
 
         String normalised = squeeze(body);
 
-        int face = normalised.indexOf("float[]face=this.faceAimAt(pos);");
-        int camera = normalised.indexOf("this.easeCameraOnto(face);");
+        assertTrue(normalised.indexOf("float[]face=this.faceAimAt(pos);") >= 0,
+            "the face aim has to be computed before it is handed over");
+    }
 
-        assertTrue(face >= 0 && camera > face,
-            "the face aim must be computed first and handed to the camera");
+    /**
+     * The camera has to end up holding the rotation the server was actually sent.
+     *
+     * <p>This is Grim's {@code Simulation}, and it is a millimetre of movement rather than a
+     * rotation check. Grim's {@code OffsetHandler} flags when the client's position differs from
+     * the server's prediction by more than 0.001 blocks. The client computes the movement from the
+     * camera's yaw; the server predicts it from the yaw in the movement packet. Those have to be
+     * the same number.</p>
+     *
+     * <p>They were not, and the live log showed it: the camera at 81 degrees, the server at 87, the
+     * raw aim at 89. Meteor's {@code Rotations} smooths the rotation it sends, so the angle that
+     * reaches the server is not the angle that was asked for. Writing the camera to the requested
+     * aim therefore guarantees a mismatch, and it is also the "the camera snaps back to the normal
+     * camera of the user": Meteor writes its angle onto the camera for the packet and restores the
+     * previous camera angle afterwards.</p>
+     *
+     * <p>So the camera is put back on the sent rotation once the packet has gone out, which is the
+     * only moment that value is knowable.</p>
+     */
+    @Test
+    void theCameraEndsUpHoldingTheRotationTheServerWasSent() {
+        String body = methodBody(source(SCAFFOLD),
+            "private void onSendMovementPacketsPost(SendMovementPacketsEvent.Post event)");
+
+        requireAnchor(body, "onSendMovementPacketsPost", "setYRot");
+
+        String squeezed = squeeze(body);
+
+        assertTrue(squeezed.contains("this.mc.player.setYRot(Rotations.serverYaw);"),
+            "the camera is put on the rotation the server was just told, not on the one that was "
+                + "asked for - Meteor smooths what it sends, so the two are not the same number");
+
+        assertTrue(squeezed.contains("this.mc.player.setXRot(Rotations.serverPitch);"),
+            "and the pitch with it");
+
+        assertTrue(squeezed.contains("Float.isFinite(Rotations.serverYaw)")
+                && squeezed.contains("Float.isFinite(Rotations.serverPitch)"),
+            "a non-finite rotation is never written to the camera; the server discards those with "
+                + "\"Invalid entity rotation: NaN, discarding.\" and the module silently stops "
+                + "placing");
+
+        assertTrue(squeezed.contains("!this.isActive()"),
+            "and the camera is only touched while the module is on");
     }
 
     /**
@@ -65,28 +105,26 @@ public class ScaffoldCameraTest extends SourceGuard {
      * given to the camera and to the server. Meteor's snap then writes the value that is already
      * there, and its restore puts back the same one.</p>
      */
+    /**
+     * The camera is written once, from the sent rotation, and never from the requested aim.
+     *
+     * <p>Two values were fighting over the camera: the aim that was asked for, and the rotation
+     * Meteor actually smoothed and sent. The live log caught them three degrees apart. They cannot
+     * be reconciled by smoothing, because the one that matters is the one on the wire.</p>
+     */
     @Test
     void theCameraAndTheServerAreGivenTheSameSmoothedAngle() {
-        String body = methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)");
+        String code = squeeze(code(source(SCAFFOLD)));
 
-        requireAnchor(body, "aimAndPlace", "PreRotate.rotateThen");
+        assertFalse(code.contains("this.mc.player.setYRot(face[0])"),
+            "writing the requested aim to the camera guarantees a mismatch with the packet, "
+                + "because Meteor smooths what it sends");
 
-        String squeezed = squeeze(body);
+        assertFalse(code.contains("this.mc.player.setXRot(face[1])"),
+            "same, for the pitch");
 
-        assertTrue(squeezed.contains("this.easeCameraOnto(face);"),
-            "the camera is given the aim");
-
-        assertTrue(matches("PreRotate\\.rotateThen\\(this,\\s*face\\[0\\],\\s*face\\[1\\]", squeezed),
-            "and the server is given the same two numbers, not the camera's lagged copy - a "
-                + "difference between the two is exactly what Meteor's snap makes visible");
-
-        String camera = methodBody(source(SCAFFOLD), "private float[] easeCameraOnto(float[] face)");
-        requireAnchor(camera, "easeCameraOnto", "setYRot");
-
-        assertTrue(squeeze(camera).contains("this.mc.player.setYRot(face[0]);")
-                && squeeze(camera).contains("this.mc.player.setXRot(face[1]);"),
-            "the camera is written to the aim itself, with no second easing of its own - a second "
-                + "easing is a second value, and two values is what made the camera snap");
+        assertTrue(code.contains("this.mc.player.setYRot(Rotations.serverYaw);"),
+            "the camera takes the rotation the server was sent");
     }
 
     /**
@@ -134,22 +172,6 @@ public class ScaffoldCameraTest extends SourceGuard {
      * <p>Writing the camera here and sending that same angle makes Meteor's snap a no-op and its
      * restore a no-op, so the camera and the packet agree at every moment of the tick.</p>
      */
-    @Test
-    void theCameraAndTheSentRotationAreTheSameAngle() {
-        String camera = methodBody(source(SCAFFOLD), "private float[] easeCameraOnto(float[] face)");
-
-        requireAnchor(camera, "easeCameraOnto", "setYRot");
-
-        String squeezed = squeeze(camera);
-
-        assertTrue(squeezed.contains("this.mc.player.setYRot(face[0]);")
-                && squeezed.contains("this.mc.player.setXRot(face[1]);"),
-            "the camera is written to the aim itself");
-
-        assertTrue(squeezed.contains("returnface;"),
-            "and the aim is returned unchanged, so the server is told the very same angle");
-    }
-
     /**
      * The camera must close a fixed share of the gap, and hold no velocity.
      *
@@ -241,15 +263,13 @@ public class ScaffoldCameraTest extends SourceGuard {
      */
     @Test
     void theCameraYawIsWrittenUnwrappedTheWayVanillaDoes() {
-        String body = methodBody(source(SCAFFOLD), "private float[] easeCameraOnto(float[] face)");
+        String code = squeeze(code(source(SCAFFOLD)));
 
-        requireAnchor(body, "easeCameraOnto", "setYRot(");
-
-        assertFalse(squeeze(body).contains("setYRot(wrapDegrees("),
+        assertFalse(code.contains("setYRot(wrapDegrees("),
             "wrapping the yaw on write creates a single-tick 360 degree jump, which is precisely "
                 + "what Grim's AimModulo360 flags; Entity.turn never wraps yaw, so neither may this");
 
-        assertTrue(squeeze(code(source(SCAFFOLD))).contains("wrapDegrees(heading-this.smoothedYaw)"),
+        assertTrue(code.contains("wrapDegrees(heading-this.smoothedYaw)"),
             "the remaining error is what gets wrapped instead, so the approach still takes the "
                 + "short way round and converges");
     }
@@ -463,7 +483,7 @@ public class ScaffoldCameraTest extends SourceGuard {
     void theConstantRateCameraSweepIsGone() {
         String code = scaffold();
 
-        requireAnchor(code, "Scaffold", "private float[] easeCameraOnto(float[] face)");
+        requireAnchor(code, "Scaffold", "private void onSendMovementPacketsPost(");
 
         assertFalse(code.contains("setYRot(this.smooth("),
             "the old constant-rate sweep is gone; it moved by an unquantised fixed number of degrees "
