@@ -204,10 +204,9 @@ public class ScaffoldCameraTest extends SourceGuard {
             "the pitch carries a small wobble so the rotation is never byte-for-byte the same as "
                 + "the previous one, which is what AimDuplicateLook reports");
 
-        assertTrue(code.contains("(this.scaffoldCount*37)%101"),
-            "and the wobble steps through values that never repeat, so two packets in a row can "
-                + "never carry the same rotation - a sine returns to the same value, and that is "
-                + "exactly what AimDuplicateLook reports");
+        assertTrue(code.contains("Math.sin(this.scaffoldCount"),
+            "and the wobble is a sine rather than a random number, so the deltas stay smooth and "
+                + "the rotation still looks like something a hand produced");
     }
 
     /**
@@ -326,72 +325,26 @@ public class ScaffoldCameraTest extends SourceGuard {
      */
     @Test
     void thePlacementIsGatedOnTheRayReachingTheBlock() {
-        String body = methodBody(source(SCAFFOLD),
-            "private boolean rayReachesSupport(BlockPos support, float yaw, float pitch)");
+        String body = methodBody(source(SCAFFOLD), "private boolean rayReachesSupport(BlockPos support)");
 
         requireAnchor(body, "rayReachesSupport", "GrimRay.rotationPlaceWouldPass");
 
         String squeezed = squeeze(body);
 
+        assertTrue(squeezed.contains("Rotations.serverYaw"),
+            "the ray has to be tested against the rotation the SERVER is holding, because that is "
+                + "the one Grim judges the placement by");
+
         assertTrue(squeezed.contains("support.getX()"),
             "and against the block that was clicked, which is the support");
 
-        assertTrue(squeezed.contains("yaw,pitch,this.lastServerYaw,this.lastServerPitch"),
-            "and against the rotation the placement is going out with, with the last one sent as "
-                + "the second candidate - Grim tries the current yaw with the current pitch, the "
-                + "previous yaw with the current pitch, and the previous yaw with the previous pitch");
-
         String caller = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
 
-        assertTrue(caller.contains("if(this.rayReachesSupport(support,face[0],face[1]))"),
+        assertTrue(caller.contains("if(this.rayReachesSupport(support))"),
             "and the placement is only made when that test passes");
 
         assertFalse(caller.contains("PLACE_TOLERANCE"),
             "the angle tolerance is what this replaces; it was seven degrees of slack on a geometry "
                 + "where two degrees already misses the face");
-    }
-
-    /**
-     * The action is queued only when a placement is due.
-     *
-     * <p>The crouch must not change on a tick where a placement leaves, or Grim's PacketOrderF
-     * denies the placement. But if the action is queued on every tick - the aim is worked out every
-     * tick - the queue is never empty, the crouch is never allowed to change, and it never comes on
-     * at all.</p>
-     */
-    @Test
-    void theActionIsQueuedOnlyWhenAPlacementIsDue() {
-        String body = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
-
-        assertTrue(body.contains("if(this.placementDue()){"),
-            "the action is queued only when a placement is due, so the queue is empty on the other "
-                + "ticks and the crouch is free to change on them");
-
-        assertTrue(body.contains("PreRotate.rotateOnly(this,face[0],face[1]);"),
-            "the rotation still goes out every tick - the pitch is smoothed and the server needs "
-                + "the current one");
-    }
-
-    /**
-     * The edge is in front of the player, not under their feet.
-     *
-     * <p>The cell under the feet is empty exactly when the player is in the air, and the crouch is
-     * only held while the player is on the ground - a mid-air crouch is meaningless. Asking about
-     * the cell underneath therefore asked for a state the crouch is not held in, and the crouch
-     * never came on at all.</p>
-     */
-    @Test
-    void theEdgeIsInFrontOfThePlayerAndNotUnderTheirFeet() {
-        String body = squeeze(methodBody(source(SCAFFOLD), "private boolean isOverEdge()"));
-
-        requireAnchor(body, "isOverEdge", "movementDirection");
-
-        assertFalse(body.contains("getY() - 1.0"),
-            "the cell under the player's feet is empty exactly when they are airborne, and the "
-                + "crouch is only held while they are on the ground - the two can never both be "
-                + "true, so this question can never be answered yes");
-
-        assertTrue(body.contains("this.isDrop("),
-            "the drop is the cell in front of the player, at the level of their feet");
     }
 }

@@ -367,6 +367,8 @@ public class Scaffold extends Module {
         // and by the bridge modes, and it put "sneaking=true" on every Grim packet-order flag:
         // PacketOrderE reports any held-item change while a flag is set, and PacketOrderF reports
         // placing while it is set. A flag the player did not ask for, on every placement.
+        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
+
         // Expand/VulcanExpand were removed: they placed extra blocks per tick, which no cadence
         // survives and which the anticheat's straight-line minimum punishes hardest.
         if (this.rotate.get()) {
@@ -374,17 +376,6 @@ public class Scaffold extends Module {
         } else {
             this.place(placePos);
         }
-
-        // The crouch is decided after the placement. Grim's PacketOrderF denies an action packet
-        // that arrives while the server still believes the player is sneaking, and the server
-        // believes it between the "start sneaking" packet and the next movement packet. The
-        // placement leaves in between: the crouch input goes out in the player's own tick, and the
-        // placement leaves in the movement packet's PRE phase. So a crouch that changes on the same
-        // tick as a placement puts the placement inside that window, and the server denies it.
-        //
-        // Deciding it after the placement is what makes the guard work. The placement is queued
-        // above, so the queue is not empty by the time the crouch is considered.
-        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
     }
 
     /** Human-looking Grim profile: edge crouch, visible eased aim, then an unspoofed interaction. */
@@ -395,14 +386,14 @@ public class Scaffold extends Module {
             return;
         }
 
+        // Also opt-in now, for the same reason as tickStandardMode.
+        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
+
         if (!this.rotate.get()) {
             this.place(target);
         } else {
             this.aimAndPlace(target);
         }
-
-        // The crouch goes after the placement, for the reason given in tickStandardMode.
-        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
     }
 
     private void tickBridgeMode() {
@@ -505,24 +496,11 @@ public class Scaffold extends Module {
         // waiting for the yaw would hold the placement back every time they looked around - and
         // the action is discarded after five ticks, so the bridge would only build while they
         // happened to be holding the mouse still.
-        // The rotation goes out every tick, whether or not a placement is due: the pitch is
-        // smoothed, and the server needs the current one for its movement prediction.
-        PreRotate.rotateOnly(this, face[0], face[1]);
-
-        // The action is queued only when a placement is actually due, and it waits for the pitch
-        // alone. The yaw is the player's own and moves with the mouse, so waiting for it would
-        // measure the mouse rather than the rotation.
-        //
-        // Queueing the action on every tick would also fill the queue on every tick, and the
-        // crouch - which must not change on a tick where a placement leaves, or Grim's
-        // PacketOrderF denies the placement - would then never be allowed to change at all.
-        if (this.placementDue()) {
-            PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
-                if (this.rayReachesSupport(support, face[0], face[1])) {
-                    this.place(pos);
-                }
-            });
-        }
+        PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
+            if (this.rayReachesSupport(support)) {
+                this.place(pos);
+            }
+        });
     }
 
     /**
@@ -577,7 +555,7 @@ public class Scaffold extends Module {
         // The wobble. Small enough that it moves the landing point by a fraction of a millimetre,
         // and it keeps the rotation from ever repeating exactly.
         this.smoothedPitch = clamp(this.smoothedPitch
-            + PITCH_WOBBLE * (float)((((this.scaffoldCount * 37) % 101) / 50.0D) - 1.0D), -90.0F, 90.0F);
+            + PITCH_WOBBLE * (float) Math.sin(this.scaffoldCount * 0.7D), -90.0F, 90.0F);
 
         return new float[] {yaw, this.smoothedPitch};
     }
@@ -599,21 +577,13 @@ public class Scaffold extends Module {
      * blocks on 1.9+ clients, so the eye-box overlap that lets a near miss through is worth
      * nothing.</p>
      */
-    private boolean rayReachesSupport(BlockPos support, float yaw, float pitch) {
+    private boolean rayReachesSupport(BlockPos support) {
         if (this.mc.player == null) return false;
 
         Vec3 eye = this.mc.player.getEyePosition();
 
-        // The rotation being tested is the one this placement goes out with, not the one the server
-        // happens to be holding. Grim judges a placement after the flying packet - the rotation the
-        // server ends up with - and the placement leaves in the PRE phase of that very packet, so
-        // the rotation in it is the one that has just been asked for.
-        //
-        // Grim tries three of them: the current yaw with the current pitch, the previous yaw with
-        // the current pitch, and the previous yaw with the previous pitch. The helper takes exactly
-        // those three, so passing the requested rotation and the last one sent covers all of them.
         return GrimRay.rotationPlaceWouldPass(eye.x, eye.z, this.mc.player.getY(),
-            yaw, pitch, this.lastServerYaw, this.lastServerPitch,
+            Rotations.serverYaw, Rotations.serverPitch, this.lastServerYaw, this.lastServerPitch,
             support.getX(), support.getY(), support.getZ(),
             support.getX() + 1.0D, support.getY() + 1.0D, support.getZ() + 1.0D);
     }
@@ -721,7 +691,7 @@ public class Scaffold extends Module {
         // the block underneath was still inside the cooldown from the previous placement, and they
         // fell off the bridge.
         long now = this.nowMs();
-        if (!this.placementDue()) {
+        if (now < this.nextPlaceAtMs) {
             return false;
         }
 
@@ -866,56 +836,13 @@ public class Scaffold extends Module {
         }
     }
 
-    /**
-     * Whether the cooldown allows a placement right now.
-     *
-     * <p>Wall clock, not ticks: a tick-counted cooldown assumes 20 TPS, and this client does not
-     * run at 20.</p>
-     */
-    private boolean placementDue() {
-        return this.nowMs() >= this.nextPlaceAtMs;
-    }
-
     /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */
     private static long nowMs() {
         return System.nanoTime() / 1_000_000L;
     }
 
-    /**
-     * Whether there is a drop in the direction the player is walking.
-     *
-     * <p>This used to ask whether the cell under the player's feet was empty, which is the wrong
-     * question twice over. That cell is empty exactly when the player is in the air - and the
-     * crouch is only held while the player is on the ground, because a mid-air crouch is
-     * meaningless. The two conditions could never both be true, so the crouch never came on at
-     * all, however the edge was asked about.</p>
-     *
-     * <p>The edge is in front of the player: the cell they are about to walk into, at the level of
-     * their feet, and the cell under that one is where they would land. That is the drop the
-     * crouch is for - it is what stops them walking off it.</p>
-     */
     private boolean isOverEdge() {
-        if (this.mc.player == null || this.mc.level == null) return false;
-
-        Vec3 dir = this.movementDirection();
-        if (dir.lengthSqr() < 1.0E-6D) return false;
-
-        int x = (int)Math.floor(this.mc.player.getX());
-        int y = (int)Math.floor(this.mc.player.getY());
-        int z = (int)Math.floor(this.mc.player.getZ());
-
-        // The cell in front, on each axis the player is moving along. A diagonal walk checks both
-        // sides, which is what the vanilla edge sneak does.
-        return (dir.x > 0.5D && this.isDrop(x + 1, y, z))
-            || (dir.x < -0.5D && this.isDrop(x - 1, y, z))
-            || (dir.z > 0.5D && this.isDrop(x, y, z + 1))
-            || (dir.z < -0.5D && this.isDrop(x, y, z - 1));
-    }
-
-    /** Whether the cell is empty and the one under it is not: a drop the player is standing beside. */
-    private boolean isDrop(int x, int y, int z) {
-        return this.mc.level.getBlockState(new BlockPos(x, y, z)).isAir()
-            && !this.mc.level.getBlockState(new BlockPos(x, y - 1, z)).isAir();
+        return this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ())).isAir();
     }
 
     @Override
