@@ -1,12 +1,14 @@
 package net.venomous.meteoraddon.modules.combat;
 
 import java.util.Random;
+import java.util.List;
 import java.util.Set;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.EntityTypeListSetting;
+import meteordevelopment.meteorclient.settings.ItemListSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.friends.Friends;
@@ -24,6 +26,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.AimGuard;
 import net.venomous.meteoraddon.utils.RotationGcd;
 import net.venomous.meteoraddon.utils.McCompat;
 
@@ -93,6 +96,41 @@ public class Aimbot extends Module {
             .build()
     );
 
+    private final Setting<Boolean> clickAim = this.sgHumanlike.add(
+        new BoolSetting.Builder()
+            .name("click-aim")
+            .description("Only aim while the attack key is held. A human's view only moves when "
+                + "they choose to move it; an aim assist that keeps tracking someone you are "
+                + "walking past is a behaviour no mouse produces.")
+            .defaultValue(true)
+            .build()
+    );
+
+    private final Setting<Boolean> checkBlockBreak = this.sgHumanlike.add(
+        new BoolSetting.Builder()
+            .name("check-block-break")
+            .description("Do not aim while mining. Attack held against a block means digging, and "
+                + "a person digging is not also lining up a shot.")
+            .defaultValue(true)
+            .build()
+    );
+
+    private final Setting<Boolean> limitToItems = this.sgHumanlike.add(
+        new BoolSetting.Builder()
+            .name("limit-to-items")
+            .description("Only aim while holding one of the allowed items.")
+            .defaultValue(false)
+            .build()
+    );
+
+    private final Setting<List<Item>> allowedItems = this.sgHumanlike.add(
+        new ItemListSetting.Builder()
+            .name("allowed-items")
+            .description("Items the aim assist is allowed to hold. Ignored while "
+                + "limit-to-items is off, and an empty list means unrestricted.")
+            .build()
+    );
+
     private final Setting<Boolean> gcdFix = this.sgAnticheat.add(
         new BoolSetting.Builder()
             .name("gcd-fix")
@@ -140,6 +178,12 @@ public class Aimbot extends Module {
             return;
         }
 
+        if (!this.mayAimNow()) {
+            this.releaseUse();
+            this.crossbowClickTicks = 0;
+            return;
+        }
+
         this.target = TargetUtils.get(entity -> {
             if (!entity.isAlive() || entity == this.mc.player) {
                 return false;
@@ -163,6 +207,25 @@ public class Aimbot extends Module {
             this.releaseUse();
             this.crossbowClickTicks = 0;
         }
+    }
+
+    /**
+     * Whether the guards permit adjusting the view at all this tick.
+     *
+     * <p>See {@link AimGuard} for why an aimer needs a "when" as well as a "where". All three
+     * conditions are gathered here so the module stays free of the decision itself.</p>
+     */
+    private boolean mayAimNow() {
+        if (this.mc.options == null || this.mc.player == null) return false;
+
+        boolean attackDown = this.mc.options.keyAttack.isDown();
+        boolean breaking = attackDown
+            && this.mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult
+            && !this.mc.player.hasInfiniteMaterials();
+        boolean holdingOk = AimGuard.itemAllowed(this.allowedItems.get(), this.mc.player.getMainHandItem().getItem());
+
+        return AimGuard.mayAim(attackDown, breaking, holdingOk,
+            this.clickAim.get(), this.checkBlockBreak.get(), this.limitToItems.get());
     }
 
     private void aim(Entity target) {
