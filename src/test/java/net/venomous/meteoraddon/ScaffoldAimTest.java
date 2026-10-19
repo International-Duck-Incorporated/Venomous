@@ -78,8 +78,34 @@ public class ScaffoldAimTest {
         assertEquals(10.5, point[0], 1e-9, "nor the X axis, which is in-plane but the eye matches");
     }
 
-    @Test
-    void anEyeExactlyOnTheFaceCentreLeavesThePointThere() {
+    /**
+ * The crash this guards. {@code BlockUtils.getPlaceSide} returns {@code null} whenever no face of
+ * the target has a supporting block - routine mid-jump and the instant a bridge is first extended.
+ * Dereferencing that {@code Direction} threw
+ * {@code NullPointerException: Cannot invoke "Direction.getStepX()" because "side" is null} and
+ * took the client down at Scaffold.faceAimAt. The fallback lives in {@link ScaffoldAim#aimPoint}
+ * rather than at the call site so it cannot be forgotten.
+ */
+@Test
+void aMissingPlacementSideFallsBackToTheBlockCentre() {
+    double[] point = ScaffoldAim.aimPoint(10, 64, 20, null, 10.5, 70.0, 15.0, 0.4);
+
+    assertEquals(10.5, point[0], 1e-9);
+    assertEquals(64.5, point[1], 1e-9);
+    assertEquals(20.5, point[2], 1e-9);
+}
+
+@Test
+void aValidSideIsUsedRatherThanTheCentre() {
+    double[] nullSide = ScaffoldAim.aimPoint(10, 64, 20, null, 10.9, 70.0, 15.0, 0.4);
+    double[] withSide = ScaffoldAim.aimPoint(10, 64, 20, UP, 10.9, 70.0, 15.0, 0.4);
+
+    org.junit.jupiter.api.Assertions.assertNotEquals(nullSide[2], withSide[2],
+        "a valid side must slide the point towards the eye, so the two must differ");
+}
+
+@Test
+void anEyeExactlyOnTheFaceCentreLeavesThePointThere() {
         double[] face = ScaffoldAim.sharedFaceCentre(4, 70, -9, DOWN, 0.5);
 
         double[] point = ScaffoldAim.nearestPointOnFace(face, UP, face[0], face[1] + 5, face[2], 0.4);

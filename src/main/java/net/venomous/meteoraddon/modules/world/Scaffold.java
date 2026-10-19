@@ -498,6 +498,10 @@ public class Scaffold extends Module {
      * </ul>
      */
     private void aimAndPlace(BlockPos pos) {
+        // canPlace is what place() checks anyway; doing it here avoids aiming at a target that is
+        // guaranteed to be refused, and is the other half of the null-side crash.
+        if (!BlockUtils.canPlace(pos)) return;
+
         float[] aim = this.easedAimAt(pos);
 
         // Only place once the rotation has actually arrived; PreRotate enforces the tolerance and
@@ -547,18 +551,17 @@ public class Scaffold extends Module {
      */
     private float[] faceAimAt(BlockPos pos) {
         Vec3 eyes = this.mc.player.getEyePosition();
-        Direction side = BlockUtils.getPlaceSide(pos);
 
-        double[] normal = {
-            side.getStepX(),
-            side.getStepY(),
-            side.getStepZ()
+        // getPlaceSide returns null when no face of pos has support, which is routine mid-jump and
+        // when a bridge is first extended. ScaffoldAim.aimPoint handles that by falling back to the
+        // block centre, so this never dereferences a null Direction.
+        Direction side = BlockUtils.getPlaceSide(pos);
+        double[] normal = side == null ? null : new double[] {
+            side.getStepX(), side.getStepY(), side.getStepZ()
         };
 
-        double[] face = ScaffoldAim.sharedFaceCentre(
-            pos.getX() - normal[0], pos.getY() - normal[1], pos.getZ() - normal[2], normal, 0.5);
-
-        double[] point = ScaffoldAim.nearestPointOnFace(face, normal, eyes.x, eyes.y, eyes.z, 0.4);
+        double[] point = ScaffoldAim.aimPoint(pos.getX(), pos.getY(), pos.getZ(), normal,
+            eyes.x, eyes.y, eyes.z, 0.4);
 
         double dx = point[0] - eyes.x;
         double dy = point[1] - eyes.y;

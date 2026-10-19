@@ -29,6 +29,33 @@ public final class ScaffoldAim {
     }
 
     /**
+     * The aim point for a placement, falling back to the block centre when there is no valid side.
+     *
+     * <p>This is the single entry point the module uses, so the null case lives here where it is
+     * unit-tested. It is not hypothetical: {@code BlockUtils.getPlaceSide} returns {@code null}
+     * whenever no face of the target has a supporting block, which happens routinely mid-jump and
+     * the instant a bridge is first extended. Calling {@code side.getStepX()} on that result
+     * crashed the client with a NullPointerException.</p>
+     *
+     * @param blockX/Y/Z the block being placed, in block coordinates
+     * @param normal     unit face normal from the support towards the new block, or {@code null}
+     * @param halfExtent 0.5 for a full block; the face spans {@code [-half, +half]} per axis
+     */
+    public static double[] aimPoint(double blockX, double blockY, double blockZ, double[] normal,
+                                    double eyeX, double eyeY, double eyeZ, double halfExtent) {
+        if (normal == null) {
+            // No support on any face: there is nothing sensible to aim at, and place() refuses it
+            // anyway. The block centre is the safe, always-valid answer.
+            return new double[] {blockX + 0.5, blockY + 0.5, blockZ + 0.5};
+        }
+
+        double[] face = sharedFaceCentre(
+            blockX - normal[0], blockY - normal[1], blockZ - normal[2], normal, halfExtent);
+
+        return nearestPointOnFace(face, normal, eyeX, eyeY, eyeZ, halfExtent);
+    }
+
+    /**
      * The point on the shared face that is closest to the eye.
      *
      * @param faceCentre the centre of the face being clicked, in block coordinates
