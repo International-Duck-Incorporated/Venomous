@@ -885,8 +885,41 @@ public class Scaffold extends Module {
         return System.nanoTime() / 1_000_000L;
     }
 
+    /**
+     * Whether there is a drop in the direction the player is walking.
+     *
+     * <p>This used to ask whether the cell under the player's feet was empty, which is the wrong
+     * question twice over. That cell is empty exactly when the player is in the air - and the
+     * crouch is only held while the player is on the ground, because a mid-air crouch is
+     * meaningless. The two conditions could never both be true, so the crouch never came on at
+     * all, however the edge was asked about.</p>
+     *
+     * <p>The edge is in front of the player: the cell they are about to walk into, at the level of
+     * their feet, and the cell under that one is where they would land. That is the drop the
+     * crouch is for - it is what stops them walking off it.</p>
+     */
     private boolean isOverEdge() {
-        return this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ())).isAir();
+        if (this.mc.player == null || this.mc.level == null) return false;
+
+        Vec3 dir = this.movementDirection();
+        if (dir.lengthSqr() < 1.0E-6D) return false;
+
+        int x = (int)Math.floor(this.mc.player.getX());
+        int y = (int)Math.floor(this.mc.player.getY());
+        int z = (int)Math.floor(this.mc.player.getZ());
+
+        // The cell in front, on each axis the player is moving along. A diagonal walk checks both
+        // sides, which is what the vanilla edge sneak does.
+        return (dir.x > 0.5D && this.isDrop(x + 1, y, z))
+            || (dir.x < -0.5D && this.isDrop(x - 1, y, z))
+            || (dir.z > 0.5D && this.isDrop(x, y, z + 1))
+            || (dir.z < -0.5D && this.isDrop(x, y, z - 1));
+    }
+
+    /** Whether the cell is empty and the one under it is not: a drop the player is standing beside. */
+    private boolean isDrop(int x, int y, int z) {
+        return this.mc.level.getBlockState(new BlockPos(x, y, z)).isAir()
+            && !this.mc.level.getBlockState(new BlockPos(x, y - 1, z)).isAir();
     }
 
     @Override

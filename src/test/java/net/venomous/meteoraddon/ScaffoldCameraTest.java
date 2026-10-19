@@ -271,6 +271,29 @@ public class ScaffoldCameraTest extends SourceGuard {
      * and that desync is worth tenths of a block: the live log showed the offsets jump to 0.15 and
      * the server teleporting the player back.</p>
      */
+    /**
+     * The edge is in front of the player, not under their feet.
+     *
+     * <p>The cell under the feet is empty exactly when the player is in the air, and the crouch is
+     * only held while the player is on the ground - a mid-air crouch is meaningless. Asking about
+     * the cell underneath therefore asked for a state the crouch is not held in, and the crouch
+     * never came on at all.</p>
+     */
+    @Test
+    void theEdgeIsInFrontOfThePlayerAndNotUnderTheirFeet() {
+        String body = squeeze(methodBody(source(SCAFFOLD), "private boolean isOverEdge()"));
+
+        requireAnchor(body, "isOverEdge", "movementDirection");
+
+        assertFalse(body.contains("getY() - 1.0"),
+            "the cell under the player's feet is empty exactly when they are airborne, and the "
+                + "crouch is only held while they are on the ground - the two can never both be "
+                + "true, so this question can never be answered yes");
+
+        assertTrue(body.contains("this.isDrop("),
+            "the drop is the cell in front of the player, at the level of their feet");
+    }
+
     @Test
     void theCrouchDoesNotChangeOnATickWithAPlacement() {
         String body = methodBody(source(SCAFFOLD), "private void updateManagedSneak(boolean atEdge)");
