@@ -10,6 +10,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.ClickGuard;
 import meteordevelopment.meteorclient.settings.IntSetting;
 
 public class AutoClickerPlus extends Module {
@@ -85,6 +86,17 @@ public class AutoClickerPlus extends Module {
                 .name("respect-cooldown")
                 .description("Respect attack cooldown (humanlike).")
                 .defaultValue(true)
+                .build()
+        );
+    private final Setting<Boolean> requireEntity = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("require-entity")
+                .description("Only click while the crosshair resolves to an entity. CPS and jitter "
+                    + "set the rhythm; this says whether there is anything to hit. Clicking empty "
+                    + "air on a perfect cadence is a stronger signal than clicking erratically, "
+                    + "because real misses are irregular.")
+                .defaultValue(false)
                 .build()
         );
     private final Setting<Boolean> vulcanSpeedRandomization = this.sgGeneral
@@ -232,7 +244,10 @@ public class AutoClickerPlus extends Module {
         if (this.mc.player != null
             && !this.mc.player.isDeadOrDying()
             && (!(Boolean)this.onlyWhileHolding.get() || this.mc.options.keyAttack.isDown())
-            && (!(Boolean)this.respectCooldown.get() || !(this.mc.player.getAttackStrengthScale(0.0F) < 0.9F))) {
+            && (!(Boolean)this.respectCooldown.get() || !(this.mc.player.getAttackStrengthScale(0.0F) < 0.9F))
+            && ClickGuard.mayClick(
+                this.mc.hitResult instanceof EntityHitResult,
+                (Boolean)this.requireEntity.get())) {
             this.ticksUntilClick--;
             if (this.ticksUntilClick <= 0) {
                 this.doClick();

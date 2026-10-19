@@ -1,7 +1,9 @@
 package net.venomous.meteoraddon.modules.world;
 
+import java.util.List;
 import java.util.Random;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
+import meteordevelopment.meteorclient.settings.BlockListSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
@@ -20,11 +22,14 @@ import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
+import net.venomous.meteoraddon.utils.ScaffoldGates;
 import net.venomous.meteoraddon.utils.SneakTiming;
 
 public class Scaffold extends Module {
@@ -60,6 +65,43 @@ public class Scaffold extends Module {
             .defaultValue(SneakTiming.DEFAULT_SNEAK_DELAY_MS)
             .range(0, 1000)
             .sliderMax(500)
+            .build()
+    );
+
+    private final Setting<List<Block>> blockWhitelist = this.sgGeneral.add(
+        new BlockListSetting.Builder()
+            .name("block-whitelist")
+            .description("Only ever place these blocks. An empty list means unrestricted.")
+            .build()
+    );
+
+    private final Setting<List<Block>> blockBlacklist = this.sgGeneral.add(
+        new BlockListSetting.Builder()
+            .name("block-blacklist")
+            .description("Never place these blocks. Useful where glass, ladders or glowstone end "
+                + "up in the hotbar - bridging with those looks nothing like building with one "
+                + "material. Always wins over the whitelist.")
+            .build()
+    );
+
+    private final Setting<Boolean> pitchCheck = this.sgGeneral.add(
+        new BoolSetting.Builder()
+            .name("pitch-check")
+            .description("Only place while looking down towards the bridge. Someone about to "
+                + "bridge is watching their feet; placing while staring at the horizon is not "
+                + "something a person does. Complements pitch-assist.")
+            .defaultValue(false)
+            .build()
+    );
+
+    private final Setting<Integer> pitchThreshold = this.sgGeneral.add(
+        new IntSetting.Builder()
+            .name("pitch-threshold")
+            .description("How far down the head must be pointed before placing, in degrees. "
+                + "0 disables the gate.")
+            .defaultValue(0)
+            .range(0, 90)
+            .sliderMax(90)
             .build()
     );
 
@@ -625,23 +667,46 @@ public class Scaffold extends Module {
         return false;
     }
 
+    /**
+     * Whether {@code item} is a block this configuration is willing to place.
+     *
+     * <p>Applies the blacklist, then the whitelist. A whitelist only restricts once it has entries,
+     * so turning the feature on without picking anything does not silently stop the module.</p>
+     */
+    private boolean isPlaceableBlock(ItemStack stack) {
+        if (stack.isEmpty() || !(stack.getItem() instanceof BlockItem blockItem)) return false;
+        return ScaffoldGates.blockAllowed(blockItem.getBlock(),
+            this.blockWhitelist.get(), this.blockBlacklist.get());
+    }
+
+    /** Head-pitch gate; see {@link ScaffoldGates#pitchAllows}. */
+    private boolean pitchAllowsPlacing() {
+        if (!this.pitchCheck.get() || this.mc.player == null) return true;
+        return ScaffoldGates.pitchAllows(this.mc.player.getXRot(), this.pitchThreshold.get());
+    }
+
     private FindItemResult findBlock() {
+        if (!this.pitchAllowsPlacing()) {
+            return new FindItemResult(-1, 0);
+        }
+
         if (!this.autoBlockSwitch.get()) {
             ItemStack held = this.mc.player.getMainHandItem();
-            if (held.getItem() instanceof BlockItem) {
+            if (this.isPlaceableBlock(held)) {
                 return InvUtils.findInHotbar(held.getItem());
             }
             return InvUtils.findInHotbar(item -> false);
         }
 
-        if (this.technique.get() == Scaffold.Technique.GrimScaffold && this.grimUseScaffolding.get()) {
+        if (this.technique.get() == Scaffold.Technique.GrimScaffold && this.grimUseScaffolding.get()
+            && ScaffoldGates.blockAllowed(Blocks.SCAFFOLDING, this.blockWhitelist.get(), this.blockBlacklist.get())) {
             FindItemResult scaffold = InvUtils.findInHotbar(Items.SCAFFOLDING);
             if (scaffold.found()) {
                 return scaffold;
             }
         }
 
-        return InvUtils.findInHotbar(item -> item.getItem() instanceof BlockItem);
+        return InvUtils.findInHotbar(this::isPlaceableBlock);
     }
 
     private void pressManagedSneak() {
