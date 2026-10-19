@@ -18,6 +18,7 @@ import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.VelocityGate;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 
 public class VelocityPlus extends Module {
@@ -57,6 +58,34 @@ public class VelocityPlus extends Module {
             new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
                 .name("only-on-ground")
                 .description("Only reduce velocity when on ground.")
+                .defaultValue(false)
+                .build()
+        );
+    private final Setting<Integer> reduceChance = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.IntSetting.Builder()
+                .name("chance")
+                .description("Percent of knockback packets actually reduced. Reducing every "
+                    + "knockback, every time, is itself a pattern; real players take full knockback "
+                    + "sometimes. 100 restores unconditional reduction.")
+                .defaultValue(100)
+                .range(0, 100)
+                .sliderMax(100)
+                .build()
+        );
+    private final Setting<Boolean> waterCheck = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("water-check")
+                .description("Leave knockback alone while in water.")
+                .defaultValue(false)
+                .build()
+        );
+    private final Setting<Boolean> onlyWhenTargeting = this.sgGeneral
+        .add(
+            new meteordevelopment.meteorclient.settings.BoolSetting.Builder()
+                .name("only-when-targeting")
+                .description("Only reduce knockback while face to face with an opponent.")
                 .defaultValue(false)
                 .build()
         );
@@ -217,6 +246,16 @@ public class VelocityPlus extends Module {
                 }
 
                 if ((Boolean)this.onlyOnGround.get() && !this.mc.player.onGround()) {
+                    return;
+                }
+
+                if (!VelocityGate.shouldReduce(
+                        VelocityGate.rollPassed(this.reduceChance.get(), (int) (Math.random() * 100)),
+                        this.isInWater(),
+                        // Only scanned when the gate is on; it walks every nearby player.
+                        (Boolean)this.onlyWhenTargeting.get() && !this.isFacingTarget(),
+                        (Boolean)this.waterCheck.get(),
+                        (Boolean)this.onlyWhenTargeting.get())) {
                     return;
                 }
 
@@ -385,6 +424,36 @@ public class VelocityPlus extends Module {
                 this.mc.player.setSprinting(true);
             }
         }
+    }
+
+    /** Feet in water or eyes in water - either reads as "in water" to the server. */
+    private boolean isInWater() {
+        if (this.mc.player == null || this.mc.level == null) return false;
+        return this.mc.player.isInWater();
+    }
+
+    /** True when some other player is inside a short, forward-facing cone. */
+    private boolean isFacingTarget() {
+        if (this.mc.player == null || this.mc.level == null) return false;
+
+        Vec3 eyes = this.mc.player.getEyePosition();
+        Vec3 look = this.mc.player.getLookAngle();
+        double reach = 6.0;
+
+        for (net.minecraft.world.entity.player.Player entity : this.mc.level.players()) {
+            if (entity == this.mc.player) {
+                continue;
+            }
+
+            if (entity.distanceToSqr(this.mc.player) > reach * reach) continue;
+
+            Vec3 to = entity.getEyePosition().subtract(eyes);
+            if (to.lengthSqr() < 1.0E-6) return true;
+
+            if (to.normalize().dot(look) > 0.94) return true;
+        }
+
+        return false;
     }
 
     private boolean isBoatNearby() {

@@ -6,6 +6,15 @@ All notable changes to Venomous are documented in this file.
 
 ## [7.1.0] - 2026-10-18
 
+- Added activity guards across the combat modules, ported from a decompile of Vape v4.10. Each one
+  stops the client doing something a person would not: `aimbot` gained `click-aim` (only aim while
+  the attack key is held), `check-block-break` (do not aim while mining) and `limit-to-items` — the
+  first two close a real inconsistency, because `auto-clicker-plus` already refused to click unless
+  the attack key was down while the aimer tracked anyone unconditionally. `auto-clicker-plus` gained
+  `require-entity`, since nothing stopped it firing on empty air. `velocity-plus` gained `chance`,
+  `water-check` and `only-when-targeting`; reducing every knockback in every situation is itself a
+  pattern. `v-scaffold` gained `block-whitelist`/`block-blacklist` and `pitch-check`/
+  `pitch-threshold`. All default to off or permissive so existing behaviour is unchanged.
 - Removed the `god-bridge` and `breezily` techniques from `v-scaffold`. Both drove the camera
   directly, which is the behaviour this release exists to undo: `god-bridge` jumped, looked back and
   down, placed beneath the jump and eased the view forward again, while `breezily` pulsed the player
