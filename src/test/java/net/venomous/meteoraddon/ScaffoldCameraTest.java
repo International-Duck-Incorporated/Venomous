@@ -325,22 +325,22 @@ public class ScaffoldCameraTest extends SourceGuard {
      */
     @Test
     void thePlacementIsGatedOnTheRayReachingTheBlock() {
-        String body = methodBody(source(SCAFFOLD), "private boolean rayReachesSupport(BlockPos support)");
+        String body = methodBody(source(SCAFFOLD),
+            "private boolean rayReachesSupport(BlockPos support, float yaw, float pitch)");
 
         requireAnchor(body, "rayReachesSupport", "GrimRay.rotationPlaceWouldPass");
 
         String squeezed = squeeze(body);
 
-        assertTrue(squeezed.contains("Rotations.serverYaw"),
-            "the ray has to be tested against the rotation the SERVER is holding, because that is "
-                + "the one Grim judges the placement by");
+        assertTrue(squeezed.contains("yaw,pitch,this.lastServerYaw,this.lastServerPitch"),
+            "the ray has to be tested against the rotation the placement goes out with, with the last one sent as the second candidate");
 
         assertTrue(squeezed.contains("support.getX()"),
             "and against the block that was clicked, which is the support");
 
         String caller = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
 
-        assertTrue(caller.contains("this.rayReachesSupport(support)") && caller.contains("if(reaches)"),
+        assertTrue(caller.contains("this.rayReachesSupport(support,face[0],face[1])") && caller.contains("if(reaches)"),
             "and the placement is only made when that test passes");
 
         assertFalse(caller.contains("PLACE_TOLERANCE"),

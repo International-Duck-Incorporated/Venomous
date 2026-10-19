@@ -265,6 +265,25 @@ public class Scaffold extends Module {
     private long nextPlaceAtMs = 0L;
 
     /**
+     * The crouch state the module wants, when it could not be applied this tick.
+     *
+     * <p>Deferred rather than dropped: the crouch may not change on a tick where a placement
+     * leaves, or Grim's PacketOrderF denies the placement, but it must not be lost either - a
+     * crouch that is never applied is not a crouch.</p>
+     */
+    private boolean pendingSneak = false;
+
+    /**
+     * Whether the cooldown allows a placement right now.
+     *
+     * <p>Wall clock, not ticks: a tick-counted cooldown assumes 20 TPS, and this client does not
+     * run at 20.</p>
+     */
+    private boolean placementDue() {
+        return this.nowMs() >= this.nextPlaceAtMs;
+    }
+
+    /**
      * How many ticks of detail to log after a placement.
      *
      * <p>Grim's Simulation check compares the movement the client actually performed against the
@@ -527,6 +546,15 @@ public class Scaffold extends Module {
         this.lastServerYaw = Rotations.serverYaw;
         this.lastServerPitch = Rotations.serverPitch;
 
+        // The pitch is only spoofed when a placement is going out. On every other tick the server
+        // is told the player's own pitch, so their head does not move: a spectator watching sees a
+        // player who is looking where they are looking, rather than one whose head is pinned to
+        // the ground and jerks on every placement.
+        boolean pending = PreRotate.hasPending(this);
+        boolean due = this.placementDue();
+
+        PreRotate.rotateOnly(this, face[0], due || pending ? face[1] : this.mc.player.getXRot());
+
         // The server is told the aim, and the placement goes out one tick later, once the server
         // has actually received that rotation. Grim judges the placement against the rotation the
         // server holds at that moment, so that is the angle the ray has to be tested against -
@@ -536,8 +564,9 @@ public class Scaffold extends Module {
         // waiting for the yaw would hold the placement back every time they looked around - and
         // the action is discarded after five ticks, so the bridge would only build while they
         // happened to be holding the mouse still.
+        if (due) {
         PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
-            boolean reaches = this.rayReachesSupport(support);
+            boolean reaches = this.rayReachesSupport(support, face[0], face[1]);
 
             this.debugLog("place: cell=%s support=%s side=%s aim=%.2f,%.2f camYaw=%.2f serverHolds=%.2f,%.2f ray=%s",
                 pos, support, side, face[0], face[1], this.mc.player.getYRot(),
@@ -547,6 +576,7 @@ public class Scaffold extends Module {
                 this.place(pos);
             }
         });
+        }
     }
 
     /**
@@ -623,13 +653,16 @@ public class Scaffold extends Module {
      * blocks on 1.9+ clients, so the eye-box overlap that lets a near miss through is worth
      * nothing.</p>
      */
-    private boolean rayReachesSupport(BlockPos support) {
+    private boolean rayReachesSupport(BlockPos support, float yaw, float pitch) {
         if (this.mc.player == null) return false;
 
         Vec3 eye = this.mc.player.getEyePosition();
 
+        // The rotation being tested is the one the placement goes out with: Grim judges a
+        // placement after the flying packet, and the placement leaves in the PRE phase of that
+        // very packet, so the rotation in it is the one just asked for.
         return GrimRay.rotationPlaceWouldPass(eye.x, eye.z, this.mc.player.getY(),
-            Rotations.serverYaw, Rotations.serverPitch, this.lastServerYaw, this.lastServerPitch,
+            yaw, pitch, this.lastServerYaw, this.lastServerPitch,
             support.getX(), support.getY(), support.getZ(),
             support.getX() + 1.0D, support.getY() + 1.0D, support.getZ() + 1.0D);
     }
@@ -737,7 +770,7 @@ public class Scaffold extends Module {
         // the block underneath was still inside the cooldown from the previous placement, and they
         // fell off the bridge.
         long now = this.nowMs();
-        if (now < this.nextPlaceAtMs) {
+        if (!this.placementDue()) {
             this.debugLog("place: cell=%s skipped, %dms of cooldown left", pos, this.nextPlaceAtMs - now);
             return false;
         }
@@ -885,17 +918,26 @@ public class Scaffold extends Module {
      * server's view of the crouch is unchanged.</p>
      */
     private void updateManagedSneak(boolean atEdge) {
-        if (PreRotate.hasPending(this)) {
-            this.debugLog("crouch: left alone - a placement is leaving this tick");
-            return;
-        }
-
         boolean onGround = this.mc.player != null && this.mc.player.onGround();
         long heldFor = this.managedSneak && this.sneakHeldSinceMs > 0L
             ? Math.max(0L, nowMs() - this.sneakHeldSinceMs)
             : 0L;
 
-        boolean hold = SneakTiming.shouldHold(atEdge, onGround, this.managedSneak, heldFor, this.sneakDelay.get());
+        boolean hold = SneakTiming.shouldHold(atEdge, onGround,
+            this.managedSneak || this.pendingSneak, heldFor, this.sneakDelay.get());
+
+        // The state the crouch wants, whether or not it can be applied this tick.
+        this.pendingSneak = hold;
+
+        // A placement leaves at the end of this tick, so the crouch must not change now: the
+        // server believes the player is sneaking between the "start sneaking" packet and the next
+        // movement packet, and a placement inside that window is denied by Grim's PacketOrderF.
+        // The change is deferred to the next tick with no placement, not dropped.
+        if (PreRotate.hasPending(this)) {
+            this.debugLog("crouch: deferred to %s - a placement is leaving this tick",
+                hold ? "press" : "release");
+            return;
+        }
 
         if (hold != this.managedSneak) {
             this.debugLog("crouch: edge=%s onGround=%s held=%dms -> %s",
@@ -984,7 +1026,7 @@ public class Scaffold extends Module {
      */
     private void debugLog(String message, Object... args) {
         if (!this.debugLogging.get()) return;
-        LOG.info("[DEBUG-scf] " + message, args);
+        LOG.info("[DEBUG-scf] " + (args.length == 0 ? message : String.format(message, args)));
     }
 
     /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */

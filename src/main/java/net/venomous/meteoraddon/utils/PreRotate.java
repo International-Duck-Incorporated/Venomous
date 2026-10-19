@@ -156,6 +156,18 @@ public final class PreRotate {
         PENDING.add(owner, guard, (float) yaw, (float) pitch, action, replace, yawMatters);
     }
 
+    /**
+     * Asks for the rotation without queuing an action to go with it.
+     *
+     * <p>For a caller that wants the server to be told an angle every tick but only acts
+     * occasionally. Queueing an action on every tick would fill the queue, and a caller that asks
+     * "is an action of mine waiting?" would then be told yes every tick - which is what stopped
+     * the crouch from ever coming on.</p>
+     */
+    public static void rotateOnly(Module owner, double yaw, double pitch) {
+        Rotations.rotate(yaw, pitch, 10, null);
+    }
+
     /** Drops every queued action. Call from {@code onDeactivate}. */
     public static void cancelAll() {
         PENDING.clear();
