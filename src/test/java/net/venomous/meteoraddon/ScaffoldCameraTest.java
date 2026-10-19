@@ -325,26 +325,73 @@ public class ScaffoldCameraTest extends SourceGuard {
      */
     @Test
     void thePlacementIsGatedOnTheRayReachingTheBlock() {
-        String body = methodBody(source(SCAFFOLD), "private boolean rayReachesSupport(BlockPos support)");
+        String body = methodBody(source(SCAFFOLD),
+            "private boolean rayReachesSupport(BlockPos support, float yaw, float pitch)");
 
         requireAnchor(body, "rayReachesSupport", "GrimRay.rotationPlaceWouldPass");
 
         String squeezed = squeeze(body);
-
-        assertTrue(squeezed.contains("Rotations.serverYaw"),
-            "the ray has to be tested against the rotation the SERVER is holding, because that is "
-                + "the one Grim judges the placement by");
 
         assertTrue(squeezed.contains("support.getX()"),
             "and against the block that was clicked, which is the support");
 
         String caller = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
 
-        assertTrue(caller.contains("if(this.rayReachesSupport(support))"),
+        assertTrue(caller.contains("if(this.rayReachesSupport(support,face[0],face[1]))"),
             "and the placement is only made when that test passes");
 
         assertFalse(caller.contains("PLACE_TOLERANCE"),
             "the angle tolerance is what this replaces; it was seven degrees of slack on a geometry "
                 + "where two degrees already misses the face");
+    }
+
+    /**
+     * The gate has to test the rotation the placement is going out with.
+     *
+     * <p>Grim judges a placement after the flying packet - the rotation the server ends up with -
+     * and the placement leaves in the PRE phase of that very packet. So the rotation in it is the
+     * one that has just been asked for, and the one the server already holds is the previous tick's.
+     * Testing the rotation the server happened to be holding passes the gate on a ray that misses
+     * the block, and the placement is denied with "not looking at it".</p>
+     */
+    @Test
+    void theGateTestsTheRotationThePlacementGoesOutWith() {
+        String body = methodBody(source(SCAFFOLD),
+            "private boolean rayReachesSupport(BlockPos support, float yaw, float pitch)");
+
+        requireAnchor(body, "rayReachesSupport", "rotationPlaceWouldPass");
+
+        String squeezed = squeeze(body);
+
+        assertTrue(squeezed.contains("yaw,pitch,this.lastServerYaw,this.lastServerPitch"),
+            "the requested rotation is the one Grim judges, and the last one sent is the second "
+                + "candidate - Grim tries the current yaw with the current pitch, the previous yaw "
+                + "with the current pitch, and the previous yaw with the previous pitch");
+
+        assertFalse(squeezed.contains("Rotations.serverYaw"),
+            "the rotation the server is holding at the moment of the check is the previous tick's, "
+                + "which is not the one the placement is judged by");
+    }
+
+    /**
+     * The crouch is decided after the placement, and only when none is waiting.
+     *
+     * <p>Both halves matter. The guard has to be able to see the placement, so the placement is
+     * queued first; and the guard has to see the placement that is leaving this tick, which is the
+     * one queued by the previous tick and still in the queue when the tick starts.</p>
+     */
+    @Test
+    void theCrouchIsDecidedAfterThePlacement() {
+        String standard = squeeze(methodBody(source(SCAFFOLD), "private void tickStandardMode()"));
+        String grim = squeeze(methodBody(source(SCAFFOLD), "private void tickGrim()"));
+
+        for (String body : new String[] {standard, grim}) {
+            int place = body.indexOf("this.aimAndPlace(");
+            int sneak = body.indexOf("this.updateManagedSneak(");
+
+            assertTrue(place >= 0 && sneak > place,
+                "the placement is queued before the crouch is decided, so the crouch can see that a "
+                    + "placement is waiting and leave it alone");
+        }
     }
 }

@@ -359,15 +359,11 @@ public class Scaffold extends Module {
 
         BlockPos placePos = this.getPlacePos();
         if (placePos == null) {
-            this.releaseManagedSneak();
+            // A placement queued on the previous tick leaves at the end of this one, so the crouch
+            // must not change here either - see the note below.
+            if (!PreRotate.hasPending(this)) this.releaseManagedSneak();
             return;
         }
-
-        // Sneaking at the edge is now strictly opt-in. It used to be forced on by the NCP profile
-        // and by the bridge modes, and it put "sneaking=true" on every Grim packet-order flag:
-        // PacketOrderE reports any held-item change while a flag is set, and PacketOrderF reports
-        // placing while it is set. A flag the player did not ask for, on every placement.
-        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
 
         // Expand/VulcanExpand were removed: they placed extra blocks per tick, which no cadence
         // survives and which the anticheat's straight-line minimum punishes hardest.
@@ -376,24 +372,42 @@ public class Scaffold extends Module {
         } else {
             this.place(placePos);
         }
+
+        // The crouch is decided after the placement, and only when no placement is waiting.
+        //
+        // Grim's PacketOrderF denies an action packet that arrives while the server still believes
+        // the player is sneaking, and the server believes it between the "start sneaking" packet
+        // and the next movement packet. The placement leaves in between: the crouch input goes out
+        // in the player's own tick, and the placement leaves in the movement packet's PRE phase.
+        // So a crouch that changes on the same tick as a placement puts the placement inside that
+        // window, and the server denies it.
+        //
+        // A denied placement is not just a missing block. The client is left standing on a block
+        // the server never received, and the two disagree by tenths of a block: the live log showed
+        // the offsets jump to 0.15 and the server teleporting the player back.
+        //
+        // Deciding it after the placement is what makes the guard work. The placement is queued
+        // above, so the queue is no longer empty by the time the crouch is considered, and the
+        // crouch is left exactly as it is for the tick the placement leaves on.
+        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
     }
 
     /** Human-looking Grim profile: edge crouch, visible eased aim, then an unspoofed interaction. */
     private void tickGrim() {
         BlockPos target = this.getPlacePos();
         if (target == null || !this.findBlock().found()) {
-            this.releaseManagedSneak();
+            if (!PreRotate.hasPending(this)) this.releaseManagedSneak();
             return;
         }
-
-        // Also opt-in now, for the same reason as tickStandardMode.
-        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
 
         if (!this.rotate.get()) {
             this.place(target);
         } else {
             this.aimAndPlace(target);
         }
+
+        // The crouch goes after the placement, for the reason given in tickStandardMode.
+        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
     }
 
     private void tickBridgeMode() {
@@ -497,7 +511,7 @@ public class Scaffold extends Module {
         // the action is discarded after five ticks, so the bridge would only build while they
         // happened to be holding the mouse still.
         PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
-            if (this.rayReachesSupport(support)) {
+            if (this.rayReachesSupport(support, face[0], face[1])) {
                 this.place(pos);
             }
         });
@@ -577,13 +591,22 @@ public class Scaffold extends Module {
      * blocks on 1.9+ clients, so the eye-box overlap that lets a near miss through is worth
      * nothing.</p>
      */
-    private boolean rayReachesSupport(BlockPos support) {
+    private boolean rayReachesSupport(BlockPos support, float yaw, float pitch) {
         if (this.mc.player == null) return false;
 
         Vec3 eye = this.mc.player.getEyePosition();
 
+        // The rotation being tested is the one this placement is going out with, not the one the
+        // server happens to be holding. Grim judges the placement after the flying packet - the
+        // rotation the server ends up with - and the placement leaves in the PRE phase of that very
+        // packet, so the rotation in it is the one that has just been asked for and not the one
+        // that was sent a tick ago.
+        //
+        // Grim tries three of them: the current yaw with the current pitch, the previous yaw with
+        // the current pitch, and the previous yaw with the previous pitch. The helper takes exactly
+        // those three, so passing the requested rotation and the last one sent covers all of them.
         return GrimRay.rotationPlaceWouldPass(eye.x, eye.z, this.mc.player.getY(),
-            Rotations.serverYaw, Rotations.serverPitch, this.lastServerYaw, this.lastServerPitch,
+            yaw, pitch, this.lastServerYaw, this.lastServerPitch,
             support.getX(), support.getY(), support.getZ(),
             support.getX() + 1.0D, support.getY() + 1.0D, support.getZ() + 1.0D);
     }
