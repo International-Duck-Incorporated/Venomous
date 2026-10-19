@@ -31,7 +31,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class LocalPlayerMixin {
     @Inject(
         method = "modifyInput(Lnet/minecraft/world/phys/Vec2;)Lnet/minecraft/world/phys/Vec2;",
-        at = @At("RETURN")
+        at = @At("RETURN"),
+        // Required: setReturnValue on a CallbackInfoReturnable throws "the call modifyInput is
+        // not cancellable" without it, and that crash is a hard client crash rather than a
+        // warning - it took the game down on the first tick.
+        cancellable = true
     )
     private void venomous$compensateInput(Vec2 input, CallbackInfoReturnable<Vec2> cir) {
         float yaw = InputCompensation.yaw();
