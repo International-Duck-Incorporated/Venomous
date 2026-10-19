@@ -729,16 +729,37 @@ public class Scaffold extends Module {
         return ScaffoldGates.pitchAllows(this.mc.player.getXRot(), this.pitchThreshold.get());
     }
 
+    /**
+     * Picks the item to place with, preferring to keep the slot we already hold.
+     *
+     * <p>Grim's {@code PacketOrderE} - "Changed held item slot during another conflicting action" -
+     * fires on {@code HELD_ITEM_CHANGE} whenever any action is outstanding, and a block placement
+     * counts as one. Scanning the hotbar every tick meant swapping the slot immediately before
+     * every place, so each swap arrived while the previous placement was still in flight:</p>
+     *
+     * <pre>{@code
+     *   Grim > PacketOrderE x0.0 attacking=false, rightClicking=true,
+     *            openingInventory=false, releasing=false, sneaking=false, ...
+     * }</pre>
+     *
+     * <p>Nothing here is gained by swapping when the current slot already holds a usable block, so
+     * the held item is checked first and only a genuine change of material triggers a swap. That is
+     * also what a person does: you pick a stack and keep bridging on it.</p>
+     */
     private FindItemResult findBlock() {
         if (!this.pitchAllowsPlacing()) {
             return new FindItemResult(-1, 0);
         }
 
+        ItemStack held = this.mc.player.getMainHandItem();
+
+        // Already holding something we are allowed to place: no slot change, no HELD_ITEM_CHANGE.
+        if (this.isPlaceableBlock(held)) {
+            return new FindItemResult(this.mc.player.getInventory().getSelectedSlot(),
+                held.getCount());
+        }
+
         if (!this.autoBlockSwitch.get()) {
-            ItemStack held = this.mc.player.getMainHandItem();
-            if (this.isPlaceableBlock(held)) {
-                return InvUtils.findInHotbar(held.getItem());
-            }
             return InvUtils.findInHotbar(item -> false);
         }
 
