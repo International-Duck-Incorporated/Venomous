@@ -34,14 +34,26 @@ public final class DeferredActions<A> {
         private final float yaw;
         private final float pitch;
         private final A action;
+        private final boolean yawMatters;
         private int age;
 
-        Pending(Object owner, Guard guard, float yaw, float pitch, A action) {
+        Pending(Object owner, Guard guard, float yaw, float pitch, A action, boolean yawMatters) {
             this.owner = owner;
             this.guard = guard;
             this.yaw = yaw;
             this.pitch = pitch;
             this.action = action;
+            this.yawMatters = yawMatters;
+        }
+
+        /**
+         * Whether the action has to wait for the yaw as well as the pitch.
+         *
+         * <p>False for a caller whose yaw is the player's own: that yaw changes as the player looks
+         * around, so waiting for it measures the mouse rather than the rotation.</p>
+         */
+        public boolean yawMatters() {
+            return this.yawMatters;
         }
 
         public float yaw() {
@@ -80,15 +92,43 @@ public final class DeferredActions<A> {
      *                that must all run, such as a macro throwing an item then using a charge.
      */
     public synchronized void add(Object owner, Guard guard, float yaw, float pitch, A action, boolean replace) {
+        add(owner, guard, yaw, pitch, action, replace, true);
+    }
+
+    /**
+     * Queues an action, with a choice about whether the yaw has to have landed.
+     *
+     * @param yawMatters false when the caller does not need the yaw to have been sent - because
+     *                   the yaw is the player's own and moves with the mouse
+     */
+    public synchronized void add(Object owner, Guard guard, float yaw, float pitch, A action,
+                                 boolean replace, boolean yawMatters) {
         if (replace) {
             this.pending.removeIf(entry -> entry.owner == owner);
         }
 
-        this.pending.add(new Pending<>(owner, guard, yaw, pitch, action));
+        this.pending.add(new Pending<>(owner, guard, yaw, pitch, action, yawMatters));
     }
 
     public synchronized boolean isEmpty() {
         return this.pending.isEmpty();
+    }
+
+    /**
+     * Whether this caller has an action queued and still waiting to run.
+     *
+     * <p>Used to keep two packets that must not share a tick apart - a placement and the sneak
+     * input that goes with it, say. The caller asks at the start of the tick, while the action
+     * queued by the previous tick is still in the queue, and it fires at the end of this one.</p>
+     *
+     * @param owner identity of the caller, compared by reference as everywhere else here
+     */
+    public synchronized boolean has(Object owner) {
+        for (Pending<A> entry : this.pending) {
+            if (entry.owner == owner) return true;
+        }
+
+        return false;
     }
 
     public synchronized int size() {

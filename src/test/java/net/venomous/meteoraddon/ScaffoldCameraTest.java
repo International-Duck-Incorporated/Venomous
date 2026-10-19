@@ -259,6 +259,33 @@ public class ScaffoldCameraTest extends SourceGuard {
     }
 
     /**
+     * The crouch must not change on a tick where a placement is going out.
+     *
+     * <p>Grim's {@code PacketOrderF} cancels an action packet that arrives while the server still
+     * believes the player is sneaking, and the server believes it between the "start sneaking"
+     * packet and the next movement packet. The placement leaves in the movement packet's PRE
+     * phase, which is after the player's tick has already sent the crouch input - so a crouch that
+     * changes on that tick gets the placement cancelled.</p>
+     *
+     * <p>A cancelled placement leaves the client standing on a block the server never received,
+     * and that desync is worth tenths of a block: the live log showed the offsets jump to 0.15 and
+     * the server teleporting the player back.</p>
+     */
+    @Test
+    void theCrouchDoesNotChangeOnATickWithAPlacement() {
+        String body = methodBody(source(SCAFFOLD), "private void updateManagedSneak(boolean atEdge)");
+
+        requireAnchor(body, "updateManagedSneak", "PreRotate.hasPending");
+
+        String squeezed = squeeze(body);
+
+        assertTrue(squeezed.contains("if(PreRotate.hasPending(this))return;"),
+            "a crouch that changes on a tick where a placement leaves is what gets that placement "
+                + "cancelled by PacketOrderF, and the cancelled placement is what desyncs the "
+                + "client from the server");
+    }
+
+    /**
      * Sneaking is opt-in.
      *
      * <p>It used to be forced by two of the technique profiles, and every single Grim

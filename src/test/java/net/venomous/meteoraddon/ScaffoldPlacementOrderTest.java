@@ -91,8 +91,27 @@ public class ScaffoldPlacementOrderTest {
     void rotationAndPlaceGoesThroughPreRotate() throws IOException {
         String code = code(scaffoldSource());
 
-        assertTrue(code.contains("PreRotate.rotateThen(this, face[0], face[1], () -> {"),
+        assertTrue(code.contains("PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {"),
             "aimAndPlace must defer the placement through PreRotate so it leaves before the "
                 + "movement packet, not after it.");
+    }
+
+    /**
+     * The wait is on the pitch alone.
+     *
+     * <p>The yaw is the player's own, and it moves with the mouse. PreRotate's readiness test
+     * compares the requested yaw with the last one sent, so waiting for the yaw would measure the
+     * mouse rather than the rotation - and the action is discarded after five ticks, so the
+     * bridge would only build while the player happened to be holding the mouse still.</p>
+     */
+    @Test
+    void theWaitIsOnThePitchAlone() throws IOException {
+        String code = code(scaffoldSource());
+
+        assertFalse(code.contains("PreRotate.rotateThen(this, face[0], face[1]"),
+            "waiting for the yaw would hold the placement back every time the player looked around");
+
+        assertTrue(code.contains("PreRotate.rotateThenOnPitch("),
+            "the pitch-only variant is the one that fits a caller whose yaw is the player's own");
     }
 }

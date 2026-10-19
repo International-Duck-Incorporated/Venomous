@@ -77,7 +77,25 @@ public final class PreRotate {
 
     /** As above, with an explicit Meteor rotation priority. */
     public static void rotateThen(Module owner, double yaw, double pitch, int priority, Runnable action) {
-        queue(owner, owner::isActive, yaw, pitch, priority, action, true);
+        queue(owner, owner::isActive, yaw, pitch, priority, action, true, true);
+    }
+
+    /**
+     * As {@link #rotateThen(Module, double, double, Runnable)}, but the action waits only for the
+     * pitch to be sent.
+     *
+     * <p>For a caller whose yaw is the player's own. The yaw then changes as the player looks
+     * around, and comparing the requested yaw with the last one sent measures the mouse rather
+     * than the rotation: two degrees of mouse movement in a tick is enough to hold the action back,
+     * and the action is discarded after five ticks - so the caller would act only while the player
+     * happened to be holding the mouse still, which is the opposite of what a free camera is for.</p>
+     *
+     * <p>The yaw does not need waiting for either way. Whether the rotation the server holds is the
+     * one the caller needs is the caller's own question, and it is better asked of the rotation the
+     * server actually has - the scaffold asks it of the ray it traces.</p>
+     */
+    public static void rotateThenOnPitch(Module owner, double yaw, double pitch, Runnable action) {
+        queue(owner, owner::isActive, yaw, pitch, 10, action, true, false);
     }
 
     /**
@@ -93,7 +111,7 @@ public final class PreRotate {
 
     /** As above, with an explicit Meteor rotation priority. */
     public static void rotateThenSequence(Module owner, double yaw, double pitch, int priority, Runnable action) {
-        queue(owner, owner::isActive, yaw, pitch, priority, action, false);
+        queue(owner, owner::isActive, yaw, pitch, priority, action, false, true);
     }
 
     /**
@@ -109,7 +127,7 @@ public final class PreRotate {
 
     /** As above, with an explicit Meteor rotation priority. */
     public static void rotateThen(Object owner, Guard guard, double yaw, double pitch, int priority, Runnable action) {
-        queue(owner, guard, yaw, pitch, priority, action, true);
+        queue(owner, guard, yaw, pitch, priority, action, true, true);
     }
 
     /**
@@ -122,7 +140,8 @@ public final class PreRotate {
      * @param priority rotation priority handed to Meteor, higher wins contention
      * @param action   the interaction to perform; never run from POST
      */
-    private static void queue(Object owner, Guard guard, double yaw, double pitch, int priority, Runnable action, boolean replace) {
+    private static void queue(Object owner, Guard guard, double yaw, double pitch, int priority,
+                               Runnable action, boolean replace, boolean yawMatters) {
         if (action == null) {
             Rotations.rotate(yaw, pitch, priority, null);
             return;
@@ -134,12 +153,24 @@ public final class PreRotate {
         // put us back in the POST phase, which is the whole problem.
         Rotations.rotate(yaw, pitch, priority, null);
 
-        PENDING.add(owner, guard, (float) yaw, (float) pitch, action, replace);
+        PENDING.add(owner, guard, (float) yaw, (float) pitch, action, replace, yawMatters);
     }
 
     /** Drops every queued action. Call from {@code onDeactivate}. */
     public static void cancelAll() {
         PENDING.clear();
+    }
+
+    /**
+     * Whether {@code owner} has an action queued and still waiting to run.
+     *
+     * <p>It fires in the movement packet's PRE phase, which is after the player's own tick has
+     * already sent whatever input packets that tick carries. A caller that must not share a tick
+     * with its own queued action - a placement and the sneak input, say - asks this at the start of
+     * the tick and holds off until the queue is empty again.</p>
+     */
+    public static boolean hasPending(Module owner) {
+        return PENDING.has(owner);
     }
 
     /**

@@ -491,7 +491,12 @@ public class Scaffold extends Module {
         // has actually received that rotation. Grim judges the placement against the rotation the
         // server holds at that moment, so that is the angle the ray has to be tested against -
         // and it is tested at that moment rather than guessed at here.
-        PreRotate.rotateThen(this, face[0], face[1], () -> {
+        //
+        // The wait is on the pitch alone. The yaw is the player's own and moves with the mouse, so
+        // waiting for the yaw would hold the placement back every time they looked around - and
+        // the action is discarded after five ticks, so the bridge would only build while they
+        // happened to be holding the mouse still.
+        PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
             if (this.rayReachesSupport(support)) {
                 this.place(pos);
             }
@@ -803,8 +808,22 @@ public class Scaffold extends Module {
      * the very first tick the edge is gone. That instant transition is the shape AntiCheat-Addition's
      * {@code Scaffold.parts.Safewalk.Timing} looks for: movement that stops without a sustained
      * crouch. The decision itself lives in {@link SneakTiming} so it can be tested without a game.</p>
+     *
+     * <p>And the crouch must not change on a tick where a placement is going out, which is what
+     * Grim's {@code PacketOrderF} is about. The server believes the player is sneaking between the
+     * "start sneaking" packet and the next movement packet, and it cancels any action packet that
+     * arrives in that window - the placement included. A cancelled placement leaves the client
+     * standing on a block the server never received, and that desync is worth tenths of a block:
+     * the live log showed the offsets jump to 0.15 and the server teleporting the player back.</p>
+     *
+     * <p>The placement leaves in the movement packet's PRE phase, which is after the player's tick
+     * has already sent the crouch input. So on a tick where a placement is waiting to go out, the
+     * crouch is left exactly as it is - the key stays down and no input packet is sent, and the
+     * server's view of the crouch is unchanged.</p>
      */
     private void updateManagedSneak(boolean atEdge) {
+        if (PreRotate.hasPending(this)) return;
+
         boolean onGround = this.mc.player != null && this.mc.player.onGround();
         long heldFor = this.managedSneak && this.sneakHeldSinceMs > 0L
             ? Math.max(0L, nowMs() - this.sneakHeldSinceMs)
