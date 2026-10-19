@@ -2,10 +2,6 @@ package net.venomous.meteoraddon;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,87 +18,113 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * </ul>
  *
  * <p>Originally the camera was pinned to whatever the server was told, which hijacked the player's
- * view. Then it was decoupled entirely, so it never tracked the placement at all and stopped
- * looking at the face being built. It now eases onto that face - slower than the server rotation,
- * and GCD-quantised, because an arbitrary float written to {@code setYRot} is an angle no mouse
- * could produce.
+ * view. Then it was decoupled entirely, so it never tracked the placement at all and stopped looking
+ * at the face being built. It now eases onto that face - slower than the server rotation, and
+ * GCD-quantised, because an arbitrary float written to {@code setYRot} is an angle no mouse could
+ * produce.</p>
+ *
+ * <p>Asserts on source because "the camera is handed the face aim, not the block centre" is a
+ * property of the wiring and has no behavioural seam. See {@link SourceGuard} for why that is done
+ * defensively.</p>
  */
-public class ScaffoldCameraTest {
-    private static String scaffoldSource() throws IOException {
-        Path dir = Path.of(System.getProperty("user.dir")).toAbsolutePath();
-        String rel = "src/main/java/net/venomous/meteoraddon/modules/world/Scaffold.java";
+public class ScaffoldCameraTest extends SourceGuard {
+    private static final String SCAFFOLD =
+        "src/main/java/net/venomous/meteoraddon/modules/world/Scaffold.java";
 
-        while (dir != null) {
-            Path candidate = dir.resolve(rel);
-            if (Files.isRegularFile(candidate)) return Files.readString(candidate);
-            dir = dir.getParent();
-        }
-
-        throw new AssertionError("could not find " + rel);
+    private String scaffold() {
+        return code(source(SCAFFOLD));
     }
 
     @Test
-    void theCameraEasesOntoThePlacementFace() throws IOException {
-        String source = scaffoldSource();
+    void theCameraIsEasedOntoTheFaceAimAndNotPinnedToTheServerAngle() {
+        String body = methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)");
 
-        assertTrue(source.contains("private void easeCameraOnto(float[] face)"),
-            "scaffold must ease the camera towards the placement face");
+        requireAnchor(body, "aimAndPlace",
+            "float[] face = this.faceAimAt(pos);",
+            "this.easeCameraOnto(face);");
 
-        // Assert the wiring rather than one exact line: the face is computed once and handed to
-        // both the camera and the server rotation, which is what keeps them agreeing without the
-        // camera being pinned to the server angle.
-        int face = source.indexOf("float[] face = this.faceAimAt(pos);");
-        int camera = source.indexOf("this.easeCameraOnto(face);");
-        int server = source.indexOf("this.easedAimAt(pos);");
+        String normalised = squeeze(body);
 
-        assertTrue(face >= 0, "aimAndPlace must compute the face aim");
-        assertTrue(camera > face, "and pass that same face to the camera");
-        assertTrue(server > camera, "the server rotation must be eased from the same point");
+        int face = normalised.indexOf("float[]face=this.faceAimAt(pos);");
+        int camera = normalised.indexOf("this.easeCameraOnto(face);");
+        int server = normalised.indexOf("this.easedAimAt(pos);");
+
+        assertTrue(face >= 0 && camera > face,
+            "the face aim must be computed first and handed to the camera");
+        assertTrue(server > camera,
+            "the server rotation must be eased from the same point, so both agree on one face");
+
+        assertFalse(normalised.contains("this.easeCameraOnto(this.easedAimAt"),
+            "the camera must not be driven from the server rotation; that is what pinned the two "
+                + "together in the first place");
     }
 
     @Test
-    void theCameraIsGcdQuantised() throws IOException {
-        String source = scaffoldSource();
+    void theCameraIsGcdQuantised() {
+        String body = methodBody(source(SCAFFOLD), "private void easeCameraOnto(float[] face)");
 
-        assertTrue(source.contains("RotationGcd.quantize(sensitivity, yawStep)"),
+        requireAnchor(body, "easeCameraOnto", "RotationGcd.quantize");
+
+        assertTrue(squeeze(body).contains("setYRot(yaw+RotationGcd.quantize(sensitivity,yawStep))"),
             "every camera delta must be a whole multiple of the sensitivity GCD; writing an "
                 + "arbitrary float to setYRot produces an angle no mouse can generate, which is "
                 + "what rotation checks fingerprint");
     }
 
+    /**
+     * The camera must travel at a fraction of the server rotation's rate.
+     *
+     * <p>An earlier version asserted the literal {@code * 0.6F} was present, which passed even when
+     * the mutation replaced it - the rate appears twice, for the step and for the velocity
+     * carry-over, and only the first was replaced. Requiring <em>every</em> occurrence to be scaled
+     * is what actually holds the invariant.</p>
+     */
     @Test
-    void theCameraRunsSlowerThanTheServerRotation() throws IOException {
-        String source = scaffoldSource();
-        int camera = source.indexOf("private void easeCameraOnto(float[] face)");
-        assertTrue(camera > 0, "easeCameraOnto missing");
+    void everyUseOfTheServerRateInsideTheCameraIsScaledDown() {
+        String body = squeeze(methodBody(source(SCAFFOLD), "private void easeCameraOnto(float[] face)"));
 
-        String body = source.substring(camera, source.indexOf("\n    }", camera));
-
-        // Every use of the server rate inside the camera must be scaled down. Checking only that a
-        // particular literal is present was too weak: the rate appears twice (the step and the
-        // velocity carry-over), so replacing just one of them still left the literal behind and the
-        // test passed while the camera ran at full speed on one axis.
-        // No \s* before the lookahead: a greedy \s* can match zero-width and backtrack, which defeats a
-// negative lookahead entirely and makes the assertion pass on unscaled rates.
-        java.util.regex.Matcher unscaled = java.util.regex.Pattern
-            .compile("maxAimStep\\(\\)(?!\\s*\\*\\s*0\\.)").matcher(body);
-
-        assertFalse(unscaled.find(),
+        // No \s* before the lookahead: a greedy \s* can match zero-width and backtrack, which defeats
+        // a negative lookahead entirely and makes this assertion pass on unscaled rates.
+        assertFalse(matches("maxAimStep\\(\\)(?!\\s*\\*\\s*0\\.)", body),
             "the camera must never use the server rotation's raw rate; every occurrence of "
                 + "maxAimStep() in easeCameraOnto has to be scaled down, otherwise the view locks "
                 + "onto the placement instead of leading into it");
     }
 
+    /**
+     * The one invariant this class was silently not covering: {@code faceAimAt} must hand
+     * {@code ScaffoldAim.aimPoint} a real normal.
+     *
+     * <p>Passing {@code null} there is legal - the helper treats it as "no support, use the block
+     * centre" - which made {@code aimPoint(null, ...)} compile and pass every test while silently
+     * reverting the camera to aiming at block centres. Found by mutation: nothing was checking the
+     * argument.
+     */
     @Test
-    void theCameraTracksTheSameFaceAimAsTheServerRotation() throws IOException {
-        String source = scaffoldSource();
+    void theFaceAimForwardsARealPlacementSideToTheHelper() {
+        String body = methodBody(source(SCAFFOLD), "private float[] faceAimAt(BlockPos pos)");
 
-        assertFalse(source.contains("setYRot(this.smooth("),
-            "the old constant-rate camera sweep is gone; it moved by an unquantised fixed number of "
-                + "degrees per tick for as long as it lasted");
+        requireAnchor(body, "faceAimAt", "ScaffoldAim.aimPoint(");
 
-        int call = source.indexOf("this.easeCameraOnto(face);");
-        assertTrue(call > 0 && source.indexOf("float[] face = this.faceAimAt(pos);") < call,
-            "camera must aim at the face, not the block centre");
+        String squeezed = squeeze(body);
+
+        assertFalse(squeezed.contains("ScaffoldAim.aimPoint(pos.getX(),pos.getY(),pos.getZ(),null,"),
+            "faceAimAt is passing a null normal, so the helper silently falls back to the block "
+                + "centre and the camera stops looking at the face");
+
+        assertTrue(squeezed.contains("side==null?null:")
+                || squeezed.contains("side = BlockUtils.getPlaceSide(pos);"),
+            "the normal must be derived from BlockUtils.getPlaceSide(pos)");
+    }
+
+    @Test
+    void theConstantRateCameraSweepIsGone() {
+        String code = scaffold();
+
+        requireAnchor(code, "Scaffold", "private void easeCameraOnto(float[] face)");
+
+        assertFalse(code.contains("setYRot(this.smooth("),
+            "the old constant-rate sweep is gone; it moved by an unquantised fixed number of degrees "
+                + "per tick for as long as it lasted");
     }
 }
