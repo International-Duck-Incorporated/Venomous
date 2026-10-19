@@ -29,6 +29,7 @@ import net.venomous.meteoraddon.utils.AimEase;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
+import net.venomous.meteoraddon.utils.RotationGcd;
 import net.venomous.meteoraddon.utils.ScaffoldAim;
 import net.venomous.meteoraddon.utils.ScaffoldGates;
 import net.venomous.meteoraddon.utils.SneakTiming;
@@ -149,6 +150,17 @@ public class Scaffold extends Module {
             .build()
     );
 
+    private final Setting<Boolean> cameraFollow = this.sgGeneral.add(
+        new BoolSetting.Builder()
+            .name("camera-follow")
+            .description("Ease the camera onto the placement face. Your view tracks what you are "
+                + "building, as it does when bridging by hand, but it is eased and GCD-quantised "
+                + "rather than snapping. The server rotation is still spoofed independently "
+                + "through PreRotate, so the two are no longer forced to be identical.")
+            .defaultValue(true)
+            .build()
+    );
+
     private static final float CAPTURE_DEGREES = 0.4F;
 
     private final Setting<Integer> placeDelay = this.sgGeneral.add(
@@ -253,6 +265,8 @@ public class Scaffold extends Module {
     private long sneakHeldSinceMs = 0L;
     private boolean previousSneakDown = false;
     private int targetY = -1;
+    private float camYawVelocity = 0.0F;
+    private float camPitchVelocity = 0.0F;
     private float aimYawVelocity = 0.0F;
     private float aimPitchVelocity = 0.0F;
     private Scaffold.Technique lastTechnique = null;
@@ -291,6 +305,8 @@ public class Scaffold extends Module {
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
         this.targetY = -1;
+        this.camYawVelocity = 0.0F;
+        this.camPitchVelocity = 0.0F;
         this.aimYawVelocity = 0.0F;
         this.aimPitchVelocity = 0.0F;
     }
@@ -502,11 +518,48 @@ public class Scaffold extends Module {
         // guaranteed to be refused, and is the other half of the null-side crash.
         if (!BlockUtils.canPlace(pos)) return;
 
+        // The camera follows the same face aim, eased and slower than the server rotation so it
+        // reads as a look rather than a lock. GCD-quantised, because every delta a real mouse
+        // emits is a whole multiple of the sensitivity grid.
+        this.easeCameraOnto(this.faceAimAt(pos));
+
         float[] aim = this.easedAimAt(pos);
 
         // Only place once the rotation has actually arrived; PreRotate enforces the tolerance and
         // defers the interaction to SendMovementPacketsEvent.Pre so it leaves before the packet.
         PreRotate.rotateThen(this, aim[0], aim[1], () -> this.place(pos));
+    }
+
+    /**
+     * Eases the camera onto the placement face.
+     *
+     * <p>Runs well below the server rotation's rate so the view visibly leads into a placement
+     * rather than locking onto it, and every delta is quantised to the sensitivity GCD - an
+     * arbitrary float written straight to {@code setYRot} is an angle no mouse could produce,
+     * which is precisely what rotation checks fingerprint.</p>
+     */
+    private void easeCameraOnto(float[] face) {
+        if (!this.cameraFollow.get() || this.mc.player == null) return;
+
+        float yaw = this.mc.player.getYRot();
+        float pitch = this.mc.player.getXRot();
+        float yawDelta = wrapDegrees(face[0] - yaw);
+        float pitchDelta = face[1] - pitch;
+
+        float yawStep = AimEase.step(yawDelta, this.maxAimStep() * 0.6F, this.camYawVelocity,
+            CAPTURE_DEGREES, this.aimNoise());
+        float pitchStep = AimEase.step(pitchDelta, this.maxAimStep() * 0.35F, this.camPitchVelocity,
+            CAPTURE_DEGREES, this.aimNoise());
+
+        this.camYawVelocity = AimEase.nextVelocity(yawDelta, this.maxAimStep() * 0.6F,
+            this.camYawVelocity, CAPTURE_DEGREES, 0.0F);
+        this.camPitchVelocity = AimEase.nextVelocity(pitchDelta, this.maxAimStep() * 0.35F,
+            this.camPitchVelocity, CAPTURE_DEGREES, 0.0F);
+
+        double sensitivity = this.mc.options.sensitivity().get();
+
+        this.mc.player.setYRot(yaw + RotationGcd.quantize(sensitivity, yawStep));
+        this.mc.player.setXRot((float) ScaffoldAim.clamp(pitch + pitchStep, -90.0, 90.0));
     }
 
     /**
