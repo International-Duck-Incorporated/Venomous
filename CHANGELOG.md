@@ -6,6 +6,14 @@ All notable changes to Venomous are documented in this file.
 
 ## [7.1.0] - 2026-10-18
 
+- Removed the `god-bridge` and `breezily` techniques from `v-scaffold`. Both drove the camera
+  directly, which is the behaviour this release exists to undo: `god-bridge` jumped, looked back and
+  down, placed beneath the jump and eased the view forward again, while `breezily` pulsed the player
+  sideways at the edge and placed on each pulse. Neither survived a real bridge. Removing them took
+  out the last callers of the camera slew, so `smoothAimAt`, `smoothViewTo`, `applyLook`, `aimNoise`,
+  the per-axis aim velocities, `CAPTURE_DEGREES`, and the `AimEase`/`RotationGcd` imports went with
+  them — all of which existed only to write a GCD-quantised look change to the camera, and none of
+  which is reachable now that nothing drives the view. `v-scaffold` is down 127 lines.
 - `v-scaffold` no longer snaps out of its crouch the instant a bridge edge clears. All four
   auto-sneak sites were a bare `if (edge) crouch(); else stand();`, so the crouch came up 50ms after
   it went down. That is the exact shape AntiCheat-Addition's `Scaffold.parts.Safewalk.Timing` flags

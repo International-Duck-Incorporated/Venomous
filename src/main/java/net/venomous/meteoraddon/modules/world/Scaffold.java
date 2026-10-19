@@ -22,12 +22,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
-import net.venomous.meteoraddon.utils.AimEase;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
 import net.venomous.meteoraddon.utils.SneakTiming;
-import net.venomous.meteoraddon.utils.RotationGcd;
 
 public class Scaffold extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -226,7 +224,6 @@ public class Scaffold extends Module {
     );
 
     /** Distance at which a slew is treated as arrived and the last fraction is snapped. */
-    private static final float CAPTURE_DEGREES = 6.0F;
 
     /** Extra ticks a placement may be held back by, on top of the configured delay. */
     private static final int CADENCE_JITTER_TICKS = ScaffoldCadence.CADENCE_JITTER_TICKS;
@@ -243,13 +240,6 @@ public class Scaffold extends Module {
     private int targetY = -1;
     private Scaffold.Technique lastTechnique = null;
     private Vec3 bridgeHeading = Vec3.ZERO;
-    private float restoreYaw;
-    private float restorePitch;
-    private int godBridgePhase = 0;
-    private int godBridgeTicks = 0;
-    private int breezilySide = 1;
-    private float aimYawVelocity = 0.0F;
-    private float aimPitchVelocity = 0.0F;
     private final Random random = new Random();
 
     public Scaffold() {
@@ -268,11 +258,6 @@ public class Scaffold extends Module {
         this.previousSneakDown = false;
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
-        this.godBridgePhase = 0;
-        this.godBridgeTicks = 0;
-        this.breezilySide = 1;
-        this.aimYawVelocity = 0.0F;
-        this.aimPitchVelocity = 0.0F;
         this.targetY = this.mc.player != null ? (int)Math.floor(this.mc.player.getY() - 1.0) : -1;
     }
 
@@ -288,19 +273,13 @@ public class Scaffold extends Module {
         this.repeatedAttempts = 0;
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
-        this.godBridgePhase = 0;
-        this.godBridgeTicks = 0;
         this.targetY = -1;
-        this.aimYawVelocity = 0.0F;
-        this.aimPitchVelocity = 0.0F;
     }
 
     private boolean isBridgeMode() {
         return this.technique.get() == Scaffold.Technique.AutoSneak
             || this.technique.get() == Scaffold.Technique.BridgeMacro
             || this.technique.get() == Scaffold.Technique.VapeBridge
-            || this.technique.get() == Scaffold.Technique.GodBridge
-            || this.technique.get() == Scaffold.Technique.Breezily
             || this.technique.get() == Scaffold.Technique.VulcanSprint;
     }
 
@@ -308,7 +287,7 @@ public class Scaffold extends Module {
     private int techniqueDelay() {
         int base = Math.max(1, this.placeDelay.get());
         return switch (this.technique.get()) {
-            case GodBridge, Breezily, VapeBridge -> Math.max(1, base - 2);
+            case VapeBridge -> Math.max(1, base - 2);
             case VulcanExpand, VulcanSprint -> Math.max(1, base);
             default -> base;
         };
@@ -325,8 +304,6 @@ public class Scaffold extends Module {
         if (selected != this.lastTechnique) {
             this.releaseManagedSneak();
             this.bridgeHeading = Vec3.ZERO;
-            this.godBridgePhase = 0;
-            this.godBridgeTicks = 0;
             this.lastAttemptPos = null;
             this.repeatedAttempts = 0;
             this.lastTechnique = selected;
@@ -346,8 +323,6 @@ public class Scaffold extends Module {
 
         switch (selected) {
             case GrimScaffold -> this.tickGrim();
-            case GodBridge -> this.tickGodBridge();
-            case Breezily -> this.tickBreezily();
             case AutoSneak, BridgeMacro, VapeBridge, VulcanSprint -> this.tickBridgeMode();
             case VulcanExpand, Expand, NCPNormal, Normal -> this.tickStandardMode();
         }
@@ -418,83 +393,6 @@ public class Scaffold extends Module {
         }
     }
 
-    /** Jump forward, look back/down, place beneath the jump, and ease the view forward again. */
-    private void tickGodBridge() {
-        if (this.godBridgePhase == 0) {
-            Vec3 input = this.movementDirection();
-            if (input.lengthSqr() < 1.0E-4) return;
-            this.bridgeHeading = input.normalize();
-
-            if (this.edgeDistance(this.bridgeHeading) < this.jittered(0.30) && this.mc.player.onGround()) {
-                this.restoreYaw = this.mc.player.getYRot();
-                this.restorePitch = this.mc.player.getXRot();
-                this.mc.player.jumpFromGround();
-                this.godBridgePhase = 1;
-                this.godBridgeTicks = 0;
-            }
-            return;
-        }
-
-        this.godBridgeTicks++;
-        Vec3 velocity = this.mc.player.getDeltaMovement();
-        double horizontalSpeed = Math.max(0.18, Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z));
-        this.mc.player.setDeltaMovement(
-            this.bridgeHeading.x * horizontalSpeed,
-            velocity.y,
-            this.bridgeHeading.z * horizontalSpeed
-        );
-
-        BlockPos target = BlockPos.containing(
-            this.mc.player.getX() - this.bridgeHeading.x * 0.35,
-            this.blockY(),
-            this.mc.player.getZ() - this.bridgeHeading.z * 0.35
-        );
-        if (!this.mc.level.getBlockState(target).isAir()) {
-            target = BlockPos.containing(
-                this.mc.player.getX() + this.bridgeHeading.x * 0.55,
-                this.blockY(),
-                this.mc.player.getZ() + this.bridgeHeading.z * 0.55
-            );
-        }
-
-        if (this.godBridgePhase == 1) {
-            if (this.smoothAimAt(target, 28.0F, 11.0F) && this.place(target, false)) {
-                this.godBridgePhase = 2;
-                this.godBridgeTicks = 0;
-            } else if (this.godBridgeTicks > 8) {
-                this.godBridgePhase = 2;
-                this.godBridgeTicks = 0;
-            }
-        } else {
-            boolean yawReady = this.smoothViewTo(this.restoreYaw, this.restorePitch, 22.0F, 9.0F);
-            if (yawReady || this.godBridgeTicks > 8 || this.mc.player.onGround()) {
-                this.godBridgePhase = 0;
-                this.godBridgeTicks = 0;
-            }
-        }
-    }
-
-    /** Breezily profile: alternating lateral pulses and rapid placement without edge crouching. */
-    private void tickBreezily() {
-        Vec3 forward = this.movementDirection();
-        if (forward.lengthSqr() < 1.0E-4) return;
-        forward = forward.normalize();
-        this.releaseManagedSneak();
-
-        if (this.edgeDistance(forward) < this.jittered(0.34)) {
-            Vec3 velocity = this.mc.player.getDeltaMovement();
-            Vec3 side = new Vec3(-forward.z, 0.0, forward.x).scale(0.055 * this.breezilySide);
-            this.mc.player.setDeltaMovement(velocity.x + side.x, velocity.y, velocity.z + side.z);
-
-            BlockPos target = BlockPos.containing(
-                this.mc.player.getX() + forward.x * 0.70,
-                this.blockY(),
-                this.mc.player.getZ() + forward.z * 0.70
-            );
-            if (this.place(target)) this.breezilySide = -this.breezilySide;
-        }
-    }
-
     private void tickBridgeMode() {
         Vec3 dir = this.movementDirection();
         if (dir.lengthSqr() < 1.0E-4) {
@@ -513,12 +411,10 @@ public class Scaffold extends Module {
         boolean edge = this.edgeDistance(dir) <= this.jittered(this.bridgeEdgeThreshold.get());
         Scaffold.Technique tech = this.technique.get();
 
-        boolean isFastBridge = (tech == Scaffold.Technique.GodBridge || tech == Scaffold.Technique.Breezily);
-
         if (!edge) {
             this.releaseManagedSneak();
         } else {
-            if (!isFastBridge || !this.mc.player.onGround()) {
+            if (!this.mc.player.onGround()) {
                 this.pressManagedSneak();
             }
 
@@ -528,7 +424,7 @@ public class Scaffold extends Module {
                 float oldYaw = this.mc.player.getYRot();
                 float oldPitch = this.mc.player.getXRot();
 
-                if (this.bridgePitchAssist.get() && (tech == Scaffold.Technique.VapeBridge || tech == Scaffold.Technique.GodBridge || tech == Scaffold.Technique.VulcanSprint)) {
+                if (this.bridgePitchAssist.get() && (tech == Scaffold.Technique.VapeBridge || tech == Scaffold.Technique.VulcanSprint)) {
                     if (this.mc.player.getXRot() < 65.0F && !this.rotate.get()) {
                         this.mc.player.setXRot(75.5F);
                     }
@@ -599,31 +495,6 @@ public class Scaffold extends Module {
         };
     }
 
-    private boolean smoothAimAt(BlockPos pos, float maxYawStep, float maxPitchStep) {
-        Vec3 eyes = this.mc.player.getEyePosition();
-        double dx = pos.getX() + 0.5 - eyes.x;
-        double dy = pos.getY() + 0.5 - eyes.y;
-        double dz = pos.getZ() + 0.5 - eyes.z;
-        double horizontal = Math.sqrt(dx * dx + dz * dz);
-        float yaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
-        float pitch = (float)-Math.toDegrees(Math.atan2(dy, horizontal));
-        return this.smoothViewTo(yaw, pitch, maxYawStep, maxPitchStep);
-    }
-
-    private boolean smoothViewTo(float targetYaw, float targetPitch, float maxYawStep, float maxPitchStep) {
-        float yawDelta = wrapDegrees(targetYaw - this.mc.player.getYRot());
-        float pitchDelta = targetPitch - this.mc.player.getXRot();
-
-        float yawStep = AimEase.step(yawDelta, maxYawStep, this.aimYawVelocity, CAPTURE_DEGREES, this.aimNoise());
-        float pitchStep = AimEase.step(pitchDelta, maxPitchStep, this.aimPitchVelocity, CAPTURE_DEGREES, this.aimNoise());
-
-        this.aimYawVelocity = AimEase.nextVelocity(yawDelta, maxYawStep, this.aimYawVelocity, CAPTURE_DEGREES, 0.0F);
-        this.aimPitchVelocity = AimEase.nextVelocity(pitchDelta, maxPitchStep, this.aimPitchVelocity, CAPTURE_DEGREES, 0.0F);
-
-        this.applyLook(this.mc.player.getYRot() + yawStep, this.mc.player.getXRot() + pitchStep);
-        return Math.abs(yawDelta) <= 4.0F && Math.abs(pitchDelta) <= 4.0F;
-    }
-
     /**
      * Writes a look change a real mouse could have produced.
      *
@@ -633,19 +504,8 @@ public class Scaffold extends Module {
      * quantise for this reason; scaffold wrote straight to {@code setYRot}, so its sweep moved by
      * exactly 7 degrees per tick for as long as it lasted.</p>
      */
-    private void applyLook(float yaw, float pitch) {
-        double sensitivity = this.mc.options.sensitivity().get();
-        float yawOut = this.mc.player.getYRot() + RotationGcd.quantize(sensitivity, yaw - this.mc.player.getYRot());
-        float pitchOut = this.mc.player.getXRot() + RotationGcd.quantize(sensitivity, pitch - this.mc.player.getXRot());
-
-        this.mc.player.setYRot(yawOut);
-        this.mc.player.setXRot(clamp(pitchOut, -90.0F, 90.0F));
-    }
 
     /** Signed jitter, used to break up constant-rate sweeps. */
-    private float aimNoise() {
-        return (float)(this.random.nextGaussian() * 0.6);
-    }
 
     /** Threshold with per-evaluation variance, so the crouch is not metronomic. */
     private double jittered(double base) {
@@ -848,8 +708,6 @@ public class Scaffold extends Module {
         VulcanSprint,
         NCPNormal,
         Normal,
-        Expand,
-        GodBridge,
-        Breezily;
+        Expand;
     }
 }
