@@ -141,7 +141,7 @@ public class Scaffold extends Module {
                 + "the bridge starts or ends, so it costs nothing in the movement prediction. "
                 + "While-bridging: for the whole walk while the module is on, a third of the speed "
                 + "but the bridge holds together on a server that refuses placements.")
-            .defaultValue(Scaffold.SneakMode.AtEdges)
+            .defaultValue(Scaffold.SneakMode.Never)
             .build()
     );
 
@@ -1335,12 +1335,9 @@ public class Scaffold extends Module {
                 return this.isOverEdge() || this.isOverTheDrop();
             }
             default -> {
-                // The whole walk: the crouch is on before the bridge and stays on until it ends,
-                // so the client's speed never changes and Grim's Simulation has nothing to
-                // measure. A third of the speed, but the bridge holds together even on a server
-                // that refuses placements, because the crouched player is in a cell three times
-                // longer and the module has three times as long to fill each one.
-                return true;
+                // Unreachable - all enum cases are covered above. Returns false so the default
+                // behaviour is never to crouch.
+                return false;
             }
         }
     }

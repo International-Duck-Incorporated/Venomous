@@ -379,8 +379,9 @@ public class ScaffoldCameraTest extends SourceGuard {
                 + "and the drop they are looking at; a player bridging backwards is moving, and "
                 + "that is exactly when they need the crouch");
 
-        assertTrue(squeezed.contains("default->{returntrue;}"),
-            "and the while-bridging mode has to keep the crouch on for the whole walk");
+        assertTrue(squeezed.contains("default->{returnfalse;}"),
+            "and the default mode has to never crouch - the bridge is at full speed and the module "
+                + "is on its own");
     }
 
     /**
