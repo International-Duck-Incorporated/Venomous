@@ -280,30 +280,41 @@ public class ScaffoldCameraTest extends SourceGuard {
     }
 
     /**
-     * The crouch must not change on a tick where a placement is going out.
+     * The crouch may change on a tick where a placement is going out.
      *
      * <p>Grim's {@code PacketOrderF} cancels an action packet that arrives while the server still
      * believes the player is sneaking, and the server believes it between the "start sneaking"
-     * packet and the next movement packet. The placement leaves in the movement packet's PRE
-     * phase, which is after the player's tick has already sent the crouch input - so a crouch that
-     * changes on that tick gets the placement cancelled.</p>
+     * packet and the next movement packet.</p>
      *
-     * <p>A cancelled placement leaves the client standing on a block the server never received,
-     * and that desync is worth tenths of a block: the live log showed the offsets jump to 0.15 and
-     * the server teleporting the player back.</p>
+     * <p>This used to be handled by holding the crouch still for the tick, and applying the
+     * change later. That was needed when the placement left from the movement packet's own
+     * pre-phase, which is <em>after</em> the player's tick has already sent the crouch input - so
+     * the placement landed inside the crouch and Grim cancelled it, and a cancelled placement
+     * leaves the client standing on a block the server never received, which is worth tenths of a
+     * block: the live log showed the offsets jump to 0.15 and the server teleporting the player
+     * back.</p>
+     *
+     * <p>The placement now leaves from the hook in the player's tick that sits before the input
+     * packet, so the crouch and the placement reach the server in the order a vanilla client's do,
+     * and holding the crouch back only costs a tick of delay and a line of log on every
+     * placement.</p>
      */
     @Test
-    void theCrouchDoesNotChangeOnATickWithAPlacement() {
+    void theCrouchIsNotHeldBackForAPlacement() {
         String body = methodBody(source(SCAFFOLD), "private void updateManagedSneak(boolean atEdge)");
 
-        requireAnchor(body, "updateManagedSneak", "PreRotate.hasPending");
+        requireAnchor(body, "updateManagedSneak", "SneakTiming.shouldHold");
 
         String squeezed = squeeze(body);
 
-        assertTrue(squeezed.contains("PreRotate.hasPending(this)") && squeezed.contains("return;"),
-            "a crouch that changes on a tick where a placement leaves is what gets that placement "
-                + "cancelled by PacketOrderF, and the cancelled placement is what desyncs the "
-                + "client from the server");
+        assertFalse(squeezed.contains("PreRotate.hasPending(this)"),
+            "the placement leaves before the crouch's input packet now, so holding the crouch "
+                + "back for a pending placement only delays it by a tick and prints a line of log "
+                + "on every placement");
+
+        assertTrue(squeezed.contains("SneakTiming.shouldHold"),
+            "and the crouch is still decided by the timing helper, which is where the edge, the "
+                + "sneak delay and the ground all come together");
     }
 
     /**
@@ -348,8 +359,9 @@ public class ScaffoldCameraTest extends SourceGuard {
      * changes moved the client's speed by seventy per cent, which the server only learns about a
      * tick later.</p>
      *
-     * <p>The no-target path has to hand the crouch to the timing decision instead, so the
-     * {@code sneak-delay} is honoured and the crouch is held for a real duration.</p>
+     * <p>The no-target path has to decide by the edge, exactly as every other path does. A bridge
+     * has no target for the tick after every placement, so that path is the normal state of a
+     * bridge - and the edge is still there for the whole of the walk.</p>
      */
     @Test
     void theCrouchSurvivesATickWithNoTarget() {
@@ -361,11 +373,10 @@ public class ScaffoldCameraTest extends SourceGuard {
 
             String squeezed = squeeze(body);
 
-            assertTrue(squeezed.contains("this.updateManagedSneak(false);"),
-                method + " has to hand the crouch to the timing decision when there is no target, "
-                    + "not drop it: the module fills the cell the player is standing on, so there is "
-                    + "no target for a tick after every placement, and dropping the crouch there "
-                    + "made it come and go on every placement");
+            assertTrue(squeezed.contains("this.updateManagedSneak(this.autoSneak.get()&&this.isOverEdge());"),
+                method + " has to decide the crouch by the edge on the no-target path too: a bridge "
+                    + "has no target for the tick after every placement, and dropping the crouch "
+                    + "there made it come and go on every placement");
 
             assertEquals(1, countOccurrences(squeezed, "this.releaseManagedSneak();"),
                 method + " may only release the crouch where the player is not bridging at all - "

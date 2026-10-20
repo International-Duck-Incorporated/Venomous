@@ -474,11 +474,27 @@ public class Scaffold extends Module {
 
         BlockPos placePos = this.getPlacePos();
         if (placePos == null) {
-            // No target, but the crouch is not dropped here. The setting asks for it to be held for
-            // the delay after the edge clears, and a crouch that comes and goes changes the
-            // client's speed by seventy per cent every time - the server only learns about it a
-            // tick later, which is worth more than the placement offset it is trying to avoid.
-            this.updateManagedSneak(false);
+            // No target, but the crouch is not dropped here. The module fills the cell the
+            // player is standing on, so for the tick after a placement there is no target left -
+            // and that is the normal state of a bridge, not an exception. Releasing the crouch
+            // there is what made it come and go on every placement, which the live log shows:
+            //
+            //   crouch: key down (was false)
+            //   place: cell=... PLACED
+            //   crouch: edge=false ... -> release
+            //   crouch: key up (restored to false)
+            //
+            // A crouch that changes twice a placement changes the client's speed by seventy per
+            // cent twice a placement, and the server only learns about it a tick later. Grim's
+            // Simulation measures the difference between the movement it predicted and the
+            // movement the client made, and that difference is the speed change: the live log has
+            // .010444, .028401 and .071601 for the same bridge. Past a tenth of a block Grim
+            // teleports the player back, and being teleported back mid-bridge is how you fall
+            // off it.
+            //
+            // So the edge decides, on this path exactly as on every other: the player is at the
+            // edge of a bridge for the whole of the walk, and the crouch is held for it.
+            this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
             return;
         }
 
@@ -506,7 +522,10 @@ public class Scaffold extends Module {
 
         BlockPos target = this.getPlacePos();
         if (target == null || !this.findBlock().found()) {
-            this.updateManagedSneak(false);
+            // The same as in tickStandardMode: no target is the normal state of a bridge for the
+            // tick after a placement, and the crouch is decided by the edge, not by there being
+            // something to place.
+            this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
             return;
         }
 
@@ -623,8 +642,6 @@ public class Scaffold extends Module {
         boolean pending = PreRotate.hasPending(this);
         boolean due = this.placementDue();
 
-        PreRotate.rotateOnly(this, face[0], face[1]);
-
         // The server is told the aim, and the placement goes out one tick later, once the server
         // has actually received that rotation. Grim judges the placement against the rotation the
         // server holds at that moment, so that is the angle the ray has to be tested against -
@@ -634,6 +651,19 @@ public class Scaffold extends Module {
         // waiting for the yaw would hold the placement back every time they looked around - and
         // the action is discarded after five ticks, so the bridge would only build while they
         // happened to be holding the mouse still.
+        //
+        // ONE rotation request per tick, and never two. This used to ask for the rotation with
+        // rotateOnly and then again with rotateThenOnPitch, and Meteor's rotation queue hands out
+        // one rotation per tick - so the two requests were applied a tick apart and the server was
+        // told the same angle twice. Three things came out of that:
+        //
+        //   - Grim's AimDuplicateLook reports a rotation packet with the same yaw and pitch as
+        //     the previous one, and the live log has eleven of them;
+        //   - the rotation the server was holding when the placement went out was the one from
+        //     the tick before, not the aim the placement was made with, so the ray was traced
+        //     against an angle the server had never been told - which is what "the ray missed the
+        //     block" is;
+        //   - and the queue ran a tick ahead of the aim for the rest of the bridge.
         if (due) {
         PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
             boolean reaches = this.rayReachesSupport(support, face[0], face[1]);
@@ -669,6 +699,11 @@ public class Scaffold extends Module {
                 Rotations.serverYaw, Rotations.serverPitch, placed ? "PLACED" : "FAILED",
                 at.x, at.y, at.z, vel.x, vel.y, vel.z, this.mc.player.onGround());
         });
+        } else {
+            // No placement this tick, so the rotation still has to be sent: the camera is the
+            // aim, and the server has to be told it, or the walk it predicts and the walk the
+            // client performs are along two different angles.
+            PreRotate.rotateOnly(this, face[0], face[1]);
         }
     }
     /**
@@ -1021,10 +1056,13 @@ public class Scaffold extends Module {
      * standing on a block the server never received, and that desync is worth tenths of a block:
      * the live log showed the offsets jump to 0.15 and the server teleporting the player back.</p>
      *
-     * <p>The placement leaves in the movement packet's PRE phase, which is after the player's tick
-     * has already sent the crouch input. So on a tick where a placement is waiting to go out, the
-     * crouch is left exactly as it is - the key stays down and no input packet is sent, and the
-     * server's view of the crouch is unchanged.</p>
+     * <p>What used to be done about it here was to hold the crouch still while a placement was
+     * waiting, and apply the change on a later tick. That is no longer needed, and it was costing
+     * a tick of delay and a line of log on every placement: the placement now leaves from the hook
+     * in the player's tick, which is <em>before</em> the input packet that carries the crouch. So
+     * the crouch and the placement are on the wire in the same order a vanilla client's are - the
+     * placement first, the crouch after it - and the server never sees an action inside a
+     * crouch it has not been told about yet.</p>
      */
     private void updateManagedSneak(boolean atEdge) {
         boolean onGround = this.mc.player != null && this.mc.player.onGround();
@@ -1037,22 +1075,6 @@ public class Scaffold extends Module {
 
         // The state the crouch wants, whether or not it can be applied this tick.
         this.pendingSneak = hold;
-
-        // A placement leaves at the end of this tick, so the crouch must not change now: the
-        // server believes the player is sneaking between the "start sneaking" packet and the next
-        // movement packet, and a placement inside that window is denied by Grim's PacketOrderF.
-        // The change is deferred to the next tick with no placement, not dropped.
-        if (PreRotate.hasPending(this)) {
-            if (!this.crouchDeferred) {
-                this.crouchDeferred = true;
-                this.debugLog("crouch: deferred to %s - a placement is leaving this tick",
-                    hold ? "press" : "release");
-            }
-
-            return;
-        }
-
-        this.crouchDeferred = false;
 
         if (hold != this.managedSneak) {
             this.debugLog("crouch: edge=%s onGround=%s held=%dms -> %s",

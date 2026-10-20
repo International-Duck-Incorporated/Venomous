@@ -109,6 +109,72 @@ public class ScaffoldPlacementOrderTest {
     }
 
     /**
+     * One rotation request per tick, and never two.
+     *
+     * <p>The aim asked Meteor for the rotation with {@code rotateOnly} and then again with
+     * {@code rotateThenOnPitch}, on the same tick, with the same angle. Meteor's rotation queue
+     * hands out one rotation per tick, so the two requests were applied a tick apart and the
+     * server was told the same angle twice. Three things came out of that, and the live log has
+     * all three:</p>
+     *
+     * <ul>
+     *   <li>Grim's {@code AimDuplicateLook} reports a rotation packet with the same yaw and pitch
+     *       as the previous one - eleven of them in one bridge;</li>
+     *   <li>the rotation the server was holding when the placement went out was the one from the
+     *       tick before, not the aim the placement was made with, so the ray was traced against
+     *       an angle the server had never been told - which is what "the ray missed the block"
+     *       is;</li>
+     *   <li>and the queue ran a tick ahead of the aim for the rest of the bridge.</li>
+     * </ul>
+     */
+    @Test
+    void onlyOneRotationIsAskedForPerTick() throws IOException {
+        String code = code(scaffoldSource());
+        String body = methodBody(code, "private void aimAndPlace(BlockPos pos)");
+
+        requireAnchor(body, "aimAndPlace", "rotateThenOnPitch");
+
+        String squeezed = body.replaceAll("\\s+", "");
+
+        assertTrue(squeezed.contains("}else{PreRotate.rotateOnly(this,face[0],face[1]);}"),
+            "the rotation has to be asked for on exactly one path: the placement path asks for it "
+                + "with the action, and every other tick asks for it on its own. Asking for it "
+                + "twice on a placement tick makes Meteor's queue apply the same angle twice, a "
+                + "tick apart - which is Grim's AimDuplicateLook, and it leaves the server "
+                + "holding the previous tick's angle when the ray is traced");
+    }
+
+    /** The body of a method, found by balanced braces from its signature. */
+    private static String methodBody(String source, String signature) {
+        int start = source.indexOf(signature);
+        if (start < 0) return "";
+
+        int open = source.indexOf('{', start);
+        if (open < 0) return "";
+
+        int depth = 0;
+        for (int i = open; i < source.length(); i++) {
+            char c = source.charAt(i);
+            if (c == '{') depth++;
+            else if (c == '}' && --depth == 0) return source.substring(open + 1, i);
+        }
+
+        return "";
+    }
+
+    /** Fails loudly when an anchor is missing, rather than quietly passing. */
+    private static void requireAnchor(String where, String what, String... anchors) {
+        String haystack = where.replaceAll("\\s+", "");
+
+        for (String anchor : anchors) {
+            if (!haystack.contains(anchor.replaceAll("\\s+", ""))) {
+                throw new AssertionError("This guard is pointed at code that no longer exists ("
+                    + anchor + "). The test needs re-pointing at the new shape.");
+            }
+        }
+    }
+
+    /**
      * The placement has to leave before the crouch, not merely before the movement packet.
      *
      * <p>These are different points and the difference is the whole of Grim's
