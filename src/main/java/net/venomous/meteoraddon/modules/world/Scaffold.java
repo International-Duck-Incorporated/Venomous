@@ -141,7 +141,7 @@ public class Scaffold extends Module {
                 + "because a standing player has no speed to change. While-bridging: for the whole "
                 + "bridge, which is a third of the speed but is what keeps the bridge together "
                 + "on a server that refuses placements.")
-            .defaultValue(Scaffold.SneakMode.AtEdges)
+            .defaultValue(Scaffold.SneakMode.WhileBridging)
             .build()
     );
 
@@ -386,15 +386,6 @@ public class Scaffold extends Module {
     private boolean previousSneakDown = false;
     private int targetY = -1;
 
-    /**
-     * When the module last had a target - that is, when it was last building for the player.
-     *
-     * <p>The crouch is the fallback for when the module cannot keep the ground under the player,
-     * so this is how the module tells the two apart. A bridge has no target for the tick after
-     * every placement, and that is its normal state; measuring the gap in time rather than in
-     * ticks is what stops the crouch going on and off for the whole walk.</p>
-     */
-    private long lastTargetAtMs = 0L;
 
     /** The rotation the server held on the previous tick, which Grim also tests against. */
     private float lastServerYaw = 0.0F;
@@ -893,10 +884,6 @@ public class Scaffold extends Module {
         // fail this check at all.
         if (!this.isSupported(below)) return null;
 
-        // The module has a target, so it is building for the player and the crouch is not needed.
-        // The crouch is the fallback for when it cannot - see shouldSneak.
-        this.lastTargetAtMs = this.nowMs();
-
         return below;
     }
 
@@ -1263,22 +1250,40 @@ public class Scaffold extends Module {
     /**
      * Whether the player is at the edge of something.
      *
-     * <p>The edge is the cell in the direction the player is <em>looking</em>. Not the cell under
-     * them - that is the moment after they have already stepped off it, and it flickers on a
-     * bridge. Not the cell they are walking into either - while bridging backwards that is the
-     * cell in front of them, which is the one they just left and which is solid.</p>
+     * <p>The edge is the cell in the direction the player is walking into. On a bridge that cell
+     * is empty for the whole of the walk - the module fills the cell under the player - so this is
+     * true for the whole bridge, and the crouch is held for the whole bridge.</p>
      *
-     * <p>What is left is the classic safe walk: the drop is in front of you. A player standing at
-     * the edge of a platform is looking at the drop, and the crouch is what keeps them on the
-     * block. A player bridging backwards is looking at the bridge they have already built, and
-     * there is nothing to be careful of.</p>
+     * <p>It was the cell under the player once, and that is not the same question: the cell under
+     * the player is the moment after they have already stepped off it, and it flickers on every
+     * placement. The live log showed the crouch going down and coming straight back up on every
+     * placement, which is a crouch that changes the client's speed by seventy per cent twice a
+     * placement, and the server only learns about it a tick later.</p>
      *
      * <p>The geometry is in {@link ScaffoldEdge} so it can be tested without a world.</p>
      */
     private boolean isOverEdge() {
         if (this.mc.level == null || this.mc.player == null) return false;
 
-        // The direction the camera faces, which is the direction the player is looking.
+        Vec3 dir = this.movementDirection();
+
+        return ScaffoldEdge.overEdge(
+            this.mc.player.getX(), this.mc.player.getY(), this.mc.player.getZ(),
+            dir.x, dir.z,
+            (x, y, z) -> this.mc.level.getBlockState(new BlockPos(x, y, z)).isAir());
+    }
+
+    /**
+     * Whether there is a drop in front of the player.
+     *
+     * <p>The direction the player is <em>looking</em>, which is the classic safe walk: a player
+     * standing at the edge of a platform is looking at the drop, and the crouch is what keeps them
+     * on the block. A player bridging backwards is looking at the bridge they have already built,
+     * and there is nothing to be careful of.</p>
+     */
+    private boolean isOverTheDrop() {
+        if (this.mc.level == null || this.mc.player == null) return false;
+
         double yaw = Math.toRadians(this.mc.player.getYRot());
         double dx = -Math.sin(yaw);
         double dz = Math.cos(yaw);
@@ -1318,23 +1323,29 @@ public class Scaffold extends Module {
             case Never -> {
                 return false;
             }
-            case WhileBridging -> {
-                // The whole bridge. This is the mode that keeps a bridge together on a server
-                // that refuses placements, because a crouched player is in a cell three times
-                // longer and the module has three times as long to fill it.
-                //
-                // "The module is building" is measured in time rather than in ticks: a bridge
-                // has no target for the tick after every placement, and asking whether there is
-                // a target right now would put the crouch on and off for the whole walk.
-                boolean building = this.nowMs() - this.lastTargetAtMs <= this.sneakDelay.get();
-
-                return building || this.isOverEdge();
-            }
-            default -> {
-                // At the edge, and only while standing still. A standing player has no speed for
+            case AtEdges -> {
+                // At a drop, and only while standing still. A standing player has no speed for
                 // the crouch to change, so it costs nothing in the movement prediction and
                 // nothing in how fast the bridge goes.
-                return this.isOverEdge() && this.isStandingStill();
+                return this.isOverTheDrop() && this.isStandingStill();
+            }
+            default -> {
+                // The whole bridge.
+                //
+                // The crouch is a third of the walking speed and a bridge is walked backwards,
+                // which is a third again, so this is a slow bridge - one block a second in the
+                // live log. It is the default because of what the crouch buys: the module places
+                // the block under the player's feet, so the player is always falling for a tick
+                // or two until the block lands, and a server that refuses the placement - which
+                // the anticheat-test server does, on a timer - leaves a hole. A crouched player
+                // is in a cell three times longer, so the module has three times as long to fill
+                // it, and the bridge holds together.
+                //
+                // It is also the shape Grim wants. The crouch is on before the walk and stays on
+                // until it ends, so the client's speed never changes and Grim's Simulation has
+                // nothing to measure. The live log with the croup off had .001788, .017113,
+                // .012879 and .006660 in it; with the crouch on there were none.
+                return this.isOverEdge();
             }
         }
     }

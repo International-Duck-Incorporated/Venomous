@@ -370,14 +370,19 @@ public class ScaffoldCameraTest extends SourceGuard {
             "there has to be a mode where the crouch is never on: the bridge is at full speed and "
                 + "the module is on its own");
 
-        assertTrue(squeezed.contains("caseWhileBridging->{"),
-            "and a mode where it is on for the whole bridge, which is what keeps a bridge together "
-                + "on a server that refuses placements");
+        assertTrue(squeezed.contains("caseAtEdges->{"),
+            "and a mode where it is only at a drop while the player is standing still - a standing "
+                + "player has no speed for the crouch to change, so it costs nothing in the "
+                + "movement prediction and nothing in the bridge's speed");
 
-        assertTrue(squeezed.contains("this.isOverEdge()&&this.isStandingStill()"),
-            "and the third mode has to be the crouch at a drop while the player is standing "
-                + "still - a standing player has no speed for the crouch to change, so it costs "
-                + "nothing in the movement prediction and nothing in the bridge's speed");
+        assertTrue(squeezed.contains("this.isOverTheDrop()&&this.isStandingStill()"),
+            "and that mode has to ask both questions: the drop in front of them, and whether they "
+                + "are moving");
+
+        assertTrue(squeezed.contains("returnthis.isOverEdge();"),
+            "and the default mode has to be the whole bridge, which is what holds a bridge together "
+                + "on a server that refuses placements and what keeps the client's speed from "
+                + "changing while the walk goes on");
     }
 
     /**
@@ -435,37 +440,39 @@ public class ScaffoldCameraTest extends SourceGuard {
     }
 
     /**
-     * The edge is the drop in front of the player.
+     * Two different questions, and the module has to ask both of them.
      *
      * <p>Asserted on the wiring because the decision itself lives in {@link net.venomous.meteoraddon.utils.ScaffoldEdge}
-     * and is tested there; what this guards is that the module asks that question, and that the
-     * two questions that were wrong have not come back.</p>
+     * and is tested there; what this guards is that the module asks the right question in each
+     * place.</p>
      *
-     * <p>Not the cell under the player: that is the moment after they have already stepped off
-     * it, and it flickers on every placement, which is what made the crouch come and go. Not the
-     * cell they are walking into either: while bridging backwards that is the cell in front of
-     * them, which is the one they just left and which is solid.</p>
+     * <p>The <b>edge</b> is the cell the player is walking into. On a bridge that cell is empty
+     * for the whole of the walk, because the module fills the cell under the player, so the edge
+     * is true for the whole bridge and the crouch is held for the whole bridge. It is not the
+     * cell under the player: that is the moment after they have already stepped off it, and it
+     * flickers on every placement, which is what made the crouch come and go.</p>
+     *
+     * <p>The <b>drop</b> is in the direction the player is looking. That is the classic safe walk
+     * - a player standing at the edge of a platform is looking at the drop.</p>
      */
     @Test
-    void theEdgeIsTheDropInFrontOfThePlayer() {
-        String body = code(methodBody(source(SCAFFOLD), "private boolean isOverEdge()"));
+    void theEdgeAndTheDropAreTwoDifferentQuestions() {
+        String edge = code(methodBody(source(SCAFFOLD), "private boolean isOverEdge()"));
+        String drop = code(methodBody(source(SCAFFOLD), "private boolean isOverTheDrop()"));
 
-        requireAnchor(body, "isOverEdge", "ScaffoldEdge.overEdge");
+        requireAnchor(edge, "isOverEdge", "ScaffoldEdge.overEdge");
+        requireAnchor(drop, "isOverTheDrop", "ScaffoldEdge.overEdge");
 
-        String squeezed = squeeze(body);
+        assertTrue(squeeze(edge).contains("this.movementDirection()"),
+            "the edge is the cell the player is walking into, and on a bridge that cell is empty "
+                + "for the whole walk");
 
-        assertTrue(squeezed.contains("getYRot()"),
-            "the edge is the drop in the direction the player is looking, so the camera's yaw is "
-                + "part of the question");
+        assertTrue(squeeze(drop).contains("getYRot()"),
+            "the drop is in the direction the player is looking, which is the classic safe walk");
 
-        assertFalse(squeezed.contains("this.movementDirection()"),
-            "the cell the player is walking into is not the edge: while bridging backwards it is "
-                + "the cell in front of them, which is solid, and asking about it put the crouch "
-                + "on for the whole walk");
-
-        assertFalse(body.contains("BlockPos.containing(this.mc.player.getX()"),
-            "the cell under the player is not the edge either - it is the moment after they have "
-                + "already stepped off it, and it flickers on every placement");
+        assertFalse(edge.contains("BlockPos.containing(this.mc.player.getX()"),
+            "the cell under the player is not the edge - it is the moment after they have already "
+                + "stepped off it, and it flickers on every placement");
     }
 
     /**
