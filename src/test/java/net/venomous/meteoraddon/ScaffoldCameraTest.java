@@ -2,7 +2,6 @@ package net.venomous.meteoraddon;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,26 +52,6 @@ public class ScaffoldCameraTest extends SourceGuard {
      * <p>It has to be "never", not "not usually": a single write puts the camera and the packet a
      * different angle apart, and that is a millimetre of movement difference every tick.</p>
      */
-    @Test
-    void theCameraIsTheModulesWhileItBridgesAndThePlayersOtherwise() {
-        String code = squeeze(code(source(SCAFFOLD)));
-
-        assertTrue(code.contains("ScaffoldCamera.take("),
-            "the module takes the camera while it is bridging");
-
-        assertTrue(code.contains("ScaffoldCamera.release()"),
-            "and gives it back the moment it is not - no target, or the player is fighting");
-
-        assertTrue(code.contains("this.canBridge()"),
-            "a player who is swinging at something is not bridging, and the camera is the only "
-                + "thing they can aim with");
-
-        assertFalse(code.contains("setYRot("),
-            "the angle is applied by the mixin, at the head of the player's tick: after the mouse, "
-                + "so the mouse cannot move the camera, and before the movement, so the walk the "
-                + "client performs is along the angle the server is told");
-    }
-
     @Test
     void theModuleNeverWritesTheCamera() {
         String code = scaffold();
@@ -243,17 +222,17 @@ public class ScaffoldCameraTest extends SourceGuard {
     void theAimForwardsARealPlacementSideToTheHelper() {
         String body = methodBody(source(SCAFFOLD), "private float[] aimRotation(BlockPos pos)");
 
-        requireAnchor(body, "aimRotation", "getPlaceSide");
+        requireAnchor(body, "aimRotation", "ScaffoldAim.aimPoint(");
 
         String squeezed = squeeze(body);
 
-        assertTrue(squeezed.contains("side==null?pos:pos.relative(side)"),
-            "the aim is worked out against the block the placement is made against, so the side has "
-                + "to be resolved rather than assumed");
+        assertFalse(squeezed.contains("ScaffoldAim.aimPoint(pos.getX(),pos.getY(),pos.getZ(),null,"),
+            "the aim is passing a null normal, so the helper silently falls back to the block "
+                + "centre and the ray stops being aimed at the face");
 
-        assertTrue(squeezed.contains("support.getX()+0.5D"),
-            "and the aim point is the top of that block, not a point on the ground below the "
-                + "player, whose elevation swings as the player walks across their cell");
+        assertTrue(squeezed.contains("side==null?null:")
+                || squeezed.contains("side = BlockUtils.getPlaceSide(pos);"),
+            "the normal must be derived from BlockUtils.getPlaceSide(pos)");
     }
 
     /**
@@ -280,41 +259,30 @@ public class ScaffoldCameraTest extends SourceGuard {
     }
 
     /**
-     * The crouch may change on a tick where a placement is going out.
+     * The crouch must not change on a tick where a placement is going out.
      *
      * <p>Grim's {@code PacketOrderF} cancels an action packet that arrives while the server still
      * believes the player is sneaking, and the server believes it between the "start sneaking"
-     * packet and the next movement packet.</p>
+     * packet and the next movement packet. The placement leaves in the movement packet's PRE
+     * phase, which is after the player's tick has already sent the crouch input - so a crouch that
+     * changes on that tick gets the placement cancelled.</p>
      *
-     * <p>This used to be handled by holding the crouch still for the tick, and applying the
-     * change later. That was needed when the placement left from the movement packet's own
-     * pre-phase, which is <em>after</em> the player's tick has already sent the crouch input - so
-     * the placement landed inside the crouch and Grim cancelled it, and a cancelled placement
-     * leaves the client standing on a block the server never received, which is worth tenths of a
-     * block: the live log showed the offsets jump to 0.15 and the server teleporting the player
-     * back.</p>
-     *
-     * <p>The placement now leaves from the hook in the player's tick that sits before the input
-     * packet, so the crouch and the placement reach the server in the order a vanilla client's do,
-     * and holding the crouch back only costs a tick of delay and a line of log on every
-     * placement.</p>
+     * <p>A cancelled placement leaves the client standing on a block the server never received,
+     * and that desync is worth tenths of a block: the live log showed the offsets jump to 0.15 and
+     * the server teleporting the player back.</p>
      */
     @Test
-    void theCrouchIsNotHeldBackForAPlacement() {
+    void theCrouchDoesNotChangeOnATickWithAPlacement() {
         String body = methodBody(source(SCAFFOLD), "private void updateManagedSneak(boolean atEdge)");
 
-        requireAnchor(body, "updateManagedSneak", "SneakTiming.shouldHold");
+        requireAnchor(body, "updateManagedSneak", "PreRotate.hasPending");
 
         String squeezed = squeeze(body);
 
-        assertFalse(squeezed.contains("PreRotate.hasPending(this)"),
-            "the placement leaves before the crouch's input packet now, so holding the crouch "
-                + "back for a pending placement only delays it by a tick and prints a line of log "
-                + "on every placement");
-
-        assertTrue(squeezed.contains("SneakTiming.shouldHold"),
-            "and the crouch is still decided by the timing helper, which is where the edge, the "
-                + "sneak delay and the ground all come together");
+        assertTrue(squeezed.contains("if(PreRotate.hasPending(this))return;"),
+            "a crouch that changes on a tick where a placement leaves is what gets that placement "
+                + "cancelled by PacketOrderF, and the cancelled placement is what desyncs the "
+                + "client from the server");
     }
 
     /**
@@ -340,140 +308,9 @@ public class ScaffoldCameraTest extends SourceGuard {
                 method + " forces a sneak with no setting behind it");
         }
 
-        assertTrue(squeeze(scaffold()).contains("switch(this.autoSneak.get())"),
-            "the crouch has to be behind the setting, and the setting has to be a choice of when "
-                + "rather than a yes or no");
+        assertTrue(squeeze(scaffold()).contains("this.autoSneak.get()&&this.isOverEdge()"),
+            "edge sneaking should be reachable, but only when the player asked for it");
     }
-
-    /**
-     * The crouch is three different things and the setting says which one.
-     *
-     * <p>It is a speed control - a crouch is thirty per cent of the walking speed, and a bridge
-     * is walked backwards, which is thirty per cent again, so a permanent crouch makes a bridge a
-     * third of the speed it could be. It is a fallback - the module places the block under the
-     * player's feet, so the player is falling for a tick or two until it lands, and a server that
-     * refuses the placement leaves a hole that the crouch is what gives the module time to fill.
-     * And it is a flag - every change is a seventy per cent change in the client's speed that the
-     * server learns a tick late, which Grim's Simulation measures.</p>
-     *
-     * <p>Those pull in opposite directions, so they are three modes and the player picks.</p>
-     */
-    @Test
-    void theCrouchHasThreeModes() {
-        String body = code(methodBody(source(SCAFFOLD), "private boolean shouldSneak()"));
-
-        requireAnchor(body, "shouldSneak", "isOverEdge");
-
-        String squeezed = squeeze(body);
-
-        assertTrue(squeezed.contains("caseNever->{returnfalse;}"),
-            "there has to be a mode where the crouch is never on: the bridge is at full speed and "
-                + "the module is on its own");
-
-        assertTrue(squeezed.contains("caseAtEdges->{"),
-            "and a mode where it is on at a block edge - for the whole bridge, since the edge is "
-                + "steady while the bridge goes on");
-
-        assertTrue(squeezed.contains("returnthis.isOverEdge()||this.isOverTheDrop();"),
-            "the at-edges mode has to ask about both edges: the cell the player is walking into "
-                + "and the drop they are looking at; a player bridging backwards is moving, and "
-                + "that is exactly when they need the crouch");
-
-        assertTrue(squeezed.contains("default->{returnfalse;}"),
-            "and the default mode has to never crouch - the bridge is at full speed and the module "
-                + "is on its own");
-    }
-
-    /**
-     * The crouch must survive a tick with no target.
-     *
-     * <p>This is the bug the live log caught, and it is worth a guard of its own because the
-     * symptom was not a crash but a crouch that came and went.</p>
-     *
-     * <p>The log shows the crouch going down and coming straight back up on every single
-     * placement: "crouch: key down (was false)" immediately followed by "crouch: key up (restored
-     * to false)". The cause is the no-target path. The module fills the cell the player is standing
-     * on, so for the tick after a placement there is no cell left to place and the module took the
-     * "nothing to do" branch - and that branch released the crouch outright. The crouch was
-     * therefore on for about a tick at a time, which the player never saw, and every one of those
-     * changes moved the client's speed by seventy per cent, which the server only learns about a
-     * tick later.</p>
-     *
-     * <p>The no-target path has to decide by the edge, exactly as every other path does. A bridge
-     * has no target for the tick after every placement, so that path is the normal state of a
-     * bridge - and the edge is still there for the whole of the walk.</p>
-     */
-    @Test
-    void theCrouchSurvivesATickWithNoTarget() {
-        for (String method : new String[] {"private void tickStandardMode()",
-                                           "private void tickGrim()"}) {
-            String body = code(methodBody(source(SCAFFOLD), method));
-
-            requireAnchor(body, method, "updateManagedSneak");
-
-            String squeezed = squeeze(body);
-
-            assertTrue(squeezed.contains("this.updateManagedSneak(this.shouldSneak());"),
-                method + " has to decide the crouch the same way on the no-target path as on "
-                    + "every other path: a bridge has no target for the tick after every "
-                    + "placement, and dropping the crouch there made it come and go on every "
-                    + "placement");
-
-            assertEquals(1, countOccurrences(squeezed, "this.releaseManagedSneak();"),
-                method + " may only release the crouch where the player is not bridging at all - "
-                    + "fighting - and nowhere else");
-        }
-    }
-
-    /** How many times a needle appears in a haystack. */
-    private static int countOccurrences(String haystack, String needle) {
-        int count = 0;
-        int at = haystack.indexOf(needle);
-
-        while (at >= 0) {
-            count++;
-            at = haystack.indexOf(needle, at + needle.length());
-        }
-
-        return count;
-    }
-
-    /**
-     * Two different questions, and the module has to ask both of them.
-     *
-     * <p>Asserted on the wiring because the decision itself lives in {@link net.venomous.meteoraddon.utils.ScaffoldEdge}
-     * and is tested there; what this guards is that the module asks the right question in each
-     * place.</p>
-     *
-     * <p>The <b>edge</b> is the cell the player is walking into. On a bridge that cell is empty
-     * for the whole of the walk, because the module fills the cell under the player, so the edge
-     * is true for the whole bridge and the crouch is held for the whole bridge. It is not the
-     * cell under the player: that is the moment after they have already stepped off it, and it
-     * flickers on every placement, which is what made the crouch come and go.</p>
-     *
-     * <p>The <b>drop</b> is in the direction the player is looking. That is the classic safe walk
-     * - a player standing at the edge of a platform is looking at the drop.</p>
-     */
-    @Test
-    void theEdgeAndTheDropAreTwoDifferentQuestions() {
-        String edge = code(methodBody(source(SCAFFOLD), "private boolean isOverEdge()"));
-        String drop = code(methodBody(source(SCAFFOLD), "private boolean isOverTheDrop()"));
-
-        requireAnchor(edge, "isOverEdge", "ScaffoldEdge.overEdge");
-        requireAnchor(drop, "isOverTheDrop", "ScaffoldEdge.overEdge");
-
-        assertTrue(squeeze(edge).contains("this.movementDirection()"),
-            "the edge is the cell the player is walking into, and on a bridge that cell is empty "
-                + "for the whole walk");
-
-        assertTrue(squeeze(drop).contains("getYRot()"),
-            "the drop is in the direction the player is looking, which is the classic safe walk");
-
-        assertFalse(edge.contains("BlockPos.containing(this.mc.player.getX()"),
-            "the cell under the player is not the edge - it is the moment after they have already "
-                + "stepped off it, and it flickers on every placement");
-    }
-
 
     /**
      * The placement is gated on the ray reaching the block, not on an angle.
@@ -488,39 +325,26 @@ public class ScaffoldCameraTest extends SourceGuard {
      */
     @Test
     void thePlacementIsGatedOnTheRayReachingTheBlock() {
-        String body = methodBody(source(SCAFFOLD),
-            "private boolean rayReachesSupport(BlockPos support, float yaw, float pitch)");
+        String body = methodBody(source(SCAFFOLD), "private boolean rayReachesSupport(BlockPos support)");
 
         requireAnchor(body, "rayReachesSupport", "GrimRay.rotationPlaceWouldPass");
 
         String squeezed = squeeze(body);
 
-        assertTrue(squeezed.contains("yaw,pitch,this.lastServerYaw,this.lastServerPitch"),
-            "the ray has to be tested against the rotation the placement goes out with, with the last one sent as the second candidate");
+        assertTrue(squeezed.contains("Rotations.serverYaw"),
+            "the ray has to be tested against the rotation the SERVER is holding, because that is "
+                + "the one Grim judges the placement by");
 
         assertTrue(squeezed.contains("support.getX()"),
             "and against the block that was clicked, which is the support");
 
         String caller = squeeze(methodBody(source(SCAFFOLD), "private void aimAndPlace(BlockPos pos)"));
 
-        assertTrue(caller.contains("this.rayReachesSupport(support,face[0],face[1])")
-                && caller.contains("if(!reaches)") && caller.contains("this.place(pos);"),
+        assertTrue(caller.contains("if(this.rayReachesSupport(support))"),
             "and the placement is only made when that test passes");
 
         assertFalse(caller.contains("PLACE_TOLERANCE"),
             "the angle tolerance is what this replaces; it was seven degrees of slack on a geometry "
                 + "where two degrees already misses the face");
-    }
-
-    @Test
-    void bridgingDoesNotPlaceWhileFalling() {
-        for (String method : new String[] {"private void tickStandardMode()",
-                                           "private void tickGrim()"}) {
-            String body = squeeze(methodBody(source(SCAFFOLD), method));
-            requireAnchor(body, method, "getDeltaMovement");
-            assertTrue(body.contains("this.mc.player.getDeltaMovement().y<-0.05D"),
-                method + " has to refuse to bridge while the player is falling, otherwise a jump "
-                    + "builds a tower of blocks under a falling player");
-        }
     }
 }

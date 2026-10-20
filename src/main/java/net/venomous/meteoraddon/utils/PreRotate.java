@@ -2,6 +2,7 @@ package net.venomous.meteoraddon.utils;
 
 import java.util.List;
 import meteordevelopment.meteorclient.MeteorClient;
+import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.Rotations;
@@ -10,11 +11,11 @@ import meteordevelopment.orbit.EventPriority;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Rotate, then act <em>before</em> the movement packet - and before the crouch.
+ * Rotate, then act <em>before</em> the movement packet.
  *
  * <h2>Why this exists</h2>
  *
- * <p>Meteor's {@link Rotations#rotate(double, double, int, Runnable)} runs its callback from
+ * Meteor's {@link Rotations#rotate(double, double, int, Runnable)} runs its callback from
  * {@code SendMovementPacketsEvent.Post} — that is, <em>after</em> the tick's position packet has
  * already been flushed. Any interaction performed from that callback therefore reaches the server
  * <em>after</em> the movement packet for the same tick.
@@ -22,16 +23,9 @@ import net.minecraft.world.phys.Vec3;
  * <p>A vanilla client always sends its interaction before its movement packet. The inverted ordering
  * is exactly what anticheats fingerprint and report as "attacking/placing on POST".
  *
- * <p>But before the movement packet is not early enough either. The player's tick sends the input
- * packet - the one that carries the crouch and the sprint - before it sends the movement packet,
- * so an action fired from the movement packet's own pre-phase lands <em>after</em> the crouch. Grim
- * reads that as an action sent inside the crouch, and cancels it. The action therefore goes out
- * at the head of the tick instead, which is the earliest point Meteor offers and still after the
- * mouse has been read.
- *
  * <p>This helper keeps Meteor's rotation handling (so the rotation itself is still spoofed and
- * smoothed normally) but defers the <em>action</em> to a following tick, once the server has
- * actually observed the rotation the action depends on.
+ * smoothed normally) but defers the <em>action</em> to {@code SendMovementPacketsEvent.Pre} of a
+ * following tick, once the server has actually observed the rotation the action depends on.
  *
  * <h2>Usage</h2>
  *
@@ -162,18 +156,6 @@ public final class PreRotate {
         PENDING.add(owner, guard, (float) yaw, (float) pitch, action, replace, yawMatters);
     }
 
-    /**
-     * Asks for the rotation without queuing an action to go with it.
-     *
-     * <p>For a caller that wants the server to be told an angle every tick but only acts
-     * occasionally. Queueing an action on every tick would fill the queue, and a caller that asks
-     * "is an action of mine waiting?" would then be told yes every tick - which is what stopped
-     * the crouch from ever coming on.</p>
-     */
-    public static void rotateOnly(Module owner, double yaw, double pitch) {
-        Rotations.rotate(yaw, pitch, 10, null);
-    }
-
     /** Drops every queued action. Call from {@code onDeactivate}. */
     public static void cancelAll() {
         PENDING.clear();
@@ -192,12 +174,13 @@ public final class PreRotate {
     }
 
     /**
-     * Fires the queued actions.
+     * Fires queued actions ahead of the movement packet.
      *
-     * <p>Called from the hook in the player's tick that sits between the camera write and the
-     * input packet - see {@link #dispatch} for why that exact point matters.</p>
+     * <p>Runs at {@code HIGHEST} priority so the interaction is written before anything else this
+     * tick tries to send movement.
      */
-    public static void dispatch() {
+    @EventHandler(priority = EventPriority.HIGHEST)
+    private static void onSendMovementPacketsPre(SendMovementPacketsEvent.Pre event) {
         if (PENDING.isEmpty()) {
             return;
         }
@@ -213,44 +196,9 @@ public final class PreRotate {
         }
     }
 
-    /**
-     * Fires queued actions ahead of everything the tick sends.
-     *
-     * <p>This is not called from the movement packet's pre-phase any more, and the reason is the
-     * order of the packets a 26.2 client sends in one tick:</p>
-     *
-     * <pre>{@code
-     *   [the camera write]  [the input packet: the crouch]  [the movement packet]
-     * }</pre> *
-     *
-     * <p>So the movement packet's pre-phase is <em>after</em> the crouch has been sent, and an
-     * action fired from there lands inside the crouch. Grim's {@code PacketOrderF} - "sent action
-     * packets after sneak or sprint input in an invalid order" - flags and <em>cancels</em> any
-     * action packet that arrives while the server still believes the player is sneaking. The
-     * server believes it from the moment the sneak packet arrives until the next movement packet,
-     * and in that order the placement falls inside the window. The live log has it:</p>
-     *
-     * <pre>{@code
-     *   Grim > ItsEspress0 failed PacketOrderF x0.0 action=place, sprinting=false, sneaking=true
-     * }</pre>
-     *
-     * <p>and a cancelled placement is worse than a flag: the client is left standing on a block
-     * the server never received, and the two disagree about where the player is by tenths of a
-     * block.</p>
-     *
-     * <p>On a server older than the client the same thing happens one step further down. The
-     * 1.21.2 input packet is translated into the old protocol's "entity action" packet, and Grim
-     * reads the crouch from that - so the placement still has to leave before it.</p>
-     *
-     * <p>The hook is therefore the one point that is after the camera write - the camera has to
-     * be the aim when the placement is made, because the interaction is validated against it -
-     * and before the input packet. The rotation is unaffected: the action waits for the rotation
-     * the server already holds, and the server holds the rotation from the previous tick's
-     * movement packet, which is the one the aim was worked out for.</p>
-     */
-    @EventHandler(priority = EventPriority.HIGHEST)
-    private static void onTickPre(TickEvent.Pre event) {
-        // Safety net: never let an action survive across a disconnect or a world change.
+    /** Safety net: never let actions survive across a disconnect or world change. */
+    @EventHandler
+    private static void onTick(TickEvent.Pre event) {
         if (MeteorClient.mc.player == null || MeteorClient.mc.level == null) {
             cancelAll();
         }

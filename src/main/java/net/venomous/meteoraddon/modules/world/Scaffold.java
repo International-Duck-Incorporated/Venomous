@@ -10,8 +10,6 @@ import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
@@ -26,13 +24,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
-import net.venomous.meteoraddon.utils.GrimPacketModel;
 import net.venomous.meteoraddon.utils.GrimRay;
-import net.venomous.meteoraddon.utils.ScaffoldCamera;
 import net.venomous.meteoraddon.utils.MovementMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ScaffoldCadence;
-import net.venomous.meteoraddon.utils.ScaffoldEdge;
 import net.venomous.meteoraddon.utils.RotationGcd;
 import net.venomous.meteoraddon.utils.ScaffoldAim;
 import net.venomous.meteoraddon.utils.ScaffoldGates;
@@ -41,62 +36,6 @@ import net.venomous.meteoraddon.utils.SneakTiming;
 public class Scaffold extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
     private final SettingGroup sgAnticheat = this.settings.createGroup("Anticheat");
-
-    /**
-     * Verbose logging of what the module is doing and why.
-     *
-     * <p>Every decision the module makes is a guess about what the anticheat is checking, and the
-     * server only ever says "flagged". The log lines here are what makes that guessable: the
-     * crouch's decision and its inputs, the aim that is being sent, whether the ray reached the
-     * block, and what the client was doing at the moment of the placement.</p>
-     *
-     * <p>Tagged {@code DEBUG-scf} so it can be stripped with one grep when the diagnosis is done.</p>
-     */
-    /**
-     * The per-tick movement log, off by default.
-     *
-     * <p>Six lines per placement is enough to see the movement, and it is enough to make the client
-     * miss its own packet deadlines: the live log filled with Grim's Timer check, which is the
-     * server saying the client's packets were late. The place and state lines are cheap and are
-     * the ones that say anything; this one is for when the movement itself is the question.</p>
-     */
-    private final Setting<Boolean> debugMovement = this.sgAnticheat.add(
-        new BoolSetting.Builder()
-            .name("debug-movement")
-            .description("Log the movement of every tick for six ticks after a placement. This is "
-                + "what the server's Simulation check measures, but it prints enough to make the "
-                + "client's packets late, so it is off by default.")
-            .defaultValue(false)
-            .build()
-    );
-
-    private final Setting<Boolean> debugLogging = this.sgAnticheat.add(
-        new BoolSetting.Builder()
-            .name("debug-log")
-            .description("Log every decision the module makes: the crouch, the aim, the ray, and "
-                + "the placement. Tagged [DEBUG-scf] so it can be removed in one grep.")
-            .defaultValue(true)
-            .build()
-    );
-
-    /**
-     * The packet-rate watch, off by default.
-     *
-     * <p>Grim's timer and aim checks are decided by the order of the packets the client sends, and
-     * nothing in the game records that - so this prints the numbers Grim works from, as a model of
-     * its own accounting running in the client. The counted rate is the one that matters: Grim
-     * writes twenty a second against, and anything above it makes the balance run ahead until the
-     * Timer check fires and then keeps firing.</p>
-     */
-    private final Setting<Boolean> debugPackets = this.sgAnticheat.add(
-        new BoolSetting.Builder()
-            .name("debug-packets")
-            .description("Print Grim's own packet accounting once a second: the movement packets, "
-                + "the end-of-tick packets, the rate Grim's Timer check counts against twenty, and "
-                + "the duplicate rotations its AimDuplicateLook reports.")
-            .defaultValue(false)
-            .build()
-    );
     private final SettingGroup sgGrim = this.settings.createGroup("Grim");
     private final SettingGroup sgBridge = this.settings.createGroup("Bridge Assist");
     private final SettingGroup sgTower = this.settings.createGroup("Tower");
@@ -109,39 +48,11 @@ public class Scaffold extends Module {
             .build()
     );
 
-    /**
-     * When the crouch is on.
-     *
-     * <p>This was a yes/no and it could not be one thing, because the crouch does two different
-     * jobs that pull in opposite directions.</p>
-     *
-     * <p>It is a <em>speed control</em>: a crouch is thirty per cent of the walking speed, and a
-     * bridge is walked backwards, which is thirty per cent again, so a permanent crouch makes a
-     * bridge a third of the speed it could be - one block a second in the live log.</p>
-     *
-     * <p>And it is a <em>fallback</em>: the module places the block under the player's feet, which
-     * means the player is always falling for a tick or two until the block lands. If the server
-     * refuses the placement - and the anticheat-test server does, on a timer - there is a hole, and
-     * the crouch is what gives the module the time to fill it: a crouched player is in a cell
-     * three times longer.</p>
-     *
-     * <p>And it is a <em>flag</em>: every time it goes on or off, the client's speed changes by
-     * seventy per cent and the server only learns about it a tick later, which Grim's Simulation
-     * measures as the difference between the movement it predicted and the movement the client
-     * made. The live log had .010444, .028401 and .071601 for one bridge, and past a tenth of a
-     * block Grim teleports the player back.</p>
-     *
-     * <p>So the three modes are:</p>
-     */
-    private final Setting<Scaffold.SneakMode> autoSneak = this.sgGeneral.add(
-        new EnumSetting.Builder<Scaffold.SneakMode>()
+    private final Setting<Boolean> autoSneak = this.sgGeneral.add(
+        new BoolSetting.Builder()
             .name("auto-sneak")
-            .description("When the crouch is on. Never: never, and the bridge is at full speed. "
-                + "At-edges: at a block edge, for the whole bridge - the crouch changes only when "
-                + "the bridge starts or ends, so it costs nothing in the movement prediction. "
-                + "While-bridging: for the whole walk while the module is on, a third of the speed "
-                + "but the bridge holds together on a server that refuses placements.")
-            .defaultValue(Scaffold.SneakMode.Never)
+            .description("Sneak at block edges (Eagle/BridgeAssist).")
+            .defaultValue(true)
             .build()
     );
 
@@ -333,43 +244,6 @@ public class Scaffold extends Module {
     private long nextPlaceAtMs = 0L;
 
     /**
-     * The crouch state the module wants, when it could not be applied this tick.
-     *
-     * <p>Deferred rather than dropped: the crouch may not change on a tick where a placement
-     * leaves, or Grim's PacketOrderF denies the placement, but it must not be lost either - a
-     * crouch that is never applied is not a crouch.</p>
-     */
-    private boolean pendingSneak = false;
-
-    /** Whether the crouch is currently being deferred, so the deferral is logged once. */
-    private boolean crouchDeferred = false;
-
-    /**
-     * Whether the cooldown allows a placement right now.
-     *
-     * <p>Wall clock, not ticks: a tick-counted cooldown assumes 20 TPS, and this client does not
-     * run at 20.</p>
-     */
-    private boolean placementDue() {
-        return this.nowMs() >= this.nextPlaceAtMs;
-    }
-
-    /**
-     * How many ticks of detail to log after a placement.
-     *
-     * <p>Grim's Simulation check compares the movement the client actually performed against the
-     * movement it predicted, and reports the distance between the two vectors. The offset in the
-     * log arrives on the tick of a placement, so the tick-by-tick movement around a placement is
-     * what has to be logged - not the position, and not a per-tick log for the whole session.</p>
-     */
-    private int debugTicksAfterPlacement = 0;
-
-    /** The position on the previous tick, so the movement can be logged the way Grim measures it. */
-    private double debugLastX = Double.NaN;
-    private double debugLastY = Double.NaN;
-    private double debugLastZ = Double.NaN;
-
-    /**
      * The pitch the server is told, smoothed.
      *
      * <p>The yaw is not smoothed because it is not the module's: it is the player's own camera yaw,
@@ -385,7 +259,6 @@ public class Scaffold extends Module {
     private long sneakHeldSinceMs = 0L;
     private boolean previousSneakDown = false;
     private int targetY = -1;
-
 
     /** The rotation the server held on the previous tick, which Grim also tests against. */
     private float lastServerYaw = 0.0F;
@@ -409,10 +282,6 @@ public class Scaffold extends Module {
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
         this.targetY = this.mc.player != null ? (int)Math.floor(this.mc.player.getY() - 1.0) : -1;
-
-        // The packet watch counts whether the module is on or not, so the window it reports has to
-        // start here rather than with whatever the client sent while the module was off.
-        GrimPacketModel.get().snapshot();
     }
 
     @Override
@@ -451,14 +320,6 @@ public class Scaffold extends Module {
 
         this.scaffoldCount++;
 
-        // The camera is the player's until the module has something to place, and the module cannot
-        // have the camera at all while the player is fighting.
-        ScaffoldCamera.release();
-
-        if (this.scaffoldCount % 20 == 0) this.debugHeartbeat();
-
-        this.debugTick();
-
         Scaffold.Technique selected = this.technique.get();
         if (selected != this.lastTechnique) {
             this.releaseManagedSneak();
@@ -489,11 +350,6 @@ public class Scaffold extends Module {
     }
 
     private void tickStandardMode() {
-        if (!this.canBridge()) {
-            this.releaseManagedSneak();
-            return;
-        }
-
         if (!this.findBlock().found()) return;
 
         if (this.tower.get() && this.mc.player.getXRot() < -75.0F) {
@@ -501,40 +357,9 @@ public class Scaffold extends Module {
             return;
         }
 
-        // Placing while the player is falling is what builds a tower of blocks under them and drops
-        // them off the end of the bridge: the row is held at the take-off level and every cell the
-        // fall passes over gets filled. Going up is different - that is the jump-bridging staircase -
-        // so only the downward part of the airtime is gated. The camera is released this tick (it is
-        // only taken again by a placement) and the crouch is released for the same reason: a mid-air
-        // crouch is not something a player does.
-        if (this.mc.player.getDeltaMovement().y < -0.05D) {
-            this.updateManagedSneak(this.shouldSneak());
-            return;
-        }
-
         BlockPos placePos = this.getPlacePos();
         if (placePos == null) {
-            // No target, but the crouch is not dropped here. The module fills the cell the
-            // player is standing on, so for the tick after a placement there is no target left -
-            // and that is the normal state of a bridge, not an exception. Releasing the crouch
-            // there is what made it come and go on every placement, which the live log shows:
-            //
-            //   crouch: key down (was false)
-            //   place: cell=... PLACED
-            //   crouch: edge=false ... -> release
-            //   crouch: key up (restored to false)
-            //
-            // A crouch that changes twice a placement changes the client's speed by seventy per
-            // cent twice a placement, and the server only learns about it a tick later. Grim's
-            // Simulation measures the difference between the movement it predicted and the
-            // movement the client made, and that difference is the speed change: the live log has
-            // .010444, .028401 and .071601 for the same bridge. Past a tenth of a block Grim
-            // teleports the player back, and being teleported back mid-bridge is how you fall
-            // off it.
-            //
-            // So the edge decides, on this path exactly as on every other: the player is at the
-            // edge of a bridge for the whole of the walk, and the crouch is held for it.
-            this.updateManagedSneak(this.shouldSneak());
+            this.releaseManagedSneak();
             return;
         }
 
@@ -542,7 +367,7 @@ public class Scaffold extends Module {
         // and by the bridge modes, and it put "sneaking=true" on every Grim packet-order flag:
         // PacketOrderE reports any held-item change while a flag is set, and PacketOrderF reports
         // placing while it is set. A flag the player did not ask for, on every placement.
-        this.updateManagedSneak(this.shouldSneak());
+        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
 
         // Expand/VulcanExpand were removed: they placed extra blocks per tick, which no cadence
         // survives and which the anticheat's straight-line minimum punishes hardest.
@@ -555,28 +380,14 @@ public class Scaffold extends Module {
 
     /** Human-looking Grim profile: edge crouch, visible eased aim, then an unspoofed interaction. */
     private void tickGrim() {
-        if (!this.canBridge()) {
+        BlockPos target = this.getPlacePos();
+        if (target == null || !this.findBlock().found()) {
             this.releaseManagedSneak();
             return;
         }
 
-        // See tickStandardMode: do not place while falling.
-        if (this.mc.player.getDeltaMovement().y < -0.05D) {
-            this.updateManagedSneak(this.shouldSneak());
-            return;
-        }
-
-        BlockPos target = this.getPlacePos();
-        if (target == null || !this.findBlock().found()) {
-            // The same as in tickStandardMode: no target is the normal state of a bridge for the
-            // tick after a placement, and the crouch is decided by the edge, not by there being
-            // something to place.
-            this.updateManagedSneak(this.shouldSneak());
-            return;
-        }
-
         // Also opt-in now, for the same reason as tickStandardMode.
-        this.updateManagedSneak(this.shouldSneak());
+        this.updateManagedSneak(this.autoSneak.get() && this.isOverEdge());
 
         if (!this.rotate.get()) {
             this.place(target);
@@ -673,20 +484,8 @@ public class Scaffold extends Module {
         // the block the placement is made against.
         float[] face = this.aimRotation(pos);
 
-        // The module takes the camera while it is bridging. The angle is applied at the head of the
-        // player's tick, after the mouse and before the movement, so the walk the client performs
-        // and the walk the server predicts are the same walk; the mixin is ScaffoldCameraMixin.
-        ScaffoldCamera.take(face[0], face[1]);
-
         this.lastServerYaw = Rotations.serverYaw;
         this.lastServerPitch = Rotations.serverPitch;
-
-        // The pitch is only spoofed when a placement is going out. On every other tick the server
-        // is told the player's own pitch, so their head does not move: a spectator watching sees a
-        // player who is looking where they are looking, rather than one whose head is pinned to
-        // the ground and jerks on every placement.
-        boolean pending = PreRotate.hasPending(this);
-        boolean due = this.placementDue();
 
         // The server is told the aim, and the placement goes out one tick later, once the server
         // has actually received that rotation. Grim judges the placement against the rotation the
@@ -697,61 +496,13 @@ public class Scaffold extends Module {
         // waiting for the yaw would hold the placement back every time they looked around - and
         // the action is discarded after five ticks, so the bridge would only build while they
         // happened to be holding the mouse still.
-        //
-        // ONE rotation request per tick, and never two. This used to ask for the rotation with
-        // rotateOnly and then again with rotateThenOnPitch, and Meteor's rotation queue hands out
-        // one rotation per tick - so the two requests were applied a tick apart and the server was
-        // told the same angle twice. Three things came out of that:
-        //
-        //   - Grim's AimDuplicateLook reports a rotation packet with the same yaw and pitch as
-        //     the previous one, and the live log has eleven of them;
-        //   - the rotation the server was holding when the placement went out was the one from
-        //     the tick before, not the aim the placement was made with, so the ray was traced
-        //     against an angle the server had never been told - which is what "the ray missed the
-        //     block" is;
-        //   - and the queue ran a tick ahead of the aim for the rest of the bridge.
-        if (due) {
         PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
-            boolean reaches = this.rayReachesSupport(support, face[0], face[1]);
-
-            if (!reaches) {
-                // The ray missed the block, so wait the normal cadence before trying again. Left
-                // alone the module re-tests the ray every tick, because the cooldown only moves
-                // when a block actually goes down - and a line of log per tick is enough to make
-                // the client miss its own packet deadlines, which Grim's Timer check reports.
-                this.nextPlaceAtMs = this.nowMs()
-                    + (long)ScaffoldCadence.delayMillis(this.techniqueDelay(), 0);
-
-                this.debugLog("place: cell=%s support=%s side=%s aim=%.2f,%.2f camYaw=%.2f "
-                        + "serverHolds=%.2f,%.2f - the ray missed the block",
-                    pos, support, side, face[0], face[1], this.mc.player.getYRot(),
-                    Rotations.serverYaw, Rotations.serverPitch);
-
-                return;
+            if (this.rayReachesSupport(support)) {
+                this.place(pos);
             }
-
-            // One line per placement: the aim, the angle the server is holding, and what the
-            // placement did. It used to be two lines here and three more from the crouch, and a
-            // log that heavy is enough to make the client miss its own packet deadlines - which
-            // Grim's Timer check reports as the game running too fast.
-            boolean placed = this.place(pos);
-
-            Vec3 at = this.mc.player.position();
-            Vec3 vel = this.mc.player.getDeltaMovement();
-
-            this.debugLog("place: cell=%s support=%s side=%s aim=%.2f,%.2f camYaw=%.2f "
-                    + "serverHolds=%.2f,%.2f -> %s at %.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f onGround=%s",
-                pos, support, side, face[0], face[1], this.mc.player.getYRot(),
-                Rotations.serverYaw, Rotations.serverPitch, placed ? "PLACED" : "FAILED",
-                at.x, at.y, at.z, vel.x, vel.y, vel.z, this.mc.player.onGround());
         });
-        } else {
-            // No placement this tick, so the rotation still has to be sent: the camera is the
-            // aim, and the server has to be told it, or the walk it predicts and the walk the
-            // client performs are along two different angles.
-            PreRotate.rotateOnly(this, face[0], face[1]);
-        }
     }
+
     /**
      * The rotation the server is told: the player's own yaw, and a pitch aimed at the face.
      *
@@ -784,29 +535,9 @@ public class Scaffold extends Module {
             side.getStepX(), side.getStepY(), side.getStepZ()
         };
 
-        // The aim point is the top of the block the placement is made against, not the centre of
-        // the face the two blocks share.
-        //
-        // The shared face's centre is a point on the ground that is almost directly below the
-        // player, so the elevation to it swings by fifteen degrees as the player walks across their
-        // own cell - the live log shows the pitch going 81.3, 82.4, 84.4, 86.4 and back within a
-        // second. A pitch that swings is a rotation that moves faster than a hand can, and a chat
-        // player watching the bridge called it out. The top of the support is a whole block wide,
-        // so the same ray still reaches it from a wide range of pitches and the aim can hold
-        // still.
-        BlockPos support = side == null ? pos : pos.relative(side);
-        double[] point = new double[] {
-            support.getX() + 0.5D, support.getY() + 1.0D, support.getZ() + 0.5D
-        };
+        double[] point = ScaffoldAim.aimPoint(pos.getX(), pos.getY(), pos.getZ(), normal, 0.5);
 
         float pitch = ScaffoldAim.pitchToPoint(eyes.x, eyes.y, eyes.z, point[0], point[1], point[2]);
-
-        // And it is held inside a band. The ray has to reach the block, and the block is a block
-        // wide and about two blocks away, so anything from about fifty to eighty degrees reaches
-        // it; outside that band the ray misses and the placement is refused. Holding the pitch
-        // inside the band means the rotation does not swing, and a rotation that does not swing is
-        // a rotation that does not look like a mouse.
-        pitch = clamp(pitch, 50.0F, 82.0F);
 
         // The yaw is the player's own, exactly as the camera has it.
         float yaw = this.mc.player.getYRot();
@@ -846,16 +577,13 @@ public class Scaffold extends Module {
      * blocks on 1.9+ clients, so the eye-box overlap that lets a near miss through is worth
      * nothing.</p>
      */
-    private boolean rayReachesSupport(BlockPos support, float yaw, float pitch) {
+    private boolean rayReachesSupport(BlockPos support) {
         if (this.mc.player == null) return false;
 
         Vec3 eye = this.mc.player.getEyePosition();
 
-        // The rotation being tested is the one the placement goes out with: Grim judges a
-        // placement after the flying packet, and the placement leaves in the PRE phase of that
-        // very packet, so the rotation in it is the one just asked for.
         return GrimRay.rotationPlaceWouldPass(eye.x, eye.z, this.mc.player.getY(),
-            yaw, pitch, this.lastServerYaw, this.lastServerPitch,
+            Rotations.serverYaw, Rotations.serverPitch, this.lastServerYaw, this.lastServerPitch,
             support.getX(), support.getY(), support.getZ(),
             support.getX() + 1.0D, support.getY() + 1.0D, support.getZ() + 1.0D);
     }
@@ -899,9 +627,7 @@ public class Scaffold extends Module {
         // side=north on nearly every tick alongside eleven PositionPlace flags. Filling the cell
         // underfoot always clicks a downward face, which the eye is always above, so it cannot
         // fail this check at all.
-        if (!this.isSupported(below)) return null;
-
-        return below;
+        return this.isSupported(below) ? below : null;
     }
 
     /**
@@ -927,10 +653,7 @@ public class Scaffold extends Module {
     private void doTower() {
         BlockPos below = BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ());
         if (this.mc.level.getBlockState(below).isAir()) {
-            if (this.place(below)) {
-                this.debugLog("tower: cell=%s PLACED at %.2f,%.2f,%.2f",
-                    below, this.mc.player.getX(), this.mc.player.getY(), this.mc.player.getZ());
-            }
+            this.place(below);
         }
 
         this.towerTicks++;
@@ -968,14 +691,12 @@ public class Scaffold extends Module {
         // the block underneath was still inside the cooldown from the previous placement, and they
         // fell off the bridge.
         long now = this.nowMs();
-        if (!this.placementDue()) {
-            this.debugLog("place: cell=%s skipped, %dms of cooldown left", pos, this.nextPlaceAtMs - now);
+        if (now < this.nextPlaceAtMs) {
             return false;
         }
 
         FindItemResult block = this.findBlock();
         if (!block.found()) {
-            this.debugLog("place: cell=%s nothing placeable in hand", pos);
             return false;
         }
 
@@ -987,15 +708,8 @@ public class Scaffold extends Module {
                 // Jitter only ever lengthens the gap, never shortens it, so bridging stays at
                 // least as reliable as the fixed cadence while no longer being metronomic.
                 this.nextPlaceAtMs = now + (long) gap;
-
-                this.debugTicksAfterPlacement = 6;
-
                 return true;
             }
-
-            this.debugLog("place: cell=%s the client refused the placement", pos);
-        } else {
-            this.debugLog("place: cell=%s has no support face", pos);
         }
 
         // A failed placement retries sooner than a successful one: the cell may become placeable
@@ -1071,7 +785,6 @@ public class Scaffold extends Module {
         if (!this.managedSneak) {
             this.previousSneakDown = this.mc.options.keyShift.isDown();
             this.sneakHeldSinceMs = this.nowMs();
-            this.debugLog("crouch: key down (was %s)", this.previousSneakDown);
         }
 
         this.managedSneak = true;
@@ -1081,7 +794,6 @@ public class Scaffold extends Module {
     private void releaseManagedSneak() {
         if (this.managedSneak) {
             this.mc.options.keyShift.setDown(this.previousSneakDown);
-            this.debugLog("crouch: key up (restored to %s)", this.previousSneakDown);
         }
 
         this.managedSneak = false;
@@ -1104,159 +816,24 @@ public class Scaffold extends Module {
      * standing on a block the server never received, and that desync is worth tenths of a block:
      * the live log showed the offsets jump to 0.15 and the server teleporting the player back.</p>
      *
-     * <p>What used to be done about it here was to hold the crouch still while a placement was
-     * waiting, and apply the change on a later tick. That is no longer needed, and it was costing
-     * a tick of delay and a line of log on every placement: the placement now leaves from the hook
-     * in the player's tick, which is <em>before</em> the input packet that carries the crouch. So
-     * the crouch and the placement are on the wire in the same order a vanilla client's are - the
-     * placement first, the crouch after it - and the server never sees an action inside a
-     * crouch it has not been told about yet.</p>
+     * <p>The placement leaves in the movement packet's PRE phase, which is after the player's tick
+     * has already sent the crouch input. So on a tick where a placement is waiting to go out, the
+     * crouch is left exactly as it is - the key stays down and no input packet is sent, and the
+     * server's view of the crouch is unchanged.</p>
      */
     private void updateManagedSneak(boolean atEdge) {
+        if (PreRotate.hasPending(this)) return;
+
         boolean onGround = this.mc.player != null && this.mc.player.onGround();
         long heldFor = this.managedSneak && this.sneakHeldSinceMs > 0L
             ? Math.max(0L, nowMs() - this.sneakHeldSinceMs)
             : 0L;
 
-        boolean hold = SneakTiming.shouldHold(atEdge, onGround,
-            this.managedSneak || this.pendingSneak, heldFor, this.sneakDelay.get());
-
-        // The state the crouch wants, whether or not it can be applied this tick.
-        this.pendingSneak = hold;
-
-        if (hold != this.managedSneak) {
-            this.debugLog("crouch: edge=%s onGround=%s held=%dms -> %s",
-                atEdge, onGround, heldFor, hold ? "press" : "release");
-        }
-
-        if (hold) {
+        if (SneakTiming.shouldHold(atEdge, onGround, this.managedSneak, heldFor, this.sneakDelay.get())) {
             this.pressManagedSneak();
         } else {
             this.releaseManagedSneak();
         }
-    }
-
-    private static final Logger LOG = LogUtils.getLogger();
-
-    /**
-     * The whole state of the module, once a second.
-     *
-     * <p>The per-tick lines are what the client pays for, and a per-tick log was measured slowing
-     * the client down, so the tick-by-tick detail is left out and this carries the state instead:
-     * where the player is, how fast they are moving, whether they are on the ground, whether the
-     * crouch is down, whether there is a drop in front of them, and what the server is being
-     * told.</p>
-     */
-    /**
-     * The movement of this tick, in the form Grim measures it.
-     *
-     * <p>Grim's Simulation offset is the distance between the vector the client moved by and the
-     * vector it predicted the client would move by - the position delta, tick by tick. So the
-     * number to log is the delta, and the state around it: the ground, the crouch, and what is
-     * underfoot.</p>
-     *
-     * <p>Only for a few ticks after a placement, because that is when the offset appears, and
-     * because a log that prints every tick is a log that costs the client its frame rate.</p>
-     */
-    private void debugTick() {
-        if (!this.debugLogging.get() || !this.debugMovement.get() || this.mc.player == null) return;
-
-        double x = this.mc.player.getX();
-        double y = this.mc.player.getY();
-        double z = this.mc.player.getZ();
-
-        if (this.debugTicksAfterPlacement > 0) {
-            this.debugTicksAfterPlacement--;
-
-            if (!Double.isNaN(this.debugLastX)) {
-                double dx = x - this.debugLastX;
-                double dy = y - this.debugLastY;
-                double dz = z - this.debugLastZ;
-
-                this.debugLog("tick: moved %.4f,%.4f,%.4f (|%.4f|) vel=%.3f,%.3f,%.3f onGround=%s crouch=%s below=%s",
-                    dx, dy, dz, Math.sqrt(dx * dx + dy * dy + dz * dz),
-                    this.mc.player.getDeltaMovement().x,
-                    this.mc.player.getDeltaMovement().y,
-                    this.mc.player.getDeltaMovement().z,
-                    this.mc.player.onGround(), this.managedSneak,
-                    BlockPos.containing(x, y - 1.0D, z));
-            }
-        }
-
-        this.debugLastX = x;
-        this.debugLastY = y;
-        this.debugLastZ = z;
-    }
-
-    private void debugHeartbeat() {
-        if (!this.debugLogging.get() || this.mc.player == null) return;
-
-        Vec3 at = this.mc.player.position();
-        Vec3 vel = this.mc.player.getDeltaMovement();
-        BlockPos below = BlockPos.containing(at.x, at.y - 1.0D, at.z);
-
-        this.debugLog("state: pos=%.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f onGround=%s crouch=%s edge=%s below=%s camYaw=%.1f serverHolds=%.1f,%.1f",
-            at.x, at.y, at.z, vel.x, vel.y, vel.z, this.mc.player.onGround(),
-            this.managedSneak, this.isOverEdge(), below, this.mc.player.getYRot(),
-            Rotations.serverYaw, Rotations.serverPitch);
-
-        this.debugPackets();
-    }
-
-    /**
-     * Grim's own packet accounting, once a second.
-     *
-     * <p>Grim's timer check is a balance written against twenty packets a second, and the aim
-     * checks are decided by the order of the packets rather than by anything in the game. Neither
-     * can be reproduced from the game's state, so the client keeps a model of Grim's accounting
-     * and prints it here.</p>
-     *
-     * <p>The number to watch is {@code counted}: Grim adds fifty milliseconds to its balance for
-     * every packet it counts, so anything above twenty a second makes the balance run ahead until
-     * the check fires - and it keeps firing, because the packet it cancels is the one that would
-     * have told Grim the tick had a movement packet in it.</p>
-     */
-    private void debugPackets() {
-        if (!this.debugPackets.get()) return;
-
-        GrimPacketModel.Window window = GrimPacketModel.get().snapshot();
-
-        if (window.duplicateLooks > 0) {
-            this.debugLog("packets: %s lastDuplicate=%.2f,%.2f", window, window.duplicateYaw,
-                window.duplicatePitch);
-        } else {
-            this.debugLog("packets: %s", window);
-        }
-    }
-
-    /**
-     * One line of diagnosis, prefixed so it can be found or removed in one grep.
-     *
-     * <p>Everything the module decides is a guess about what the anticheat is checking, and the
-     * server only says "flagged" and how big the difference was. These lines are what turn that
-     * into something answerable: what the crouch decided and why, what angle was sent, whether the
-     * ray reached the block, and where the client was when it placed.</p>
-     */
-    private void debugLog(String message, Object... args) {
-        if (!this.debugLogging.get()) return;
-        LOG.info("[DEBUG-scf] " + (args.length == 0 ? message : String.format(message, args)));
-    }
-
-    /**
-     * Whether the player is in a state to bridge.
-     *
-     * <p>Fighting counts. A player who is swinging at something is not bridging, and the camera is
-     * the only thing they can aim with, so the module must not take it off them.</p>
-     *
-     * <p>It must not place either. The rotation the server is told has to be the angle the client
-     * walks along, and while the camera is the player's own those are two different angles - the
-     * client would walk the camera's line and the server would predict the module's, and Grim
-     * would report the difference in millimetres of movement every tick.</p>
-     */
-    private boolean canBridge() {
-        if (this.mc.player == null) return false;
-        if (this.mc.options.keyAttack.isDown()) return false;
-        return true;
     }
 
     /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */
@@ -1264,99 +841,8 @@ public class Scaffold extends Module {
         return System.nanoTime() / 1_000_000L;
     }
 
-    /**
-     * Whether the player is at the edge of something.
-     *
-     * <p>The edge is the cell in the direction the player is walking into. On a bridge that cell
-     * is empty for the whole of the walk - the module fills the cell under the player - so this is
-     * true for the whole bridge, and the crouch is held for the whole bridge.</p>
-     *
-     * <p>It was the cell under the player once, and that is not the same question: the cell under
-     * the player is the moment after they have already stepped off it, and it flickers on every
-     * placement. The live log showed the crouch going down and coming straight back up on every
-     * placement, which is a crouch that changes the client's speed by seventy per cent twice a
-     * placement, and the server only learns about it a tick later.</p>
-     *
-     * <p>The geometry is in {@link ScaffoldEdge} so it can be tested without a world.</p>
-     */
     private boolean isOverEdge() {
-        if (this.mc.level == null || this.mc.player == null) return false;
-
-        Vec3 dir = this.movementDirection();
-
-        // The cell underfoot at the level below the player's feet: this is the edge for safe
-        // walking - the drop is below the block the player is standing on.
-        return ScaffoldEdge.overEdge(
-            this.mc.player.getX(), this.mc.player.getY() - 1.0D, this.mc.player.getZ(),
-            dir.x, dir.z,
-            (x, y, z) -> this.mc.level.getBlockState(new BlockPos(x, y, z)).isAir());
-    }
-
-    /**
-     * Whether there is a drop in front of the player.
-     *
-     * <p>The direction the player is <em>looking</em>, which is the classic safe walk: a player
-     * standing at the edge of a platform is looking at the drop, and the crouch is what keeps them
-     * on the block. A player bridging backwards is looking at the bridge they have already built,
-     * and there is nothing to be careful of.</p>
-     */
-    private boolean isOverTheDrop() {
-        if (this.mc.level == null || this.mc.player == null) return false;
-
-        double yaw = Math.toRadians(this.mc.player.getYRot());
-        double dx = -Math.sin(yaw);
-        double dz = Math.cos(yaw);
-
-        return ScaffoldEdge.overEdge(
-            this.mc.player.getX(), this.mc.player.getY(), this.mc.player.getZ(),
-            dx, dz,
-            (x, y, z) -> this.mc.level.getBlockState(new BlockPos(x, y, z)).isAir());
-    }
-
-    /**
-     * Whether the crouch belongs on right now.
-     *
-     * <p>The crouch does two different jobs, and they pull in opposite directions.</p>
-     *
-     * <p>It is a <em>fallback</em>: the module places the block under the player's feet, so the
-     * player is always falling for a tick or two until the block lands. If the server refuses the
-     * placement - and the anticheat-test server does, on a timer - there is a hole, and the crouch
-     * is what gives the module the time to fill it: a crouched player is in a cell three times
-     * longer.</p>
-     *
-     * <p>And it is a <em>speed control</em>: a crouch is thirty per cent of the walking speed, and
-     * a bridge is walked backwards, which is thirty per cent again, so a permanent crouch makes a
-     * bridge a third of the speed it could be - one block a second in the live log.</p>
-     *
-     * <p>And it is a <em>flag</em>: every time it goes on or off, the client's speed changes by
-     * seventy per cent and the server only learns about it a tick later, which Grim's Simulation
-     * measures. The crouch must change as seldom as possible - once when the bridge starts, once
-     * when it ends - not on every placement. That is why the decision is the edge state, which is
-     * steady for the whole of a bridge, and not "is there a target right now", which flickers on
-     * the tick after every placement.</p>
-     *
-     * <p>Which of those three it is depends on what the player is doing, and that is what the
-     * setting decides.</p>
-     */
-    private boolean shouldSneak() {
-        switch (this.autoSneak.get()) {
-            case Never -> {
-                return false;
-            }
-            case AtEdges -> {
-                // The crouch is on when the player is at an edge - whether they are walking into
-                // the drop (safe walk) or looking at it (bridging backwards). The edge is steady
-                // for the whole of a bridge - the module fills the cell under the player's feet,
-                // so the cell ahead stays empty - so the crouch is held for the whole bridge and
-                // changed only when the bridge starts or ends.
-                return this.isOverEdge() || this.isOverTheDrop();
-            }
-            default -> {
-                // Unreachable - all enum cases are covered above. Returns false so the default
-                // behaviour is never to crouch.
-                return false;
-            }
-        }
+        return this.mc.level.getBlockState(BlockPos.containing(this.mc.player.getX(), this.mc.player.getY() - 1.0, this.mc.player.getZ())).isAir();
     }
 
     @Override
@@ -1371,15 +857,5 @@ public class Scaffold extends Module {
         VapeBridge,
         NCPNormal,
         Normal;
-    }
-
-    /** When the crouch is on. See the {@code auto-sneak} setting for what each one is for. */
-    public enum SneakMode {
-        /** Never. The bridge is at full speed and the module is on its own. */
-        Never,
-        /** At a block edge: the crouch is on for the whole bridge and off on flat ground. */
-        AtEdges,
-        /** For the whole walk while the module is on: a third of the speed, and the bridge holds together. */
-        WhileBridging;
     }
 }
