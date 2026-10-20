@@ -340,8 +340,44 @@ public class ScaffoldCameraTest extends SourceGuard {
                 method + " forces a sneak with no setting behind it");
         }
 
-        assertTrue(squeeze(scaffold()).contains("if(!this.autoSneak.get())returnfalse;"),
-            "edge sneaking should be reachable, but only when the player asked for it");
+        assertTrue(squeeze(scaffold()).contains("switch(this.autoSneak.get())"),
+            "the crouch has to be behind the setting, and the setting has to be a choice of when "
+                + "rather than a yes or no");
+    }
+
+    /**
+     * The crouch is three different things and the setting says which one.
+     *
+     * <p>It is a speed control - a crouch is thirty per cent of the walking speed, and a bridge
+     * is walked backwards, which is thirty per cent again, so a permanent crouch makes a bridge a
+     * third of the speed it could be. It is a fallback - the module places the block under the
+     * player's feet, so the player is falling for a tick or two until it lands, and a server that
+     * refuses the placement leaves a hole that the crouch is what gives the module time to fill.
+     * And it is a flag - every change is a seventy per cent change in the client's speed that the
+     * server learns a tick late, which Grim's Simulation measures.</p>
+     *
+     * <p>Those pull in opposite directions, so they are three modes and the player picks.</p>
+     */
+    @Test
+    void theCrouchHasThreeModes() {
+        String body = code(methodBody(source(SCAFFOLD), "private boolean shouldSneak()"));
+
+        requireAnchor(body, "shouldSneak", "isOverEdge");
+
+        String squeezed = squeeze(body);
+
+        assertTrue(squeezed.contains("caseNever->{returnfalse;}"),
+            "there has to be a mode where the crouch is never on: the bridge is at full speed and "
+                + "the module is on its own");
+
+        assertTrue(squeezed.contains("caseWhileBridging->{"),
+            "and a mode where it is on for the whole bridge, which is what keeps a bridge together "
+                + "on a server that refuses placements");
+
+        assertTrue(squeezed.contains("this.isOverEdge()&&this.isStandingStill()"),
+            "and the third mode has to be the crouch at a drop while the player is standing "
+                + "still - a standing player has no speed for the crouch to change, so it costs "
+                + "nothing in the movement prediction and nothing in the bridge's speed");
     }
 
     /**
@@ -444,29 +480,23 @@ public class ScaffoldCameraTest extends SourceGuard {
      * backwards, which is thirty per cent again, so a permanent crouch made the bridge a third of
      * the speed it could be - one block a second in the log.</p>
      *
-     * <p>So the crouch comes on when the player is looking at a drop and the module is not
-     * building for them. The "not building" is measured in time, because a bridge has no target
-     * for the tick after every placement, and treating that as "no target" would put the crouch
-     * on and off again for the whole walk.</p>
+     * <p>So the crouch that is on by default is the one that costs nothing: it comes on when the
+     * player is looking at a drop and is standing still. A standing player has no speed for the
+     * crouch to change, so Grim has nothing to measure and the bridge does not slow down. The
+     * mode that holds a bridge together on a server that refuses placements is there too, and
+     * the mode that never crouches is there too.</p>
      */
     @Test
-    void theCrouchOnlyComesOnWhenTheModuleIsNotBuilding() {
-        String body = code(methodBody(source(SCAFFOLD), "private boolean shouldSneak()"));
+    void theCrouchComesOnOnlyWhereItIsFree() {
+        String body = code(methodBody(source(SCAFFOLD), "private boolean isStandingStill()"));
 
-        requireAnchor(body, "shouldSneak", "isOverEdge", "lastTargetAtMs");
+        requireAnchor(body, "isStandingStill", "getDeltaMovement");
 
         String squeezed = squeeze(body);
 
-        assertTrue(squeezed.contains("this.isOverEdge()"),
-            "the player has to be looking at a drop");
-
-        assertTrue(squeezed.contains("this.lastTargetAtMs"),
-            "and the module has to not be building for them, which is measured by when it last "
-                + "had a target");
-
-        assertTrue(squeezed.contains("this.nowMs()-this.lastTargetAtMs>this.sneakDelay.get()"),
-            "the gap is measured in time rather than in ticks, because a bridge has no target for "
-                + "the tick after every placement and that is its normal state");
+        assertTrue(squeezed.contains("Math.abs(vel.x)<0.01D&&Math.abs(vel.z)<0.01D"),
+            "the threshold for standing still has to be small enough that a walking player is not "
+                + "caught by it, and the crouch may only change while the player is not moving");
     }
 
     /**

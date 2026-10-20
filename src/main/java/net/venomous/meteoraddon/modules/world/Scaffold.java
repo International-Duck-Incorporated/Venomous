@@ -109,11 +109,39 @@ public class Scaffold extends Module {
             .build()
     );
 
-    private final Setting<Boolean> autoSneak = this.sgGeneral.add(
-        new BoolSetting.Builder()
+    /**
+     * When the crouch is on.
+     *
+     * <p>This was a yes/no and it could not be one thing, because the crouch does two different
+     * jobs that pull in opposite directions.</p>
+     *
+     * <p>It is a <em>speed control</em>: a crouch is thirty per cent of the walking speed, and a
+     * bridge is walked backwards, which is thirty per cent again, so a permanent crouch makes a
+     * bridge a third of the speed it could be - one block a second in the live log.</p>
+     *
+     * <p>And it is a <em>fallback</em>: the module places the block under the player's feet, which
+     * means the player is always falling for a tick or two until the block lands. If the server
+     * refuses the placement - and the anticheat-test server does, on a timer - there is a hole, and
+     * the crouch is what gives the module the time to fill it: a crouched player is in a cell
+     * three times longer.</p>
+     *
+     * <p>And it is a <em>flag</em>: every time it goes on or off, the client's speed changes by
+     * seventy per cent and the server only learns about it a tick later, which Grim's Simulation
+     * measures as the difference between the movement it predicted and the movement the client
+     * made. The live log had .010444, .028401 and .071601 for one bridge, and past a tenth of a
+     * block Grim teleports the player back.</p>
+     *
+     * <p>So the three modes are:</p>
+     */
+    private final Setting<Scaffold.SneakMode> autoSneak = this.sgGeneral.add(
+        new EnumSetting.Builder<Scaffold.SneakMode>()
             .name("auto-sneak")
-            .description("Sneak at block edges (Eagle/BridgeAssist).")
-            .defaultValue(true)
+            .description("When the crouch is on. Never: never, and the bridge is at full speed. "
+                + "At-edges: only when the player is standing at a drop, which costs nothing "
+                + "because a standing player has no speed to change. While-bridging: for the whole "
+                + "bridge, which is a third of the speed but is what keeps the bridge together "
+                + "on a server that refuses placements.")
+            .defaultValue(Scaffold.SneakMode.AtEdges)
             .build()
     );
 
@@ -1279,17 +1307,51 @@ public class Scaffold extends Module {
      * backwards, which is thirty per cent again - so a permanent crouch makes a bridge a third of
      * the speed it could be. The live log: one block a second.</p>
      *
-     * <p>So the crouch is the fallback: it comes on when the module is not keeping up, when the
-     * player is standing at the edge of something with the module unable to build for them. The
-     * "unable" is measured in time rather than in ticks, because a bridge has no target for the
-     * tick after every placement - that is the normal state of a bridge, and treating it as "no
-     * target" would put the crouch on and off again for the whole walk.</p>
+     * Which of those three it is depends on what the player is doing, and that is what the
+     * setting decides. A crouch that changes while the player is moving is the worst of the
+     * three: the speed changes, the server learns a tick late, and the bridge is a third of the
+     * speed for nothing. A crouch that changes while the player is standing still is free: there
+     * is no speed for it to change, so Grim has nothing to measure.</p>
      */
     private boolean shouldSneak() {
-        if (!this.autoSneak.get()) return false;
-        if (!this.isOverEdge()) return false;
+        switch (this.autoSneak.get()) {
+            case Never -> {
+                return false;
+            }
+            case WhileBridging -> {
+                // The whole bridge. This is the mode that keeps a bridge together on a server
+                // that refuses placements, because a crouched player is in a cell three times
+                // longer and the module has three times as long to fill it.
+                //
+                // "The module is building" is measured in time rather than in ticks: a bridge
+                // has no target for the tick after every placement, and asking whether there is
+                // a target right now would put the crouch on and off for the whole walk.
+                boolean building = this.nowMs() - this.lastTargetAtMs <= this.sneakDelay.get();
 
-        return this.nowMs() - this.lastTargetAtMs > this.sneakDelay.get();
+                return building || this.isOverEdge();
+            }
+            default -> {
+                // At the edge, and only while standing still. A standing player has no speed for
+                // the crouch to change, so it costs nothing in the movement prediction and
+                // nothing in how fast the bridge goes.
+                return this.isOverEdge() && this.isStandingStill();
+            }
+        }
+    }
+
+    /**
+     * Whether the player is standing still.
+     *
+     * <p>Below a twentieth of a block a tick, which is a tenth of a walking step. It is the
+     * threshold that makes the crouch free: a crouch changes the speed by seventy per cent, and
+     * a player who is not moving has no speed for that to change.</p>
+     */
+    private boolean isStandingStill() {
+        if (this.mc.player == null) return false;
+
+        Vec3 vel = this.mc.player.getDeltaMovement();
+
+        return Math.abs(vel.x) < 0.01D && Math.abs(vel.z) < 0.01D;
     }
 
     @Override
@@ -1304,5 +1366,15 @@ public class Scaffold extends Module {
         VapeBridge,
         NCPNormal,
         Normal;
+    }
+
+    /** When the crouch is on. See the {@code auto-sneak} setting for what each one is for. */
+    public enum SneakMode {
+        /** Never. The bridge is at full speed and the module is on its own. */
+        Never,
+        /** Only at a drop, and only while the player is standing still. */
+        AtEdges,
+        /** For the whole bridge. A third of the speed, and the bridge holds together. */
+        WhileBridging;
     }
 }
