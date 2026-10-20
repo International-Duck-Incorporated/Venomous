@@ -511,4 +511,16 @@ public class ScaffoldCameraTest extends SourceGuard {
             "the angle tolerance is what this replaces; it was seven degrees of slack on a geometry "
                 + "where two degrees already misses the face");
     }
+
+    @Test
+    void bridgingDoesNotPlaceWhileFalling() {
+        for (String method : new String[] {"private void tickStandardMode()",
+                                           "private void tickGrim()"}) {
+            String body = squeeze(methodBody(source(SCAFFOLD), method));
+            requireAnchor(body, method, "getDeltaMovement");
+            assertTrue(body.contains("this.mc.player.getDeltaMovement().y<-0.05D"),
+                method + " has to refuse to bridge while the player is falling, otherwise a jump "
+                    + "builds a tower of blocks under a falling player");
+        }
+    }
 }

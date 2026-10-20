@@ -501,6 +501,17 @@ public class Scaffold extends Module {
             return;
         }
 
+        // Placing while the player is falling is what builds a tower of blocks under them and drops
+        // them off the end of the bridge: the row is held at the take-off level and every cell the
+        // fall passes over gets filled. Going up is different - that is the jump-bridging staircase -
+        // so only the downward part of the airtime is gated. The camera is released this tick (it is
+        // only taken again by a placement) and the crouch is released for the same reason: a mid-air
+        // crouch is not something a player does.
+        if (this.mc.player.getDeltaMovement().y < -0.05D) {
+            this.updateManagedSneak(this.shouldSneak());
+            return;
+        }
+
         BlockPos placePos = this.getPlacePos();
         if (placePos == null) {
             // No target, but the crouch is not dropped here. The module fills the cell the
@@ -546,6 +557,12 @@ public class Scaffold extends Module {
     private void tickGrim() {
         if (!this.canBridge()) {
             this.releaseManagedSneak();
+            return;
+        }
+
+        // See tickStandardMode: do not place while falling.
+        if (this.mc.player.getDeltaMovement().y < -0.05D) {
+            this.updateManagedSneak(this.shouldSneak());
             return;
         }
 
