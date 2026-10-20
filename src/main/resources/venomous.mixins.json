@@ -6,6 +6,7 @@
   "client": [
     "ClientIntentionPacketAccessor",
     "ServerboundMovePlayerPacketAccessor",
+    "ClientPacketListenerMixin",
     "NoPitchLimitMixin",
     "ScaffoldCameraMixin",
     "MinecraftMixin",

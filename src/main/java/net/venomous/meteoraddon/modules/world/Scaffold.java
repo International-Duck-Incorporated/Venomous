@@ -26,6 +26,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.GrimPacketModel;
 import net.venomous.meteoraddon.utils.GrimRay;
 import net.venomous.meteoraddon.utils.ScaffoldCamera;
 import net.venomous.meteoraddon.utils.MovementMath;
@@ -75,6 +76,25 @@ public class Scaffold extends Module {
             .description("Log every decision the module makes: the crouch, the aim, the ray, and "
                 + "the placement. Tagged [DEBUG-scf] so it can be removed in one grep.")
             .defaultValue(true)
+            .build()
+    );
+
+    /**
+     * The packet-rate watch, off by default.
+     *
+     * <p>Grim's timer and aim checks are decided by the order of the packets the client sends, and
+     * nothing in the game records that - so this prints the numbers Grim works from, as a model of
+     * its own accounting running in the client. The counted rate is the one that matters: Grim
+     * writes twenty a second against, and anything above it makes the balance run ahead until the
+     * Timer check fires and then keeps firing.</p>
+     */
+    private final Setting<Boolean> debugPackets = this.sgAnticheat.add(
+        new BoolSetting.Builder()
+            .name("debug-packets")
+            .description("Print Grim's own packet accounting once a second: the movement packets, "
+                + "the end-of-tick packets, the rate Grim's Timer check counts against twenty, and "
+                + "the duplicate rotations its AimDuplicateLook reports.")
+            .defaultValue(false)
             .build()
     );
     private final SettingGroup sgGrim = this.settings.createGroup("Grim");
@@ -360,6 +380,10 @@ public class Scaffold extends Module {
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
         this.targetY = this.mc.player != null ? (int)Math.floor(this.mc.player.getY() - 1.0) : -1;
+
+        // The packet watch counts whether the module is on or not, so the window it reports has to
+        // start here rather than with whatever the client sent while the module was off.
+        GrimPacketModel.get().snapshot();
     }
 
     @Override
@@ -1105,6 +1129,34 @@ public class Scaffold extends Module {
             at.x, at.y, at.z, vel.x, vel.y, vel.z, this.mc.player.onGround(),
             this.managedSneak, this.isOverEdge(), below, this.mc.player.getYRot(),
             Rotations.serverYaw, Rotations.serverPitch);
+
+        this.debugPackets();
+    }
+
+    /**
+     * Grim's own packet accounting, once a second.
+     *
+     * <p>Grim's timer check is a balance written against twenty packets a second, and the aim
+     * checks are decided by the order of the packets rather than by anything in the game. Neither
+     * can be reproduced from the game's state, so the client keeps a model of Grim's accounting
+     * and prints it here.</p>
+     *
+     * <p>The number to watch is {@code counted}: Grim adds fifty milliseconds to its balance for
+     * every packet it counts, so anything above twenty a second makes the balance run ahead until
+     * the check fires - and it keeps firing, because the packet it cancels is the one that would
+     * have told Grim the tick had a movement packet in it.</p>
+     */
+    private void debugPackets() {
+        if (!this.debugPackets.get()) return;
+
+        GrimPacketModel.Window window = GrimPacketModel.get().snapshot();
+
+        if (window.duplicateLooks > 0) {
+            this.debugLog("packets: %s lastDuplicate=%.2f,%.2f", window, window.duplicateYaw,
+                window.duplicatePitch);
+        } else {
+            this.debugLog("packets: %s", window);
+        }
     }
 
     /**
