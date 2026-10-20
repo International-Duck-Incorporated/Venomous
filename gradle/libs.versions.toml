@@ -1,5 +1,5 @@
 [versions]
-mod-version = "7.34.0"
+mod-version = "7.35.0"
 
 # Java / Minecraft
 jdk = "25"

@@ -45,10 +45,10 @@ public class ScaffoldEdgeTest {
      */
     @Test
     void theCellInTheDirectionOfTravelIsTheEdge() {
-        // Standing at (10, 84, 20) on a solid floor, walking towards +z.
+        // Standing at (10, 84, 20) on a solid floor at y=83, walking towards +z.
         ScaffoldEdge.Air air = airIn(cells("10,83,21"));
 
-        assertTrue(ScaffoldEdge.overEdge(10.5D, 84.0D, 20.5D, 0.0D, 1.0D, air),
+        assertTrue(ScaffoldEdge.overEdge(10.5D, 83.0D, 20.5D, 0.0D, 1.0D, air),
             "the cell in front of the player is empty, so they are at the edge");
     }
 
@@ -62,7 +62,7 @@ public class ScaffoldEdgeTest {
     void solidGroundAheadIsNotAnEdge() {
         ScaffoldEdge.Air air = airIn(cells());
 
-        assertFalse(ScaffoldEdge.overEdge(10.5D, 84.0D, 20.5D, 0.0D, 1.0D, air),
+        assertFalse(ScaffoldEdge.overEdge(10.5D, 83.0D, 20.5D, 0.0D, 1.0D, air),
             "there is solid ground in every direction, so the player is not at an edge");
     }
 
@@ -76,7 +76,7 @@ public class ScaffoldEdgeTest {
     void standingOnNothingIsAnEdge() {
         ScaffoldEdge.Air air = airIn(cells("10,83,20"));
 
-        assertTrue(ScaffoldEdge.overEdge(10.5D, 84.0D, 20.5D, 0.0D, 0.0D, air),
+        assertTrue(ScaffoldEdge.overEdge(10.5D, 83.0D, 20.5D, 0.0D, 0.0D, air),
             "the cell under the player is empty, so they are over a drop");
     }
 
@@ -87,7 +87,7 @@ public class ScaffoldEdgeTest {
     void standingStillOnSolidGroundIsNotAnEdge() {
         ScaffoldEdge.Air air = airIn(cells());
 
-        assertFalse(ScaffoldEdge.overEdge(10.5D, 84.0D, 20.5D, 0.0D, 0.0D, air),
+        assertFalse(ScaffoldEdge.overEdge(10.5D, 83.0D, 20.5D, 0.0D, 0.0D, air),
             "no direction to step into and solid ground underneath");
     }
 
@@ -103,12 +103,12 @@ public class ScaffoldEdgeTest {
         // Walking towards -z; the cell at z-1 is empty and the cell at z+1 is solid.
         ScaffoldEdge.Air air = airIn(cells("10,83,19"));
 
-        assertTrue(ScaffoldEdge.overEdge(10.5D, 84.0D, 20.5D, 0.0D, -1.0D, air),
+        assertTrue(ScaffoldEdge.overEdge(10.5D, 83.0D, 20.5D, 0.0D, -1.0D, air),
             "the cell they are walking into is empty");
 
         ScaffoldEdge.Air solid = airIn(cells("10,83,21"));
 
-        assertFalse(ScaffoldEdge.overEdge(10.5D, 84.0D, 20.5D, 0.0D, -1.0D, solid),
+        assertFalse(ScaffoldEdge.overEdge(10.5D, 83.0D, 20.5D, 0.0D, -1.0D, solid),
             "the cell they are walking into is solid, and the one behind them does not matter");
     }
 
@@ -119,7 +119,7 @@ public class ScaffoldEdgeTest {
     void aDiagonalWalkStepsIntoTheDiagonalCell() {
         ScaffoldEdge.Air air = airIn(cells("11,83,21"));
 
-        assertTrue(ScaffoldEdge.overEdge(10.5D, 84.0D, 20.5D, 0.7D, 0.7D, air),
+        assertTrue(ScaffoldEdge.overEdge(10.5D, 83.0D, 20.5D, 0.7D, 0.7D, air),
             "the diagonal cell in the direction of travel is empty");
     }
 
@@ -130,7 +130,7 @@ public class ScaffoldEdgeTest {
     void aMostlyAxialDirectionUsesThatCell() {
         ScaffoldEdge.Air air = airIn(cells("11,83,20"));
 
-        assertTrue(ScaffoldEdge.overEdge(10.5D, 84.0D, 20.5D, 0.98D, 0.2D, air),
+        assertTrue(ScaffoldEdge.overEdge(10.5D, 83.0D, 20.5D, 0.98D, 0.2D, air),
             "the player is walking mostly along x, so the cell in x is the one that counts");
     }
 }

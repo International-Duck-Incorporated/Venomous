@@ -64,16 +64,18 @@ public final class ScaffoldEdge {
      * Whether the player is at the edge of something.
      *
      * @param x     the player's x
-     * @param y     the player's y
+     * @param footY the y of the block the player is standing on - the edge is checked at this
+     *              level, which is usually {@code floor(y - 1.0)} for safe walking or {@code y}
+     *              for bridging at the same level as the player's feet
      * @param z     the player's z
      * @param dirX  the x of the direction they are looking
      * @param dirZ  the z of the direction they are looking
      * @param air   what counts as air
      * @return true if the player is over a drop, or about to step into one
      */
-    public static boolean overEdge(double x, double y, double z, double dirX, double dirZ, Air air) {
+    public static boolean overEdge(double x, double footY, double z, double dirX, double dirZ, Air air) {
         int bx = (int)Math.floor(x);
-        int by = (int)Math.floor(y - 1.0D);
+        int by = (int)Math.floor(footY);
         int bz = (int)Math.floor(z);
 
         // Standing on nothing at all is the edge of everything, and it is the case that matters

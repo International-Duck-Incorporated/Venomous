@@ -1267,8 +1267,10 @@ public class Scaffold extends Module {
 
         Vec3 dir = this.movementDirection();
 
+        // The cell underfoot at the level below the player's feet: this is the edge for safe
+        // walking - the drop is below the block the player is standing on.
         return ScaffoldEdge.overEdge(
-            this.mc.player.getX(), this.mc.player.getY(), this.mc.player.getZ(),
+            this.mc.player.getX(), this.mc.player.getY() - 1.0D, this.mc.player.getZ(),
             dir.x, dir.z,
             (x, y, z) -> this.mc.level.getBlockState(new BlockPos(x, y, z)).isAir());
     }
@@ -1325,10 +1327,12 @@ public class Scaffold extends Module {
                 return false;
             }
             case AtEdges -> {
-                // The edge is steady for the whole of a bridge - the module fills the cell under
-                // the player's feet, so the cell in front of them stays empty - so the crouch is
-                // held for the whole bridge and changed only when the bridge starts or ends.
-                return this.isOverEdge();
+                // The crouch is on when the player is at an edge - whether they are walking into
+                // the drop (safe walk) or looking at it (bridging backwards). The edge is steady
+                // for the whole of a bridge - the module fills the cell under the player's feet,
+                // so the cell ahead stays empty - so the crouch is held for the whole bridge and
+                // changed only when the bridge starts or ends.
+                return this.isOverEdge() || this.isOverTheDrop();
             }
             default -> {
                 // The whole walk: the crouch is on before the bridge and stays on until it ends,

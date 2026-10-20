@@ -374,10 +374,10 @@ public class ScaffoldCameraTest extends SourceGuard {
             "and a mode where it is on at a block edge - for the whole bridge, since the edge is "
                 + "steady while the bridge goes on");
 
-        assertTrue(squeezed.contains("returnthis.isOverEdge();"),
-            "the at-edges mode has to ask about the edge, not whether the player is standing "
-                + "still: a player bridging backwards is moving, and that is exactly when they "
-                + "need the crouch");
+        assertTrue(squeezed.contains("returnthis.isOverEdge()||this.isOverTheDrop();"),
+            "the at-edges mode has to ask about both edges: the cell the player is walking into "
+                + "and the drop they are looking at; a player bridging backwards is moving, and "
+                + "that is exactly when they need the crouch");
 
         assertTrue(squeezed.contains("default->{returntrue;}"),
             "and the while-bridging mode has to keep the crouch on for the whole walk");
