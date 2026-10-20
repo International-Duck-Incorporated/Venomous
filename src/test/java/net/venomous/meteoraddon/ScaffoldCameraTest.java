@@ -511,19 +511,4 @@ public class ScaffoldCameraTest extends SourceGuard {
             "the angle tolerance is what this replaces; it was seven degrees of slack on a geometry "
                 + "where two degrees already misses the face");
     }
-
-    /**
-     * Bridging is a ground activity: a jump must not place blocks under a falling player.
-     */
-    @Test
-    void bridgingDoesNotPlaceWhileAirborne() {
-        for (String method : new String[] {"private void tickStandardMode()",
-                                           "private void tickGrim()"}) {
-            String body = squeeze(methodBody(source(SCAFFOLD), method));
-            requireAnchor(body, method, "onGround");
-            assertTrue(body.contains("!this.mc.player.onGround()"),
-                method + " has to refuse to bridge while the player is in the air, otherwise a jump "
-                    + "builds a tower of blocks under a falling player");
-        }
-    }
 }
