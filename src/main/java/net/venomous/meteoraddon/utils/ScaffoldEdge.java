@@ -20,10 +20,12 @@ package net.venomous.meteoraddon.utils;
  * changes the client's movement speed by seventy per cent, and the server only learns about it a
  * tick later - which is worth far more than the placement offset the crouch was there to avoid.</p>
  *
- * <p>The edge is the cell in the direction the player is walking. On a bridge that cell is empty
- * for the whole of the walk - the module fills the cell under the player - so the crouch is held
- * steadily while bridging and let go when the player stops walking or turns away from the drop.
- * That is the behaviour the setting has always claimed: "sneak at block edges".</p>
+ * <p>What is left is the classic safe walk: the drop is in front of you. A player standing at
+ * the edge of a platform is looking at the drop, and the crouch is what keeps them on the
+ * block. A player bridging backwards is looking at the bridge they have already built, and there
+ * is nothing to be careful of. The direction this is given is the direction the player is
+ * <em>looking</em>, which is the camera's yaw - not the direction they are walking, which while
+ * bridging backwards is the cell they have just left and which is solid.</p>
  */
 public final class ScaffoldEdge {
     /**
@@ -64,8 +66,8 @@ public final class ScaffoldEdge {
      * @param x     the player's x
      * @param y     the player's y
      * @param z     the player's z
-     * @param dirX  the x of the direction they are walking
-     * @param dirZ  the z of the direction they are walking
+     * @param dirX  the x of the direction they are looking
+     * @param dirZ  the z of the direction they are looking
      * @param air   what counts as air
      * @return true if the player is over a drop, or about to step into one
      */

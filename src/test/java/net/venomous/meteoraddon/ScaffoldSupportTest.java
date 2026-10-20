@@ -49,7 +49,7 @@ public class ScaffoldSupportTest extends SourceGuard {
         assertTrue(body.contains("BlockPos.containing(this.mc.player.getX(),y,this.mc.player.getZ())"),
             "the target is the cell directly beneath the player");
 
-        assertTrue(matches("returnthis\\.isSupported\\(below\\)\\?below:null;", body),
+        assertTrue(matches("if\\(!this\\.isSupported\\(below\\)\\)returnnull;", body),
             "and it is returned only when it has a supporting face, otherwise null so the caller "
                 + "does nothing this tick");
 

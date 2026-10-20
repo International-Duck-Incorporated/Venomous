@@ -340,7 +340,7 @@ public class ScaffoldCameraTest extends SourceGuard {
                 method + " forces a sneak with no setting behind it");
         }
 
-        assertTrue(squeeze(scaffold()).contains("this.autoSneak.get()&&this.isOverEdge()"),
+        assertTrue(squeeze(scaffold()).contains("if(!this.autoSneak.get())returnfalse;"),
             "edge sneaking should be reachable, but only when the player asked for it");
     }
 
@@ -373,10 +373,11 @@ public class ScaffoldCameraTest extends SourceGuard {
 
             String squeezed = squeeze(body);
 
-            assertTrue(squeezed.contains("this.updateManagedSneak(this.autoSneak.get()&&this.isOverEdge());"),
-                method + " has to decide the crouch by the edge on the no-target path too: a bridge "
-                    + "has no target for the tick after every placement, and dropping the crouch "
-                    + "there made it come and go on every placement");
+            assertTrue(squeezed.contains("this.updateManagedSneak(this.shouldSneak());"),
+                method + " has to decide the crouch the same way on the no-target path as on "
+                    + "every other path: a bridge has no target for the tick after every "
+                    + "placement, and dropping the crouch there made it come and go on every "
+                    + "placement");
 
             assertEquals(1, countOccurrences(squeezed, "this.releaseManagedSneak();"),
                 method + " may only release the crouch where the player is not bridging at all - "
@@ -398,28 +399,74 @@ public class ScaffoldCameraTest extends SourceGuard {
     }
 
     /**
-     * The edge has to be the cell in the direction of travel.
+     * The edge is the drop in front of the player.
      *
      * <p>Asserted on the wiring because the decision itself lives in {@link net.venomous.meteoraddon.utils.ScaffoldEdge}
-     * and is tested there; what this guards is that the module actually asks that question, and
-     * that the old question - is the cell <em>under</em> the player air - has not come back.</p>
+     * and is tested there; what this guards is that the module asks that question, and that the
+     * two questions that were wrong have not come back.</p>
+     *
+     * <p>Not the cell under the player: that is the moment after they have already stepped off
+     * it, and it flickers on every placement, which is what made the crouch come and go. Not the
+     * cell they are walking into either: while bridging backwards that is the cell in front of
+     * them, which is the one they just left and which is solid.</p>
      */
     @Test
-    void theEdgeIsTheCellInTheDirectionOfTravel() {
+    void theEdgeIsTheDropInFrontOfThePlayer() {
         String body = code(methodBody(source(SCAFFOLD), "private boolean isOverEdge()"));
 
         requireAnchor(body, "isOverEdge", "ScaffoldEdge.overEdge");
 
         String squeezed = squeeze(body);
 
-        assertTrue(squeezed.contains("this.movementDirection()"),
-            "the edge is the cell the player is walking into, so the direction of travel has to be "
+        assertTrue(squeezed.contains("getYRot()"),
+            "the edge is the drop in the direction the player is looking, so the camera's yaw is "
                 + "part of the question");
 
+        assertFalse(squeezed.contains("this.movementDirection()"),
+            "the cell the player is walking into is not the edge: while bridging backwards it is "
+                + "the cell in front of them, which is solid, and asking about it put the crouch "
+                + "on for the whole walk");
+
         assertFalse(body.contains("BlockPos.containing(this.mc.player.getX()"),
-            "the cell under the player is not the edge - it is the moment after they have already "
-                + "stepped off it, and it flickers on every placement, which is what made the "
-                + "crouch come and go");
+            "the cell under the player is not the edge either - it is the moment after they have "
+                + "already stepped off it, and it flickers on every placement");
+    }
+
+    /**
+     * The crouch is the fallback, not a permanent state.
+     *
+     * <p>While the module is building for the player it <em>is</em> the safety net - the ground
+     * arrives before the player reaches it - and a crouch on top of that is not free. It changes
+     * the client's speed by seventy per cent and the server only learns about it a tick later,
+     * which Grim's Simulation measures as the difference between the movement it predicted and
+     * the movement the client made; the live log had .010444, .028401 and .071601 for one bridge.
+     * And it is slow: a crouch is thirty per cent of the walking speed, and a bridge is walked
+     * backwards, which is thirty per cent again, so a permanent crouch made the bridge a third of
+     * the speed it could be - one block a second in the log.</p>
+     *
+     * <p>So the crouch comes on when the player is looking at a drop and the module is not
+     * building for them. The "not building" is measured in time, because a bridge has no target
+     * for the tick after every placement, and treating that as "no target" would put the crouch
+     * on and off again for the whole walk.</p>
+     */
+    @Test
+    void theCrouchOnlyComesOnWhenTheModuleIsNotBuilding() {
+        String body = code(methodBody(source(SCAFFOLD), "private boolean shouldSneak()"));
+
+        requireAnchor(body, "shouldSneak", "isOverEdge", "lastTargetAtMs");
+
+        String squeezed = squeeze(body);
+
+        assertTrue(squeezed.contains("this.isOverEdge()"),
+            "the player has to be looking at a drop");
+
+        assertTrue(squeezed.contains("this.lastTargetAtMs"),
+            "and the module has to not be building for them, which is measured by when it last "
+                + "had a target");
+
+        assertTrue(squeezed.contains("this.nowMs()-this.lastTargetAtMs>this.sneakDelay.get()"),
+            "the gap is measured in time rather than in ticks, because a bridge has no target for "
+                + "the tick after every placement and that is its normal state");
     }
 
     /**
