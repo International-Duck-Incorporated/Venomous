@@ -137,11 +137,11 @@ public class Scaffold extends Module {
         new EnumSetting.Builder<Scaffold.SneakMode>()
             .name("auto-sneak")
             .description("When the crouch is on. Never: never, and the bridge is at full speed. "
-                + "At-edges: only when the player is standing at a drop, which costs nothing "
-                + "because a standing player has no speed to change. While-bridging: for the whole "
-                + "bridge, which is a third of the speed but is what keeps the bridge together "
-                + "on a server that refuses placements.")
-            .defaultValue(Scaffold.SneakMode.WhileBridging)
+                + "At-edges: at a block edge, for the whole bridge - the crouch changes only when "
+                + "the bridge starts or ends, so it costs nothing in the movement prediction. "
+                + "While-bridging: for the whole walk while the module is on, a third of the speed "
+                + "but the bridge holds together on a server that refuses placements.")
+            .defaultValue(Scaffold.SneakMode.AtEdges)
             .build()
     );
 
@@ -1297,26 +1297,27 @@ public class Scaffold extends Module {
     /**
      * Whether the crouch belongs on right now.
      *
-     * <p>Two things have to be true, and the second one is the whole point of this method.</p>
+     * <p>The crouch does two different jobs, and they pull in opposite directions.</p>
      *
-     * <p>The player has to be looking at a drop, and the module must not be building for them.
-     * While the module is placing the block under the player's feet it <em>is</em> the safety net:
-     * the ground arrives before the player reaches it, and a crouch on top of that is not free. It
-     * changes the client's speed by seventy per cent, and the server only learns about it a tick
-     * later, which Grim's Simulation measures as the difference between the movement it predicted
-     * and the movement the client made. The live log had .010444, .028401 and .071601 for one
-     * bridge - and past a tenth of a block Grim teleports the player back, which is how you fall
-     * off a bridge.</p>
+     * <p>It is a <em>fallback</em>: the module places the block under the player's feet, so the
+     * player is always falling for a tick or two until the block lands. If the server refuses the
+     * placement - and the anticheat-test server does, on a timer - there is a hole, and the crouch
+     * is what gives the module the time to fill it: a crouched player is in a cell three times
+     * longer.</p>
      *
-     * <p>And it is slow. A crouch is thirty per cent of the walking speed, and a bridge is walked
-     * backwards, which is thirty per cent again - so a permanent crouch makes a bridge a third of
-     * the speed it could be. The live log: one block a second.</p>
+     * <p>And it is a <em>speed control</em>: a crouch is thirty per cent of the walking speed, and
+     * a bridge is walked backwards, which is thirty per cent again, so a permanent crouch makes a
+     * bridge a third of the speed it could be - one block a second in the live log.</p>
      *
-     * Which of those three it is depends on what the player is doing, and that is what the
-     * setting decides. A crouch that changes while the player is moving is the worst of the
-     * three: the speed changes, the server learns a tick late, and the bridge is a third of the
-     * speed for nothing. A crouch that changes while the player is standing still is free: there
-     * is no speed for it to change, so Grim has nothing to measure.</p>
+     * <p>And it is a <em>flag</em>: every time it goes on or off, the client's speed changes by
+     * seventy per cent and the server only learns about it a tick later, which Grim's Simulation
+     * measures. The crouch must change as seldom as possible - once when the bridge starts, once
+     * when it ends - not on every placement. That is why the decision is the edge state, which is
+     * steady for the whole of a bridge, and not "is there a target right now", which flickers on
+     * the tick after every placement.</p>
+     *
+     * <p>Which of those three it is depends on what the player is doing, and that is what the
+     * setting decides.</p>
      */
     private boolean shouldSneak() {
         switch (this.autoSneak.get()) {
@@ -1324,45 +1325,20 @@ public class Scaffold extends Module {
                 return false;
             }
             case AtEdges -> {
-                // At a drop, and only while standing still. A standing player has no speed for
-                // the crouch to change, so it costs nothing in the movement prediction and
-                // nothing in how fast the bridge goes.
-                return this.isOverTheDrop() && this.isStandingStill();
-            }
-            default -> {
-                // The whole bridge.
-                //
-                // The crouch is a third of the walking speed and a bridge is walked backwards,
-                // which is a third again, so this is a slow bridge - one block a second in the
-                // live log. It is the default because of what the crouch buys: the module places
-                // the block under the player's feet, so the player is always falling for a tick
-                // or two until the block lands, and a server that refuses the placement - which
-                // the anticheat-test server does, on a timer - leaves a hole. A crouched player
-                // is in a cell three times longer, so the module has three times as long to fill
-                // it, and the bridge holds together.
-                //
-                // It is also the shape Grim wants. The crouch is on before the walk and stays on
-                // until it ends, so the client's speed never changes and Grim's Simulation has
-                // nothing to measure. The live log with the croup off had .001788, .017113,
-                // .012879 and .006660 in it; with the crouch on there were none.
+                // The edge is steady for the whole of a bridge - the module fills the cell under
+                // the player's feet, so the cell in front of them stays empty - so the crouch is
+                // held for the whole bridge and changed only when the bridge starts or ends.
                 return this.isOverEdge();
             }
+            default -> {
+                // The whole walk: the crouch is on before the bridge and stays on until it ends,
+                // so the client's speed never changes and Grim's Simulation has nothing to
+                // measure. A third of the speed, but the bridge holds together even on a server
+                // that refuses placements, because the crouched player is in a cell three times
+                // longer and the module has three times as long to fill each one.
+                return true;
+            }
         }
-    }
-
-    /**
-     * Whether the player is standing still.
-     *
-     * <p>Below a twentieth of a block a tick, which is a tenth of a walking step. It is the
-     * threshold that makes the crouch free: a crouch changes the speed by seventy per cent, and
-     * a player who is not moving has no speed for that to change.</p>
-     */
-    private boolean isStandingStill() {
-        if (this.mc.player == null) return false;
-
-        Vec3 vel = this.mc.player.getDeltaMovement();
-
-        return Math.abs(vel.x) < 0.01D && Math.abs(vel.z) < 0.01D;
     }
 
     @Override
@@ -1383,9 +1359,9 @@ public class Scaffold extends Module {
     public enum SneakMode {
         /** Never. The bridge is at full speed and the module is on its own. */
         Never,
-        /** Only at a drop, and only while the player is standing still. */
+        /** At a block edge: the crouch is on for the whole bridge and off on flat ground. */
         AtEdges,
-        /** For the whole bridge. A third of the speed, and the bridge holds together. */
+        /** For the whole walk while the module is on: a third of the speed, and the bridge holds together. */
         WhileBridging;
     }
 }

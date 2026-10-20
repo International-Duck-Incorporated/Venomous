@@ -371,18 +371,16 @@ public class ScaffoldCameraTest extends SourceGuard {
                 + "the module is on its own");
 
         assertTrue(squeezed.contains("caseAtEdges->{"),
-            "and a mode where it is only at a drop while the player is standing still - a standing "
-                + "player has no speed for the crouch to change, so it costs nothing in the "
-                + "movement prediction and nothing in the bridge's speed");
-
-        assertTrue(squeezed.contains("this.isOverTheDrop()&&this.isStandingStill()"),
-            "and that mode has to ask both questions: the drop in front of them, and whether they "
-                + "are moving");
+            "and a mode where it is on at a block edge - for the whole bridge, since the edge is "
+                + "steady while the bridge goes on");
 
         assertTrue(squeezed.contains("returnthis.isOverEdge();"),
-            "and the default mode has to be the whole bridge, which is what holds a bridge together "
-                + "on a server that refuses placements and what keeps the client's speed from "
-                + "changing while the walk goes on");
+            "the at-edges mode has to ask about the edge, not whether the player is standing "
+                + "still: a player bridging backwards is moving, and that is exactly when they "
+                + "need the crouch");
+
+        assertTrue(squeezed.contains("default->{returntrue;}"),
+            "and the while-bridging mode has to keep the crouch on for the whole walk");
     }
 
     /**
@@ -475,36 +473,6 @@ public class ScaffoldCameraTest extends SourceGuard {
                 + "stepped off it, and it flickers on every placement");
     }
 
-    /**
-     * The crouch is the fallback, not a permanent state.
-     *
-     * <p>While the module is building for the player it <em>is</em> the safety net - the ground
-     * arrives before the player reaches it - and a crouch on top of that is not free. It changes
-     * the client's speed by seventy per cent and the server only learns about it a tick later,
-     * which Grim's Simulation measures as the difference between the movement it predicted and
-     * the movement the client made; the live log had .010444, .028401 and .071601 for one bridge.
-     * And it is slow: a crouch is thirty per cent of the walking speed, and a bridge is walked
-     * backwards, which is thirty per cent again, so a permanent crouch made the bridge a third of
-     * the speed it could be - one block a second in the log.</p>
-     *
-     * <p>So the crouch that is on by default is the one that costs nothing: it comes on when the
-     * player is looking at a drop and is standing still. A standing player has no speed for the
-     * crouch to change, so Grim has nothing to measure and the bridge does not slow down. The
-     * mode that holds a bridge together on a server that refuses placements is there too, and
-     * the mode that never crouches is there too.</p>
-     */
-    @Test
-    void theCrouchComesOnOnlyWhereItIsFree() {
-        String body = code(methodBody(source(SCAFFOLD), "private boolean isStandingStill()"));
-
-        requireAnchor(body, "isStandingStill", "getDeltaMovement");
-
-        String squeezed = squeeze(body);
-
-        assertTrue(squeezed.contains("Math.abs(vel.x)<0.01D&&Math.abs(vel.z)<0.01D"),
-            "the threshold for standing still has to be small enough that a walking player is not "
-                + "caught by it, and the crouch may only change while the player is not moving");
-    }
 
     /**
      * The placement is gated on the ray reaching the block, not on an angle.
