@@ -501,6 +501,17 @@ public class Scaffold extends Module {
             return;
         }
 
+        // Bridging is a ground activity: while the player is in the air there is nothing to
+        // bridge against that they will not outrun, and placing anyway is what made a jump build
+        // a tower of blocks under a falling player and drop them off the end of it. The camera
+        // is already back with the player - it was released at the top of this tick and is only
+        // taken again by a placement - and the crouch is released here for the same reason: a
+        // mid-air crouch is not something a player does.
+        if (!this.mc.player.onGround()) {
+            this.updateManagedSneak(this.shouldSneak());
+            return;
+        }
+
         BlockPos placePos = this.getPlacePos();
         if (placePos == null) {
             // No target, but the crouch is not dropped here. The module fills the cell the
@@ -546,6 +557,13 @@ public class Scaffold extends Module {
     private void tickGrim() {
         if (!this.canBridge()) {
             this.releaseManagedSneak();
+            return;
+        }
+
+        // Bridging is a ground activity; see tickStandardMode. Placing while airborne is what made
+        // a jump build a tower of blocks under a falling player.
+        if (!this.mc.player.onGround()) {
+            this.updateManagedSneak(this.shouldSneak());
             return;
         }
 
