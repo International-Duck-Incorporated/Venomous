@@ -9,6 +9,7 @@
     "ClientPacketListenerMixin",
     "NoPitchLimitMixin",
     "ScaffoldCameraMixin",
+    "LocalPlayerTickMixin",
     "MinecraftMixin",
     "ScreenMixin",
     "GameRendererMixin",

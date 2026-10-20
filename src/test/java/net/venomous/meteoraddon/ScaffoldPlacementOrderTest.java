@@ -32,16 +32,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class ScaffoldPlacementOrderTest {
     private static String scaffoldSource() throws IOException {
+        return source("src/main/java/net/venomous/meteoraddon/modules/world/Scaffold.java");
+    }
+
+    private static String preRotateSource() throws IOException {
+        return source("src/main/java/net/venomous/meteoraddon/utils/PreRotate.java");
+    }
+
+    private static String mixinSource(String relative) throws IOException {
+        return source(relative);
+    }
+
+    /** Reads a source file from the project, walking up until it finds one. */
+    private static String source(String relative) throws IOException {
         Path dir = Path.of(System.getProperty("user.dir")).toAbsolutePath();
-        String rel = "src/main/java/net/venomous/meteoraddon/modules/world/Scaffold.java";
 
         while (dir != null) {
-            Path candidate = dir.resolve(rel);
+            Path candidate = dir.resolve(relative);
             if (Files.isRegularFile(candidate)) return Files.readString(candidate);
             dir = dir.getParent();
         }
 
-        throw new AssertionError("could not find " + rel + " above " + System.getProperty("user.dir"));
+        throw new AssertionError("could not find " + relative + " above " + System.getProperty("user.dir"));
     }
 
     /** Strips comments so prose in a javadoc cannot satisfy or break a source assertion. */
@@ -94,6 +106,53 @@ public class ScaffoldPlacementOrderTest {
         assertTrue(code.contains("PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {"),
             "aimAndPlace must defer the placement through PreRotate so it leaves before the "
                 + "movement packet, not after it.");
+    }
+
+    /**
+     * The placement has to leave before the crouch, not merely before the movement packet.
+     *
+     * <p>These are different points and the difference is the whole of Grim's
+     * {@code PacketOrderF}. A 26.2 client sends a tick's packets like this:</p>
+     *
+     * <pre>{@code
+     *   [the camera write]  [the input packet: the crouch]  [the movement packet]
+     * }</pre>
+     *
+     * <p>so the movement packet's own pre-phase is <em>after</em> the crouch has gone out. Grim
+     * reads the crouch as lasting from the sneak packet until the next movement packet and cancels
+     * any action that arrives inside that window, and the live log has it:</p>
+     *
+     * <pre>{@code
+     *   Grim > ItsEspress0 failed PacketOrderF x0.0 action=place, sprinting=false, sneaking=true
+     * }</pre>
+     *
+     * <p>A cancelled placement is worse than a flag: the client is left standing on a block the
+     * server never received, and the two disagree about where the player is - which is the
+     * Simulation offset that follows every one of them in the log.</p>
+     *
+     * <p>So the action leaves from the hook in the player's tick that sits between the camera
+     * write and the input packet.</p>
+     */
+    @Test
+    void thePlacementLeavesBeforeTheCrouch() throws IOException {
+        String code = code(preRotateSource());
+
+        assertFalse(code.contains("SendMovementPacketsEvent"),
+            "the movement packet's pre-phase is after the input packet, so an action fired from "
+                + "there lands inside the crouch and Grim's PacketOrderF cancels it");
+
+        assertTrue(code.contains("PreRotate.dispatch()") || code.contains("public static void dispatch("),
+            "the action has to leave from the hook that sits between the camera write and the "
+                + "input packet");
+
+        String mixin = code(mixinSource("src/main/java/net/venomous/meteoraddon/mixin/LocalPlayerTickMixin.java"));
+
+        assertTrue(mixin.contains("AbstractClientPlayer;tick()V"),
+            "the hook has to be right after the player's tick: that is where the camera has been "
+                + "written and the input packet has not been sent yet");
+
+        assertTrue(mixin.contains("PreRotate.dispatch()"),
+            "and that is where the queued actions go out");
     }
 
     /**
