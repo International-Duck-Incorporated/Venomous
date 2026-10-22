@@ -32,6 +32,8 @@ import net.venomous.meteoraddon.utils.RotationGcd;
 import net.venomous.meteoraddon.utils.ScaffoldAim;
 import net.venomous.meteoraddon.utils.ScaffoldGates;
 import net.venomous.meteoraddon.utils.SneakTiming;
+import net.venomous.meteoraddon.utils.AimHold;
+import net.venomous.meteoraddon.utils.SneakRepress;
 
 public class Scaffold extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -244,6 +246,16 @@ public class Scaffold extends Module {
     private long nextPlaceAtMs = 0L;
 
     /**
+     * Wall-clock time of the last placement that actually left the client.
+     *
+     * <p>The sneaking and the aiming decisions below are measured <em>relative to it</em> rather
+     * than to the tick, because the freshest real event the server saw from this module is a
+     * placement, and "how long since then" is the quantity a hand answers in both cases. Zero
+     * means nothing has been placed yet, which every consumer below reads as "a very long time".</p>
+     */
+    private long lastPlaceAtMs = 0L;
+
+    /**
      * The pitch the server is told, smoothed.
      *
      * <p>The yaw is not smoothed because it is not the module's: it is the player's own camera yaw,
@@ -277,6 +289,7 @@ public class Scaffold extends Module {
         this.towerTicks = 0;
         this.scaffoldCount = 0;
         this.nextPlaceAtMs = 0L;
+        this.lastPlaceAtMs = 0L;
         this.managedSneak = false;
         this.previousSneakDown = false;
         this.lastTechnique = null;
@@ -292,6 +305,7 @@ public class Scaffold extends Module {
 
         this.releaseManagedSneak();
         this.nextPlaceAtMs = 0L;
+        this.lastPlaceAtMs = 0L;
         this.smoothedPitch = Float.NaN;
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
@@ -523,6 +537,11 @@ public class Scaffold extends Module {
      * very small wobble, because Grim's {@code AimDuplicateLook} flags a rotation that repeats
      * exactly, and a player standing still with a settled aim would otherwise send the same
      * rotation every tick.</p>
+     *
+     * <p>And the smoothing does not run continuously: after a placement the pitch rests on the
+     * angle that performed it, for a duration that fits what the player is doing - see
+     * {@link AimHold}. Between rests the chase runs at the gain above; while a placement is staged
+     * the hold gives way entirely, because that is when the ray the server traces has to land.</p>
      */
     private float[] aimRotation(BlockPos pos) {
         Vec3 eyes = this.mc.player.getEyePosition();
@@ -545,9 +564,13 @@ public class Scaffold extends Module {
         // The first-call test has to be Float.isNaN and not an equality comparison. NaN is not
         // equal to itself, so `smoothedPitch == Float.NaN` is never true, the initialisation never
         // ran, and the pitch was NaN from the first tick onwards.
+        //
+        // While a hold is active - see AimHold - the chase is suspended and the pitch stays where
+        // the last placement left it, so the aim rests between actions instead of drifting along
+        // with the walk. A staged placement turns the hold off, because then the pitch has to work.
         if (Float.isNaN(this.smoothedPitch)) {
             this.smoothedPitch = pitch;
-        } else {
+        } else if (!this.holdsPitch()) {
             this.smoothedPitch = this.smoothedPitch
                 + (pitch - this.smoothedPitch) * AIM_SMOOTH_PITCH;
         }
@@ -708,6 +731,10 @@ public class Scaffold extends Module {
                 // Jitter only ever lengthens the gap, never shortens it, so bridging stays at
                 // least as reliable as the fixed cadence while no longer being metronomic.
                 this.nextPlaceAtMs = now + (long) gap;
+
+                // The crouch and the aim are measured from here, not from the attempt: a failed
+                // placement never left the client, so nothing the server can see happened.
+                this.lastPlaceAtMs = now;
                 return true;
             }
         }
@@ -820,6 +847,13 @@ public class Scaffold extends Module {
      * has already sent the crouch input. So on a tick where a placement is waiting to go out, the
      * crouch is left exactly as it is - the key stays down and no input packet is sent, and the
      * server's view of the crouch is unchanged.</p>
+     *
+     * <p>There is a second, quieter shape to the same problem: even with that guard, a fresh
+     * <em>press</em> that follows a placement within milliseconds produces a place-squeeze
+     * metronome at the cadence of the bridge. So a crouch that is not already down waits out a
+     * short delay since the last placement before it starts - see {@link SneakRepress} - while a
+     * crouch that is already down is holding rather than pressing and is left alone, and a release
+     * is never delayed at all, because a crouch held past its point walks the player into the air.</p>
      */
     private void updateManagedSneak(boolean atEdge) {
         if (PreRotate.hasPending(this)) return;
@@ -830,10 +864,37 @@ public class Scaffold extends Module {
             : 0L;
 
         if (SneakTiming.shouldHold(atEdge, onGround, this.managedSneak, heldFor, this.sneakDelay.get())) {
-            this.pressManagedSneak();
+            // Holding is not pressing: an already-down key changes nothing, so the placement-gap
+            // rule has nothing to say to it. Only the fresh press waits for the delay.
+            if (this.managedSneak || SneakRepress.allowsPress(this.msSinceLastPlacement(),
+                SneakRepress.DEFAULT_DELAY_MS)) {
+                this.pressManagedSneak();
+            }
         } else {
             this.releaseManagedSneak();
         }
+    }
+
+    /**
+     * Milliseconds since the last placement actually left the client.
+     *
+     * <p>Reads as a very large number before one ever does, so nothing downstream needs a
+     * special case for "no placements yet".</p>
+     */
+    private long msSinceLastPlacement() {
+        if (this.lastPlaceAtMs == 0L) return Long.MAX_VALUE / 2L;
+        return Math.max(0L, nowMs() - this.lastPlaceAtMs);
+    }
+
+    /**
+     * Whether the smoothed pitch rests this tick instead of chasing the face; see {@link AimHold}.
+     */
+    private boolean holdsPitch() {
+        return AimHold.shouldHold(
+            PreRotate.hasPending(this),
+            this.msSinceLastPlacement(),
+            this.mc.player.isSprinting(),
+            !this.movementDirection().equals(Vec3.ZERO));
     }
 
     /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */

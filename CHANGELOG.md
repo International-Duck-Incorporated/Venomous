@@ -4,6 +4,23 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.17.1] - 2026-10-22
+
+- Ported two timing ideas from Raven B4's scaffold, with the derivations behind each, to `v-scaffold`:
+  - **Sneak re-press delay** (`SneakRepress`): a crouch that is not already down now waits 90ms of
+    wall-clock time since the last placement before it presses, instead of squeezing the edge crouch
+    back on the tick after a placement leaves. Holding is not pressing — an already-down key is left
+    alone — and releases are never delayed, because a crouch held past its point is a walking-into-air
+    bug. Together with `SneakTiming` this turns the sneak-toggle cadence from one toggle per
+    placement into bursts at the places a real hand would squeeze the crouch.
+  - **Aim hold after a placement** (`AimHold`): the smoothed pitch now rests on the angle that
+    performed the last placement — 710ms while sprinting, 110ms while walking, 460ms idle, Raven's
+    numbers — instead of drifting along with the walk between placements. A staged placement turns
+    the hold off entirely, because that is when the server's ray has to reach the face; the pitch
+    wobble keeps running either way so the rotation never repeats exactly for `AimDuplicateLook`.
+- Both decisions are pure static functions with unit tests (`SneakRepressTest`, `AimHoldTest`), no
+  new mixins, no camera writes, and no change to packet ordering.
+
 ## [7.1.0] - 2026-10-18
 
 - Fixed `v-scaffold` placing on POST — the anticheat named it directly:
