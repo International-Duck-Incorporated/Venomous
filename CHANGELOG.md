@@ -4,6 +4,36 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.18.5] - 2026-10-23
+
+- Fixed the quit hang. Clicking Quit used to freeze the client for twenty seconds and end in a
+  `ClientShutdownWatchdog` crash report with exit code -8. The cause: Baritone's cache workers
+  are non-daemon threads parked forever in a `LinkedBlockingQueue.take()` inside a loop that
+  catches `InterruptedException` and `Throwable` and keeps parking - so neither an interrupt nor
+  a `shutdownNow()` can release a worker that is already parked there, and once `main()` returns
+  the JVM waits on them until vanilla's watchdog force-kills the process. The fix is a shutdown
+  reaper: a daemon thread started at addon init that watches the main thread, and the moment
+  `main()` has returned invokes `System.exit(0)` - shutdown hooks run, the halt takes the parked
+  threads with it, and quitting is clean and immediate. When every thread is well behaved the
+  natural shutdown wins the race and the forced exit is a no-op on an already-halting JVM.
+  Covered by `ShutdownReaperTest` (fires on death, stays quiet while watched, daemon by
+  construction).
+- Removed fourteen dead modules after grading every one of them against the 26.2 server model.
+  Twelve were 1.8-era packet relics that cannot function against a server-side simulation and
+  only ever produced flags: `more-carry` (crafting-slot carry - servers repopulate containers on
+  close), `bungeecord-spoof` (forwarding data is proxy-side; a client injection just fingerprints),
+  `kick` (ESC menu exists), `portal-exploits` (with its two serving mixins,
+  `NetherPortalBlockMixin` and `ScreenMixin`), `reset-vl` (modern anticheats do not keep
+  reloggable violation levels), `sleep-walker` (the server ejects a moving sleeper), `chorus-exploit`
+  (the teleport is server-authoritative), `v-click-tp` (client setPos rubber-bands without
+  permission), `vehicle-one-hit` (vehicle health is server-side), `v-ghost-hand` (server
+  raycasts), `time-shift` and `v-anti-hunger`. The other two were worse than dead: the repo's
+  own `OrphanModuleTest` audit had already established that `text-field-protect`,
+  `extended-firework` and `v-ghost-hand` were wired to nothing - their advertised features never
+  ran because the mixins they waited on were never written - so those settings took space in the
+  GUI while doing literally nothing. The orphan and inert allowlists are empty now, and the
+  drift assertions keep them that way.
+
 ## [7.18.4] - 2026-10-23
 
 - Fixed V Scaffold sending pitch steps no mouse can produce. The shared `RotationGcd` grid was

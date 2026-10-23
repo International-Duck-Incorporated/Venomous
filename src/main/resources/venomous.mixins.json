@@ -4,15 +4,11 @@
   "package": "net.venomous.meteoraddon.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "ClientIntentionPacketAccessor",
     "ServerboundMovePlayerPacketAccessor",
     "LivingEntityAccessor",
     "NoPitchLimitMixin",
     "MinecraftMixin",
-    "ScreenMixin",
-    "GameRendererMixin",
     "HudMixin",
-    "NetherPortalBlockMixin",
     "NoPushEntityMixin",
     "NoPushFishingHookMixin"
   ],

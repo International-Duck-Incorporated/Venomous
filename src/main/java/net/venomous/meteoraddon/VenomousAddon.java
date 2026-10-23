@@ -7,6 +7,7 @@ import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.venomous.meteoraddon.modules.ModuleRegistry;
 import net.venomous.meteoraddon.utils.PreRotate;
+import net.venomous.meteoraddon.utils.ShutdownReaper;
 import org.slf4j.Logger;
 
 public class VenomousAddon extends MeteorAddon {
@@ -18,7 +19,7 @@ public class VenomousAddon extends MeteorAddon {
      * {@code AddonMetadataTest} now asserts it matches {@code libs.versions.toml}, which is the
      * single source of truth the build itself uses.</p>
      */
-    public static final String VERSION = "7.18.4";
+    public static final String VERSION = "7.18.5";
     public static final Logger LOG = LogUtils.getLogger();
 
     public static final Category CATEGORY = new Category("Venomous");
@@ -27,6 +28,7 @@ public class VenomousAddon extends MeteorAddon {
     @Override
     public void onInitialize() {
         LOG.info("Initializing Venomous V" + VERSION + " - Optimized & Refined.");
+        ShutdownReaper.init();
         PreRotate.init();
         ModuleRegistry.register();
     }

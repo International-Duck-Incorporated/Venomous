@@ -20,16 +20,15 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Fails when a module is decorative: present in the GUI, taking settings, and wired to nothing.
  *
- * <p>Three modules shipped in this state. {@code TextFieldProtect} and {@code ExtendedFirework}
- * expose a small public API - {@code shouldBlockChat()}, {@code getXMult()} and friends - that
- * no mixin or module anywhere in the addon calls, and neither defines an {@code onActivate}.
- * {@code VGhostHand} does run an activation, but its {@code isTargeted(Block)} - the entire
- * "interact through walls" half of the module, and the reason its setting exists - is likewise
- * never called.</p>
+ * <p>Three modules shipped in that state: {@code TextFieldProtect}, {@code ExtendedFirework} and
+ * {@code VGhostHand} each exposed a public API that nothing anywhere in the addon called - a
+ * small chat-hook surface, firework multipliers, and the entire "interact through walls" half of
+ * the ghost hand - and none could run without a mixin that was never written. All three were
+ * removed rather than left taking settings and doing nothing; git history keeps them if a hook
+ * is ever written. The allowlists below are empty now, and the assertions keep it that way.</p>
  *
- * <p>Each was presumably waiting on a mixin that was never written. Nothing catches that at
- * compile time: the class loads, the settings render, the module appears in the list. Only
- * reading the code reveals that every toggle does nothing.</p>
+ * <p>Nothing catches an unwired API at compile time: the class loads, the settings render, the
+ * module appears in the list. Only reading the code reveals that every toggle does nothing.</p>
  */
 public class OrphanModuleTest {
     private static final Path ROOT = Path.of("src/main/java/net/venomous/meteoraddon");
@@ -83,15 +82,7 @@ public class OrphanModuleTest {
      * <p>The equality assertion below is what keeps this honest: adding an entry here requires the
      * orphan to actually exist, and removing the code requires removing the entry.</p>
      */
-    private static final Set<String> KNOWN_ORPHANED_API = Set.of(
-        "TextFieldProtect.java -> shouldBlockChat()",
-        "TextFieldProtect.java -> shouldBlockSign()",
-        "TextFieldProtect.java -> shouldBlockBook()",
-        "TextFieldProtect.java -> shouldBlockAnvil()",
-        "ExtendedFirework.java -> getXMult()",
-        "ExtendedFirework.java -> getYMult()",
-        "ExtendedFirework.java -> getZMult()",
-        "VGhostHand.java -> isTargeted()");
+    private static final Set<String> KNOWN_ORPHANED_API = Set.of();
 
     @Test
     void theOrphanAllowlistHasNotDrifted() throws IOException {
@@ -149,8 +140,7 @@ public class OrphanModuleTest {
      * defines {@code onActivate} and neither is referenced outside the module registry, so
      * enabling either does literally nothing.</p>
      */
-    private static final Set<String> KNOWN_INERT_MODULES = Set.of(
-        "TextFieldProtect.java", "ExtendedFirework.java");
+    private static final Set<String> KNOWN_INERT_MODULES = Set.of();
 
     @Test
     void theInertAllowlistHasNotDrifted() throws IOException {

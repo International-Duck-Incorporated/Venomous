@@ -25,7 +25,10 @@ public class MixinConfigTest {
 
         JsonArray clientMixins = json.getAsJsonArray("client");
         assertNotNull(clientMixins);
-        assertTrue(clientMixins.size() >= 8);
+        // The pruning pass removed three mixins that served only dead exploit modules (the
+        // handshake accessor and the two portal mixins); the floor follows the roster, and the
+        // per-class load check below is the part that actually matters.
+        assertTrue(clientMixins.size() >= 7);
 
         for (JsonElement elem : clientMixins) {
             String mixinSimpleName = elem.getAsString();
