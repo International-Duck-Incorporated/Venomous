@@ -91,9 +91,11 @@ public class ScaffoldPlacementOrderTest {
     void rotationAndPlaceGoesThroughPreRotate() throws IOException {
         String code = code(scaffoldSource());
 
-        assertTrue(code.contains("PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {"),
+        assertTrue(code.contains("PreRotate.rotateThenOnPitch(this, face[0], this.stagedPitch, () -> {"),
             "aimAndPlace must defer the placement through PreRotate so it leaves before the "
-                + "movement packet, not after it.");
+                + "movement packet, not after it. The pitch handed over is the staged one - the "
+                + "grid-snapped wire pitch - so the placement is judged against the rotation the "
+                + "server was actually sent, not the raw smoothed aim.");
     }
 
     /**

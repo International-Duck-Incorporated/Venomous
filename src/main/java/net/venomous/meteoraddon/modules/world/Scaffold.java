@@ -536,9 +536,18 @@ public class Scaffold extends Module {
         this.lastServerYaw = Rotations.serverYaw;
         this.lastServerPitch = Rotations.serverPitch;
 
+        // The pitch that goes on the wire is snapped onto the sensitivity grid, measured from the
+        // rotation the server already holds. What Grim validates is the delta between two
+        // consecutive rotations in the movement stream, not the absolute angle, and the smoothing
+        // and the wobble above land between the grid lines - a step no mouse could produce, which
+        // is the signature RotationPlace's reachability test is built to catch. The yaw is left
+        // alone: it is the camera's own, so the step from the server's last yaw is a real mouse
+        // turn by construction.
+        this.stagedPitch = RotationGcd.quantizeFrom(
+            this.mouseSensitivity(), Rotations.serverPitch, face[1]);
+
         // Remember what was staged and when, so the ticks that skip everything below can still
         // keep the server's yaw on the camera - see followCamera.
-        this.stagedPitch = face[1];
         this.stagedAtMs = this.nowMs();
 
         // The server is told the aim, and the placement goes out one tick later, once the server
@@ -550,7 +559,7 @@ public class Scaffold extends Module {
         // waiting for the yaw would hold the placement back every time they looked around - and
         // the action is discarded after five ticks, so the bridge would only build while they
         // happened to be holding the mouse still.
-        PreRotate.rotateThenOnPitch(this, face[0], face[1], () -> {
+        PreRotate.rotateThenOnPitch(this, face[0], this.stagedPitch, () -> {
             if (this.rayReachesSupport(support)) {
                 this.place(pos);
             }
@@ -974,10 +983,28 @@ public class Scaffold extends Module {
         float pitch = clamp(this.stagedPitch
             + PITCH_WOBBLE * (float) Math.sin(this.scaffoldCount * 0.7D), -90.0F, 90.0F);
 
+        // The held aim leaves the wire the same way a staged one does: whole grid steps from what
+        // the server already holds, wobble included. quantizeFrom never lets the sub-grid wobble
+        // round into an exactly repeated rotation - that repeat is the fingerprint the wobble
+        // exists to avoid.
+        pitch = RotationGcd.quantizeFrom(this.mouseSensitivity(), Rotations.serverPitch, pitch);
+
         // The yaw the server is told this tick is the camera's own. The pitch is not the
         // camera's - it is the held aim - and the pitch is what the staged action is still
         // waiting on; the yaw is what the walk has to agree with, and the walk follows the camera.
         PreRotate.followCameraYaw(this, this.mc.player.getYRot(), pitch);
+    }
+
+    /**
+     * The configured mouse sensitivity, 0..1.
+     *
+     * <p>The scale every server-side pitch step is snapped to: the same curve the client turns
+     * real mouse counts through, read the same way the network interceptor reads it.</p>
+     */
+    private double mouseSensitivity() {
+        return this.mc.options == null
+            ? 0.0D
+            : ((Double) this.mc.options.sensitivity().get()).doubleValue();
     }
 
     /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */

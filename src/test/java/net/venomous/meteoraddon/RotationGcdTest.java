@@ -100,4 +100,75 @@ public class RotationGcdTest {
                 "quantisation moved delta " + delta + " to " + quantised + ", further than half a step");
         }
     }
+
+    @Test
+    void quantizeFromSnapsRelativeToTheRotationTheServerHolds() {
+        double sens = 0.5;
+        double gcd = RotationGcd.factor(sens);
+
+        // The server's held rotation is whatever the last packet carried, and is rarely a grid
+        // multiple itself. What has to be legal is the step from it - so the sent rotation is
+        // checked as a whole number of steps above the anchor, not as an absolute angle.
+        float anchor = 73.417F;
+        for (float target = -40.0F; target <= 90.0F; target += 0.41F) {
+            float sent = RotationGcd.quantizeFrom(sens, anchor, target);
+            float steps = (sent - anchor) / (float) gcd;
+
+            assertEquals(Math.rint(steps), steps, 1e-3,
+                "sent rotation " + sent + " is not a whole number of GCD steps above the anchor");
+        }
+    }
+
+    @Test
+    void quantizeFromNeverRoundsARequestedMovementAway() {
+        double sens = 0.5;
+        float anchor = 10.0F;
+        float gcd = (float) RotationGcd.factor(sens);
+
+        // The scaffold's wobble is smaller than one grid step at most sensitivities. Rounded
+        // naively it would vanish and the rotation would repeat exactly - the fingerprint the
+        // wobble exists to avoid - so a real but sub-grid step becomes one whole grid step.
+        assertEquals(anchor + gcd, RotationGcd.quantizeFrom(sens, anchor, anchor + 0.05F), 1e-4,
+            "a sub-grid nudge upwards must become +1 grid step");
+        assertEquals(anchor - gcd, RotationGcd.quantizeFrom(sens, anchor, anchor - 0.05F), 1e-4,
+            "a sub-grid nudge downwards must become -1 grid step");
+
+        // But a genuinely absent movement invents nothing.
+        assertEquals(anchor, RotationGcd.quantizeFrom(sens, anchor, anchor), 1e-6,
+            "a zero delta must stay zero");
+    }
+
+    @Test
+    void quantizeFromKeepsTwoHundredTicksOfHoldOnGridAndNearTheAim() {
+        // The wire is re-anchored on the server's rotation every tick, so a held aim must neither
+        // drift off the grid nor wander from where the wobble put it: this replays the scaffold's
+        // hold shape - fixed aim, sub-grid sine wobble, each tick measured from the last sent
+        // value - and checks both properties on every tick.
+        double sens = 0.5;
+        double gcd = RotationGcd.factor(sens);
+        float aim = 60.0F;
+        float server = aim;
+
+        for (int tick = 0; tick < 200; tick++) {
+            float wobble = 0.08F * (float) Math.sin(tick * 0.7D);
+            float sent = RotationGcd.quantizeFrom(sens, server, aim + wobble);
+
+            float steps = (sent - server) / (float) gcd;
+            assertEquals(Math.rint(steps), steps, 1e-3,
+                "tick " + tick + " sent a step that is not a whole number of GCD steps");
+
+            assertTrue(Math.abs(sent - aim) <= 1.5F * gcd + 1e-4,
+                "tick " + tick + " sent " + sent + ", too far from the aim " + aim);
+
+            server = sent;
+        }
+    }
+
+    @Test
+    void quantizeFromLeavesTheTargetAloneForDegenerateSensitivity() {
+        // Same contract as quantize: nonsense settings must not silently move the rotation.
+        assertEquals(73.5F, RotationGcd.quantizeFrom(-1.0, 10.0F, 73.5F), 1e-6);
+        assertEquals(73.5F, RotationGcd.quantizeFrom(Double.NaN, 10.0F, 73.5F), 1e-6);
+        assertEquals(73.5F, RotationGcd.quantizeFrom(Double.POSITIVE_INFINITY, 10.0F, 73.5F), 1e-6);
+    }
 }

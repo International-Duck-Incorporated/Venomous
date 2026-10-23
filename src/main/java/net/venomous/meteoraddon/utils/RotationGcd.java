@@ -52,4 +52,44 @@ public final class RotationGcd {
 
         return (float)(Math.round(delta / gcd) * gcd);
     }
+
+    /**
+     * Snaps a target rotation onto the grid, measured from the rotation the server already holds.
+     *
+     * <p>Rotation checks do not validate absolute angles; they validate the <em>step</em> between
+     * two consecutive rotations in the movement stream. So the question is never "is the target
+     * on the grid" but "is the step from the last sent rotation a whole number of grid steps" -
+     * and the last sent rotation is whatever the server currently holds, which is rarely a grid
+     * multiple itself. Anchoring on it and quantising the difference is what makes the step
+     * legal.</p>
+     *
+     * <p>A requested movement is never quantised down to nothing. A sub-grid nudge - the
+     * scaffold's pitch wobble is smaller than one grid step at most sensitivities - would round
+     * away to an unchanged rotation, and a rotation that repeats exactly tick after tick is its
+     * own fingerprint (Grim's {@code AimDuplicateLook}). When the requested step is real but
+     * rounds to zero, it becomes one whole grid step in the requested direction instead: the
+     * smallest movement a real mouse can make. A genuinely zero step stays zero, because a hand
+     * that asks for no movement must not be given some.</p>
+     *
+     * @param sensitivity the configured mouse sensitivity
+     * @param anchor      the rotation the server currently holds, in degrees
+     * @param target      the rotation the caller wants the server to hold, in degrees
+     * @return the rotation to send, or the target unchanged when the GCD is not usable
+     */
+    public static float quantizeFrom(double sensitivity, float anchor, float target) {
+        double gcd = factor(sensitivity);
+
+        if (gcd <= 0.0001) {
+            return target;
+        }
+
+        float delta = target - anchor;
+        float snapped = (float)(Math.round(delta / gcd) * gcd);
+
+        if (snapped == 0.0F && delta != 0.0F) {
+            snapped = delta > 0.0F ? (float) gcd : (float) -gcd;
+        }
+
+        return anchor + snapped;
+    }
 }

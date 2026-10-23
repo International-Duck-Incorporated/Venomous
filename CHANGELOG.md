@@ -4,6 +4,38 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.18.4] - 2026-10-23
+
+- Fixed V Scaffold sending pitch steps no mouse can produce. The shared `RotationGcd` grid was
+  verified against the 26.2 client bytecode and is correct: `MouseHandler.turnPlayer` multiplies
+  mouse counts by `f³ × 8` and `Entity.turn` scales that by `0.15`, so the real grid step is
+  `f³ × 1.2` - exactly what the utility computes, and exactly what the network interceptor's
+  duplicate of the formula computes. The scaffold was the fault: it imported the utility and
+  never called it, so the staged pitch went out as the raw `smoothed + wobble` float, and the
+  delta between consecutive rotations - the thing Grim's `RotationPlace` reachability test
+  actually validates - landed between the grid lines (the session's two `RotationPlace` flags).
+  The pitch handed to the server is now snapped onto the grid at both staging sites, measured
+  from the rotation the server already holds, since what is validated is the step, not the
+  absolute angle. The yaw is deliberately untouched: it is the camera's own, so its step is a
+  real mouse turn by construction.
+- The snap never rounds a requested movement away. The pitch wobble is smaller than one grid
+  step at most sensitivities, and a naive round-to-nearest would erase it, leaving the rotation
+  repeating exactly - the fingerprint the wobble exists to avoid (`AimDuplicateLook`). A real
+  but sub-grid step now becomes one whole grid step in the requested direction, the smallest
+  movement a real mouse can make; a genuinely zero step still invents nothing. The smoothing and
+  wobble constructs are untouched - the grid is applied where the aim is handed to Meteor, in
+  the new `RotationGcd.quantizeFrom`, covered by four new `RotationGcdTest` cases: relative
+  snapping, the sub-grid bump, two hundred ticks of hold oscillation staying on-grid and near
+  the aim, and degenerate sensitivities passing the target through unchanged.
+- The Simulation flag wall from the same session is not explained by anything this codebase
+  writes: the scaffold's whole path was checked and there is not a single velocity write in it -
+  the module stages rotations and clicks, and applies no motion of its own. The steady
+  `.054600` repeat is one 0.1/tick step of velocity re-injected and ground-frictioned
+  (0.6 × 0.91) every tick, which is a physics-versus-prediction mismatch, not a motion hack.
+  Retest on Grim after this build; if the rotation-side flags are gone and Simulation remains,
+  the next suspect is the just-placed-block confirmation window, isolable with a live A/B -
+  module on while standing still, then while walking, then while bridging.
+
 ## [7.18.3] - 2026-10-23
 
 - Debug round: a head-to-head reread of the 7.18.x additions against their sources - the pause
