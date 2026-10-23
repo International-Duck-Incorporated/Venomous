@@ -4,6 +4,23 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.18.6] - 2026-10-23
+
+- New combat module `rod-aimbot`: a right click with an uncast rod is intercepted, the closest
+  valid player inside the cone is picked, and the cast is staged against where they will be when
+  the hook arrives - `predicted-ticks` projects their observed motion through vanilla's own
+  per-tick constants (air drag 0.91, gravity 0.08 with 0.98 drag, ground friction 0.546).
+  Ported from Raven B4's `RodAimbot` with the same gates (cone, distance, invisibility, bots,
+  teammates) and its deviations stated: the camera is never taken - the cast rotation is
+  spoofed server-side through `PreRotate`, so the interaction departs before the movement
+  packet from a rotation the server acknowledged, and the aim keeps refreshing every tick until
+  the cast lands rather than only when the original's motion event fires. Both rotation axes are
+  snapped onto the sensitivity grid with the 7.18.4 machinery - a cast angle no mouse could
+  produce is exactly what the rotation checks read. The reel-in is deliberately left to the
+  player: the hook is where it is, and a second interception would fight the hand that cast it.
+  The projection and the angle conventions live in `EntityPredict` and `RodAimMath`, unit
+  tested in `RodAimMathTest` (fall and friction shapes, yaw/pitch conventions, cone wrap).
+
 ## [7.18.5] - 2026-10-23
 
 - Fixed the quit hang. Clicking Quit used to freeze the client for twenty seconds and end in a
