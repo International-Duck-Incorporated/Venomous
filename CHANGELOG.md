@@ -4,6 +4,37 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.18.2] - 2026-10-23
+
+- New combat module `hit-select`: filters clicks the server would ignore anyway - a hit that
+  lands inside a target's invulnerability window is voided by every server, while the click still
+  spends the attacker's weapon cooldown and the momentum of the exchange. Ported from Raven B4's
+  `HitSelect` with its decision extracted into `HitSelectRules` (bursts predicted from the
+  attacker's own hit, the optional server-timing gate, the sticky pause holding any block reason
+  for its duration, the wait-for-first-hit hold, the criticals gate, the three-block reach, the
+  percent cancel rates), with unit tests in `HitSelectRulesTest`. Two ports findings shipped with
+  the port: Raven's hurt-window sync and its `maxHurtTime` fallback are unwired in the original -
+  the live path only ever starts ten-tick windows from a passed hit, which is what the port keeps
+  and every one of them is exclusive-end-tested; and 26.2 gives attacks their own
+  `ServerboundAttackPacket`, so the filter runs there and the rejected click's vanilla swing packet
+  still leaves the client - the visible behaviour Raven's "fake swing" option bought, without the
+  option. The mouse-over-first/else-closest target precedence and the eye-to-nearest-box-face
+  reach are Raven's own; Raven's friends list and bot list carve-outs have no equivalent here and
+  are dropped; `ignore-teammates` rides on vanilla `isAlliedTo`; weapon detection rides on the
+  repo's `McCompat.isWeapon` (the same check the other combat modules hold to), since 26.2 swords
+  carry a weapon data component instead of a `SwordItem` class and there is no sword class to
+  instanceof.
+- New misc module `latency-alerts`: the gap since the last packet the server sent is measured
+  every tick, and once it crosses the `high-latency` threshold an alert prints with the gap and
+  the last packet seen - at most once per `alert-interval` so a stall does not flood the chat.
+  Ported from Raven B4's `LatencyAlerts` with the same measurement, interval guard and its limbo
+  carve-out (measured the same way, on The End dimension); the hover component it hung the
+  details on is replaced by the details printed inline.
+- Graded-and-rejected for this increment: larpclient's `HoverTotem` (already inside
+  `auto-inv-totem` - it ships the "merged with HoverTotem" description) and Raven's `HitBox`
+  (needs a pick-interception mixin at the current `GameRendererMixin`'s cost, for a reach that
+  Grim's player-attack-range check refuses to honour beyond three blocks anyway).
+
 ## [7.18.1] - 2026-10-23
 
 - New movement module `no-jump-delay`: the vanilla jump cooldown (`LivingEntity.noJumpDelay`, ticked
