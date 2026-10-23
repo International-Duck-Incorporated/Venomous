@@ -21,6 +21,7 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.combat.CriticalsPlus",
             "net.venomous.meteoraddon.modules.combat.CrystalPvP",
             "net.venomous.meteoraddon.modules.combat.Hunt",
+            "net.venomous.meteoraddon.modules.combat.JumpReset",
             "net.venomous.meteoraddon.modules.combat.MaceKill",
             "net.venomous.meteoraddon.modules.combat.ProjectilePuncher",
             "net.venomous.meteoraddon.modules.combat.SuperKnockback",

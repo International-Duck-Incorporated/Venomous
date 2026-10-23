@@ -9,6 +9,7 @@ import net.venomous.meteoraddon.modules.combat.AutoShield;
 import net.venomous.meteoraddon.modules.combat.CriticalsPlus;
 import net.venomous.meteoraddon.modules.combat.CrystalPvP;
 import net.venomous.meteoraddon.modules.combat.Hunt;
+import net.venomous.meteoraddon.modules.combat.JumpReset;
 import net.venomous.meteoraddon.modules.combat.MaceKill;
 import net.venomous.meteoraddon.modules.combat.ProjectilePuncher;
 import net.venomous.meteoraddon.modules.combat.SuperKnockback;
@@ -129,6 +130,7 @@ public class ModuleRegistry {
         Modules.get().add(new CriticalsPlus());
         Modules.get().add(new CrystalPvP());
         Modules.get().add(new Hunt());
+        Modules.get().add(new JumpReset());
         Modules.get().add(new MaceKill());
         Modules.get().add(new ProjectilePuncher());
         Modules.get().add(new SuperKnockback());

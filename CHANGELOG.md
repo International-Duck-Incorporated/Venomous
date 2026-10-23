@@ -4,6 +4,33 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.18.0] - 2026-10-23
+
+- New combat module `jump-reset`: pressing the jump key on the tick a hit lands, so the knockback
+  multiplies into the jump and lands a fraction of its range. Ported from Raven B4's
+  `JumpReset` module and its gate list, one boolean at a time: only a fresh growth of the hurt
+  window counts as a hit (a drained window mid-combo is the same hit, not a new one), the player
+  must be grounded ("a jump can only start from the ground"), the window may not be burning or
+  jump-boost/poison/wither-tinted (`MobEffects` reads, Raven's own three), the movement direction
+  must line up with the facing, and the three optional gates ship with Raven's defaults - attack
+  key waived, walking-forward required, crosshair-on-player required.
+- The port keeps Raven's landing guard: hurt time that arrives while standing on ground after
+  falling further than three blocks is the fall's own damage, not a hit, and is suppressed once.
+  The one-tick press is Meteor-native: the module presses `keyJump` in
+  `TickEvent.Pre` only when the player was not already holding it, and releases its own press
+  before the next tick's decision, so the tap covers exactly one input window. The module only
+  ever releases a press it made itself - the key mapping is shared with the game's own events, so
+  an unconditional release would clobber a jump the player is holding.
+- Raven's knockback arc check is shipped honestly rather than copied: its `inFov(GetDirection,
+  330, ...)` halves its argument to a ±165 degree tolerance and therefore passes everything except
+  a movement within fifteen degrees of exactly backwards - a no-op in practice. `JumpResetRules`
+  carries the wrap-aware `withinArc` with the same full-arc semantics and the same 330 default
+  behind the `motion-arc` setting (documented as such), so lowering it actually rejects sideways
+  and rear hits; standing still on the hurt tick - before the knockback is applied - waives the
+  gate instead of being judged against yaw zero. The decision lives in `JumpResetRules`
+  (`motionYawOf` follows Minecraft's yaw convention: +Z is 0, +X is -90) with unit tests in
+  `JumpResetRulesTest`; every new setting is read.
+
 ## [7.17.2] - 2026-10-23
 
 - `v-scaffold` keeps the rotation the server is told on the camera's own yaw across every tick of
