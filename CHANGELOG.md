@@ -4,6 +4,36 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.18.3] - 2026-10-23
+
+- Debug round: a head-to-head reread of the 7.18.x additions against their sources - the pause
+  masks, the damage and knockback bookkeeping, the state resets, the registration and the version
+  sync - shipping the fixes the reread found. Three real ones:
+- Fixed `latency-alerts` limbo carve-out losing half of the original's test: Raven's limbo is The
+  End dimension AND an empty scoreboard sidebar, and the port had kept only the dimension half, so
+  the module went silent inside any The End world - actually hiding genuine packet-loss alerts in
+  minigames played there. Now the exact conjunction in `inLimbo()`: the `DisplaySlot.SIDEBAR`
+  objective absent, or present with zero scored rows, and the dimension The End.
+- Fixed `latency-alerts` first-alert timing: the original zeroes its last-alert stamp on disable
+  and stamps only the packet clock on enable, so the first stall raises at the earliest legal
+  moment; the port's reset-both-on-activate delayed every first alert by a full alert interval
+  after toggling. Enable and disable mirror the original now, and the disable and no-player legs
+  clear the last-packet name the way the original's branches do.
+- Fixed two `hit-select` parity breaks: the tick clock is cleared on enable (the original does;
+  the wait-first window measures exchange age, not addon uptime), and `item-blacklist` is now
+  hidden until `filter-blacklisted-items` is on - the original's guiUpdate behavior, riding the
+  addon's existing `.visible` precedent. `missed-swings-cancel-rate`'s description now tells the
+  truth about the packet level: it filters attack packets on non-player entities, and air swings
+  are out of reach there because vanilla never sends an attack packet for an empty crosshair -
+  Raven's 1.8 build could intercept them, a packet filter cannot.
+- Reread, no fault found everywhere else: `hit-select`'s pause/mask/criticals logic matches the
+  original step-for-step (including the strict pause release clock and the raw-mask write on
+  server confirmation), `jump-reset`, `no-jump-delay` and `auto-requeue` hold their shapes and
+  their state resets, the `noJumpDelay` accessor targets the javap-verified field, and
+  `ItemListSetting`'s builder seeds a non-null empty-list default (bytecode-checked), so building
+  `item-blacklist` without `defaultValue` was already safe. The skipped suite member is
+  `BuildScriptsTest`'s `@DisabledOnOs(WINDOWS)` case, idle on this machine on purpose.
+
 ## [7.18.2] - 2026-10-23
 
 - New combat module `hit-select`: filters clicks the server would ignore anyway - a hit that

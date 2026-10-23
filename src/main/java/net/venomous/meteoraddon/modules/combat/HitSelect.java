@@ -96,7 +96,7 @@ public class HitSelect extends Module {
     );
     private final Setting<Double> missedSwingsCancelRate = this.sgGeneral.add(
         new DoubleSetting.Builder().name("missed-swings-cancel-rate")
-            .description("Percent of clicks that are not players within reach, held back as well.")
+            .description("Percent of attack packets on non-player entities, held back as well. Air swings are out of reach here - vanilla sends no attack packet when the crosshair is empty.")
             .defaultValue(0.0)
             .range(0.0, 100.0)
             .sliderMax(100.0)
@@ -111,6 +111,7 @@ public class HitSelect extends Module {
     private final Setting<java.util.List<net.minecraft.world.item.Item>> itemBlacklist = this.sgGeneral.add(
         new ItemListSetting.Builder().name("item-blacklist")
             .description("Items whose clicks pass unfiltered.")
+            .visible(this.itemBlacklistToggle::get)
             .build()
     );
 
@@ -133,6 +134,9 @@ public class HitSelect extends Module {
     }
 
     public void onActivate() {
+        // Raven clears the tick clock on enable too: the wait-first window measures exchange age,
+        // not addon uptime.
+        this.tickCounter = 0;
         this.resetAllState();
     }
 

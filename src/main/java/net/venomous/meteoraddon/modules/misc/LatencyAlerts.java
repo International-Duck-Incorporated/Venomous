@@ -8,6 +8,9 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.world.scores.DisplaySlot;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.Scoreboard;
 import net.venomous.meteoraddon.VenomousAddon;
 
 /**
@@ -38,7 +41,7 @@ public class LatencyAlerts extends Module {
     );
     private final Setting<Boolean> ignoreLimbo = this.sgGeneral.add(
         new BoolSetting.Builder().name("ignore-limbo")
-            .description("Raven's carve-out for limbo worlds, measured the same way: no alerts on The End dimension, where some servers park offline players.")
+            .description("Raven's carve-out for limbo worlds, measured the same way: no alerts while sitting in The End with an empty scoreboard sidebar - where some servers park offline players.")
             .defaultValue(true)
             .build()
     );
@@ -52,12 +55,16 @@ public class LatencyAlerts extends Module {
     }
 
     public void onActivate() {
-        this.quiet();
+        // Raven stamps only the packet clock on enable: the first stall alerts at the earliest
+        // legal moment, not a whole alert interval after toggling.
+        this.lastPacketTime = System.currentTimeMillis();
     }
 
     @Override
     public void onDeactivate() {
-        this.quiet();
+        this.lastPacketTime = 0;
+        this.lastAlertTime = 0;
+        this.lastPacketName = "unknown";
     }
 
     @EventHandler
@@ -70,6 +77,7 @@ public class LatencyAlerts extends Module {
     private void onTick(Pre event) {
         if (this.mc.player == null) {
             this.quiet();
+            this.lastPacketName = "unknown";
             return;
         }
 
@@ -86,9 +94,23 @@ public class LatencyAlerts extends Module {
         }
     }
 
-    /** Vanilla world the original considered a server queue stall sitting idle, so no alerts. */
+    /**
+     * The original limbo test, verbatim in shape: The End dimension AND an empty scoreboard
+     * sidebar. An occupied The End world - its own sidebar rows rendered - is a real game and
+     * keeps being watched; the dimension alone was never the whole test.
+     */
     private boolean inLimbo() {
-        return this.mc.level != null && "the_end".equals(this.mc.level.dimension().identifier().getPath());
+        if (this.mc.level == null || !"the_end".equals(this.mc.level.dimension().identifier().getPath())) {
+            return false;
+        }
+
+        Scoreboard scoreboard = this.mc.level.getScoreboard();
+        Objective sidebar = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
+        if (sidebar == null) {
+            return true;
+        }
+
+        return scoreboard.listPlayerScores(sidebar).isEmpty();
     }
 
     private void quiet() {
