@@ -174,6 +174,44 @@ public final class PreRotate {
     }
 
     /**
+     * Re-stages the rotation on the live camera, so the server's yaw never outlives the mouse.
+     *
+     * <h2>Why this exists</h2>
+     *
+     * Meteor consumes every rotation it is handed in the same tick's movement packets, but it also
+     * keeps a memory: when no new rotation arrives, it re-sends the <em>last</em> one for up to
+     * {@code rotationHoldTicks} (default 4) more ticks - and it does that by briefly writing the
+     * player's own rotation to the staged angle for the length of the packet. The position delta
+     * in such a packet was integrated by physics that ran on the camera's live yaw, so a mouse
+     * that moved since the staging is a walk the server did not predict, and Grim's
+     * {@code Simulation} reports it - a bridging client collects one-millimetre flags every tick
+     * it looks around while the module is staging, decaying as the mouse settles.
+     *
+     * <p>The way to never have a stale yaw to hold is to never let the hold window show one: the
+     * caller re-stages the rotation every tick with the camera's own yaw, read that tick. This
+     * helper does exactly one re-stage; whether a tick is worth re-staging is the caller's
+     * decision, because only it knows where its no-target ticks are.</p>
+     *
+     * <p>Two things this deliberately does <em>not</em> do:</p>
+     * <ul>
+     *   <li>it does not touch the queue - the staged entry keeps the aim it was waiting for, and
+     *       its age-out clock keeps running;</li>
+     *   <li>it does not move the view - the staged yaw was already the camera's own yaw by
+     *       contract, so re-staging with the live camera changes nothing the player can see. It
+     *       only stops the server's idea of the yaw from outliving the mouse that moved it.</li>
+     * </ul>
+     *
+     * @param owner     identity of the caller, as for every staging call here
+     * @param cameraYaw the player's own yaw, read this tick
+     * @param pitch     the pitch to hold - the caller's staged aim, with its wobble
+     */
+    public static void followCameraYaw(Module owner, double cameraYaw, double pitch) {
+        // Priority 10 is what the rotateThen overloads hand to Meteor, so a refresh can never
+        // outrank - or be outranked by - the caller's own staging within the same tick.
+        Rotations.rotate(cameraYaw, pitch, 10, null);
+    }
+
+    /**
      * Fires queued actions ahead of the movement packet.
      *
      * <p>Runs at {@code HIGHEST} priority so the interaction is written before anything else this
@@ -206,19 +244,9 @@ public final class PreRotate {
 
     /** True once the rotation the server last received matches what this action needs. */
     private static boolean isServerReady(DeferredActions.Pending<Runnable> pending) {
-        float yawDiff = Math.abs(wrapDegrees(Rotations.serverYaw - pending.yaw()));
-        float pitchDiff = Math.abs(Rotations.serverPitch - pending.pitch());
-        return yawDiff <= TOLERANCE && pitchDiff <= TOLERANCE;
-    }
-
-    private static float wrapDegrees(float value) {
-        float wrapped = value % 360.0F;
-        if (wrapped >= 180.0F) {
-            wrapped -= 360.0F;
-        }
-        if (wrapped < -180.0F) {
-            wrapped += 360.0F;
-        }
-        return wrapped;
+        return RotationReadiness.isReady(
+            Rotations.serverYaw, Rotations.serverPitch,
+            pending.yaw(), pending.pitch(),
+            pending.yawMatters(), TOLERANCE);
     }
 }

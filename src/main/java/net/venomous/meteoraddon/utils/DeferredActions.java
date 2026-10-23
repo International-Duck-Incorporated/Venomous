@@ -131,6 +131,26 @@ public final class DeferredActions<A> {
         return false;
     }
 
+    /**
+     * The newest action this caller has queued and still waiting to run, or {@code null}.
+     *
+     * <p>"Newest" and not "only": a caller in sequence mode queues several entries at once and
+     * they all sit here until they fire, so the last one in queue order is its current intent.
+     * Callers ask this for what their aim was when they queued - the yaw the rotation is being
+     * held at and the pitch it is waiting for - without keeping their own copy of the aim.</p>
+     *
+     * @param owner identity of the caller, compared by reference as everywhere else here
+     */
+    public synchronized Pending<A> find(Object owner) {
+        Pending<A> found = null;
+
+        for (Pending<A> entry : this.pending) {
+            if (entry.owner == owner) found = entry;
+        }
+
+        return found;
+    }
+
     public synchronized int size() {
         return this.pending.size();
     }

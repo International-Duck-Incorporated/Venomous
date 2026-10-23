@@ -4,6 +4,33 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.17.2] - 2026-10-23
+
+- `v-scaffold` keeps the rotation the server is told on the camera's own yaw across every tick of
+  a bridging run, not only on the ticks the staging loop had a target to aim at. Meteor consumes
+  each rotation it is handed in the same tick, but it also keeps the last one and re-sends it for
+  up to `rotation-hold` ticks (default 4) whenever no fresh rotation is staged - writing the
+  player's own rotation to that staged angle for the length of each packet, while the position
+  delta in those packets was integrated by physics that ran on the live camera. Every degree the
+  mouse moved since the staging is therefore a walk the server did not predict, and Grim's
+  `Simulation` reports it: the 7.17.1 run collected 119 one-millimetre-scale flags in exactly
+  that shape - decaying clusters that restarted with each staging gap. The gap came from the
+  ticks that early-return out of every loop (no supporting face for the cell mid-jump, no block
+  in the hotbar, no cell underfoot), which are precisely the ticks that skipped
+  `Rotations.rotate()`. `PreRotate.followCameraYaw` now re-stages the rotation on those ticks -
+  from each no-target return in `tickGrim`, `tickStandardMode` and `aimAndPlace` - with the
+  camera's yaw read fresh that tick, the held aim pitch (`stagedPitch`) and its wobble, pending
+  an aim within a one-second linger of the last staging. The queue is untouched, the age-out
+  clock keeps running, nothing is written to the camera, there is no new setting, and the crouch
+  is unchanged.
+- `PreRotate.isServerReady` now honours the `yawMatters` flag it already records, whose documented
+  contract ("the action waits only for the pitch to be sent") was silently ignored - a moving
+  mouse held every placement back a tick, and a staged rotation was judged against a frozen
+  staging yaw with a 1.5 degree tolerance, which is exactly the mouse being measured rather than
+  the rotation. The readiness decision now lives in `RotationReadiness` (yaw comparison wraps
+  around the 0/360 seam, tolerance inclusive on both axes) with unit tests
+  (`RotationReadinessTest`, `CameraFollowTest`, and `find` coverage in `DeferredActionsTest`).
+
 ## [7.17.1] - 2026-10-22
 
 - Ported two timing ideas from Raven B4's scaffold, with the derivations behind each, to `v-scaffold`:

@@ -181,6 +181,15 @@ public class Scaffold extends Module {
     private static final long RETRY_DELAY_MS = 50L;
 
     /**
+     * How long a staged aim keeps the server rotation refreshed on the camera's own yaw.
+     *
+     * <p>A jump is about a second, and the ticks that skip the staging loop are the ticks in
+     * which the player is airborne over the gap; a window that covers one whole jump plus its
+     * landing is the whole point.</p>
+     */
+    private static final long CAMERA_FOLLOW_MS = 1000L;
+
+    /**
      * The pitch tracks much more closely than the yaw, and it has to.
      *
      * <p>The yaw's target is the discrete heading of the support's side, so it is steady and can be
@@ -275,6 +284,18 @@ public class Scaffold extends Module {
     /** The rotation the server held on the previous tick, which Grim also tests against. */
     private float lastServerYaw = 0.0F;
     private float lastServerPitch = 0.0F;
+
+    /**
+     * The pitch of the rotation last staged, and when it was staged.
+     *
+     * <p>These are the camera-follow's memory: on a tick where the staging loop has nothing to
+     * aim at - no supporting face for the cell, no block in the hotbar, no cell underfoot - the
+     * module still owes the server its own yaw this tick, and the pitch it owes is the one the
+     * last staged aim already had. Without them, a follow would have to reconstruct the held aim
+     * from elsewhere, and there is no better source than the act of staging itself.</p>
+     */
+    private float stagedPitch = 0.0F;
+    private long stagedAtMs = 0L;
     private Scaffold.Technique lastTechnique = null;
     private Vec3 bridgeHeading = Vec3.ZERO;
     private final Random random = new Random();
@@ -290,6 +311,7 @@ public class Scaffold extends Module {
         this.scaffoldCount = 0;
         this.nextPlaceAtMs = 0L;
         this.lastPlaceAtMs = 0L;
+        this.stagedAtMs = 0L;
         this.managedSneak = false;
         this.previousSneakDown = false;
         this.lastTechnique = null;
@@ -306,6 +328,7 @@ public class Scaffold extends Module {
         this.releaseManagedSneak();
         this.nextPlaceAtMs = 0L;
         this.lastPlaceAtMs = 0L;
+        this.stagedAtMs = 0L;
         this.smoothedPitch = Float.NaN;
         this.lastTechnique = null;
         this.bridgeHeading = Vec3.ZERO;
@@ -374,6 +397,9 @@ public class Scaffold extends Module {
         BlockPos placePos = this.getPlacePos();
         if (placePos == null) {
             this.releaseManagedSneak();
+            // Same reason as tickGrim: a targetless tick must not leave the server holding a yaw
+            // from a previous tick against a walk this tick performed.
+            this.followCamera();
             return;
         }
 
@@ -397,6 +423,10 @@ public class Scaffold extends Module {
         BlockPos target = this.getPlacePos();
         if (target == null || !this.findBlock().found()) {
             this.releaseManagedSneak();
+            // No cell and no block are still ticks the server sees the player move on. A staged
+            // aim would otherwise be held here for up to rotation-hold ticks against a walk the
+            // mouse has already moved off.
+            this.followCamera();
             return;
         }
 
@@ -473,6 +503,11 @@ public class Scaffold extends Module {
         // the flag arrived - and also showed the module retrying the same dead cell forever.
         Direction side = BlockUtils.getPlaceSide(pos);
         if (side == null || !BlockUtils.canPlace(pos)) {
+            // No placeable cell this tick - which is exactly when a staged rotation would
+            // otherwise outlive the tick that staged it. Keep the server's yaw on the camera
+            // for that tick (see followCamera) instead of letting the hold re-send the old
+            // angle against a walk the mouse has already moved.
+            this.followCamera();
             return;
         }
 
@@ -500,6 +535,11 @@ public class Scaffold extends Module {
 
         this.lastServerYaw = Rotations.serverYaw;
         this.lastServerPitch = Rotations.serverPitch;
+
+        // Remember what was staged and when, so the ticks that skip everything below can still
+        // keep the server's yaw on the camera - see followCamera.
+        this.stagedPitch = face[1];
+        this.stagedAtMs = this.nowMs();
 
         // The server is told the aim, and the placement goes out one tick later, once the server
         // has actually received that rotation. Grim judges the placement against the rotation the
@@ -895,6 +935,49 @@ public class Scaffold extends Module {
             this.msSinceLastPlacement(),
             this.mc.player.isSprinting(),
             !this.movementDirection().equals(Vec3.ZERO));
+    }
+
+    /**
+     * Re-stages the server rotation on the camera's own yaw on a tick that had nothing to aim at.
+     *
+     * <p>The staging loop in {@link #aimAndPlace} refreshes the rotation every tick while it has
+     * a target, so while the bridge is being filled the server's yaw is always the camera's own
+     * and the movement prediction matches the walk. The ticks that early-return out of every
+     * loop - no supporting face for the cell, mid-jump; no block in the hotbar; no cell underfoot -
+     * are the ticks that used to skip {@code Rotations.rotate()}, and those were never free.</p>
+     *
+     * <p>Meteor keeps the last rotation it was handed and re-sends it for up to
+     * {@code rotationHoldTicks} (default 4) whenever no fresh one arrives, writing the player's
+     * own rotation to that staged angle for the length of the packet. The position delta in such
+     * a packet was integrated by physics that ran on the camera's <em>live</em> yaw, so every
+     * degree the mouse moved since the staging is a walk the server did not predict: Grim's
+     * {@code Simulation} reports it at a millimetre, and the 7.17.1 live log collected 119 of
+     * them in exactly that shape - clusters that decayed as the mouse settled and restarted
+     * with the next staging gap.</p>
+     *
+     * <p>So those ticks re-stage instead. The yaw is the camera's own, read this tick - which is
+     * the invariant the whole module runs on, and why this changes nothing the player sees; the
+     * tick's physics will run on exactly this angle. The pitch is the one the last staged aim
+     * already had ({@code stagedPitch}), carrying the same wobble the aim always carries, so the
+     * rotation still never repeats exactly for {@code AimDuplicateLook}.</p>
+     *
+     * <p>It runs while an aim is pending or within {@link #CAMERA_FOLLOW_MS} of the last staged
+     * one - the window of one whole jump and its landing. Beyond that the hold has long expired
+     * and the packets carry the camera's real rotation again, which is already what the server's
+     * prediction needs; keeping the refresh alive past that would only pin the server's pitch
+     * to an aim nobody is looking at.</p>
+     */
+    private void followCamera() {
+        if (!this.rotate.get()) return;
+        if (!PreRotate.hasPending(this) && this.nowMs() - this.stagedAtMs > CAMERA_FOLLOW_MS) return;
+
+        float pitch = clamp(this.stagedPitch
+            + PITCH_WOBBLE * (float) Math.sin(this.scaffoldCount * 0.7D), -90.0F, 90.0F);
+
+        // The yaw the server is told this tick is the camera's own. The pitch is not the
+        // camera's - it is the held aim - and the pitch is what the staged action is still
+        // waiting on; the yaw is what the walk has to agree with, and the walk follows the camera.
+        PreRotate.followCameraYaw(this, this.mc.player.getYRot(), pitch);
     }
 
     /** Monotonic wall clock; {@code getGameTime()} counts ticks and is not milliseconds. */

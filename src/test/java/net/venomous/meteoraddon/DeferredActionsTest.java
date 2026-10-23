@@ -160,4 +160,50 @@ public class DeferredActionsTest {
         assertEquals(2, queue.size(),
             "distinct callers must not supersede each other just because equals() says they match");
     }
+
+    @Test
+    void findReturnsTheNewestPendingForTheOwner() {
+        DeferredActions<String> queue = new DeferredActions<>();
+        Object owner = new Object();
+
+        // Explicit 7-arg adds: the yawMatters flag travels with the entry, and here it is as a
+        // camera-follow caller would record it.
+        queue.add(owner, ALWAYS, 10.0F, 20.0F, "first", true, false);
+        queue.add(owner, ALWAYS, 30.0F, 40.0F, "second", true, false);
+
+        DeferredActions.Pending<String> found = queue.find(owner);
+
+        assertNotNull(found, "a caller with a queued action has something to find");
+        assertEquals(30.0F, found.yaw(), 0.0F, "the newest intent is what the caller waits on");
+        assertEquals(40.0F, found.pitch(), 0.0F);
+        assertEquals("second", found.action());
+        assertFalse(found.yawMatters(), "the yawMatters flag was recorded with the entry");
+    }
+
+    @Test
+    void findIsNullWhenTheOwnerHasNothingQueued() {
+        DeferredActions<String> queue = new DeferredActions<>();
+        Object owner = new Object();
+        Object stranger = new Object();
+
+        queue.add(owner, ALWAYS, 0.0F, 0.0F, "ours", true);
+
+        assertNull(queue.find(stranger),
+            "a caller with nothing queued must read as exactly that, and never as another "
+                + "caller's entry");
+
+        assertEquals("ours", queue.find(owner).action());
+    }
+
+    @Test
+    void findingDoesNotFireOrAgeAnything() {
+        DeferredActions<String> queue = new DeferredActions<>();
+        Object owner = new Object();
+
+        queue.add(owner, ALWAYS, 0.0F, 0.0F, "ours", true);
+        queue.find(owner);
+
+        assertEquals(1, queue.size(), "a look must not consume the entry");
+        assertEquals(List.of("ours"), drain(queue, true), "and a looked-at entry still fires");
+    }
 }
