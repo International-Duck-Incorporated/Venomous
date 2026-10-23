@@ -4,6 +4,34 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.18.1] - 2026-10-23
+
+- New movement module `no-jump-delay`: the vanilla jump cooldown (`LivingEntity.noJumpDelay`, ticked
+  down from ten after every jump) is clamped each tick to the `jump-delay` setting, so the default
+  of 0 lets the jump be taken again the grounded tick after the last one. The port clamps instead
+  of writing zero a decision the 26.2-era source it was transcribed from got right: a constant zero
+  would defeat the countdown itself, and a jump would never be allowed again. The field is reached
+  through a new `LivingEntityAccessor` mixin (the addon's first accessor into an entity class,
+  registered in `venomous.mixins.json`).
+- New misc module `auto-requeue`: runs the command behind a game's play-again chat button, held
+  until the `delay` has passed. Ported from Raven B4's `AutoRequeue` with its shape kept - a
+  message whose text matches the `trigger-text` is scanned for a command click event, the command
+  is held until it is run, and a fresh world join discards what was held, because requeueing
+  belongs to the game the message was sent in. Two deliberate deviations: Raven matched the
+  server's own button wording ("Click here"), where the port takes the first run-command click
+  event wherever it sits in the component tree and matches the trigger text somewhat; and Raven
+  routed the click value through 1.8.9's single send method, where the port splits on the leading
+  slash - `sendCommand` for a `/queue`, `sendChat` otherwise.
+- Surveyed further archive ports for this increment and rejected them for cause: Raven's
+  `AntiDebuff` is 1.8.9 render plumbing already covered by `anti-blind`; `InstantStop` and
+  `NullMove` need an input-injection event Meteor does not expose (`PrePlayerInputEvent` is
+  Raven-internal) for a small payoff; `StopMotion` zeroes vertical velocity mid-air, which is a
+  predictable gravity mismatch on the servers this addon is tuned for; `KeepSprint`'s 1.8.9 logic
+  is attack-slowdown math that does not exist in modern code, and its modern descendant is
+  partially covered by `super-kb`'s W-TAP; larpclient's `PanicSlot` force-selects a hotbar slot.
+  The bigger ports (`HitSelect`, the lag-queue trio, `Clutch`, `HitBox`) stay queued for their own
+  increments.
+
 ## [7.18.0] - 2026-10-23
 
 - New combat module `jump-reset`: pressing the jump key on the tick a hit lands, so the knockback
