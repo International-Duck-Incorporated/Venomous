@@ -10,7 +10,9 @@
     "MinecraftMixin",
     "HudMixin",
     "NoPushEntityMixin",
-    "NoPushFishingHookMixin"
+    "NoPushFishingHookMixin",
+    "LocalPlayerUseSlowMixin",
+    "PlayerAttackMixin"
   ],
   "injectors": {
     "defaultRequire": 1

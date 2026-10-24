@@ -4,6 +4,30 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.18.8] - 2026-10-23
+
+- New movement module `no-slow`: decides for itself how much the item in use slows you down.
+  26.2 keeps the slowdown on the item itself - the `USE_EFFECTS` data component, read through
+  one seam the client consults every tick it is eating, drinking, drawing or blocking - and the
+  new `LocalPlayerUseSlowMixin` hands that decision to `NoSlowRules`, a pure decision table
+  covered by `UseSlowRulesTest`. Ported from Raven B4's `NoSlow` with the same filter set
+  (sword-only, disable-bow, disable-potions with thrown potions still overridable) and its
+  one-way range: the slider only ever moves the multiplier up from vanilla's 0.2, and the
+  default of 80% is exact vanilla parity. The description states the cost the way the desync
+  family's does: a simulating server predicts 0.2, so the useful range is the server's to
+  allow, not the module's.
+- New combat module `keep-sprint`: softens the price your own swings charge you. Vanilla
+  multiplies the attacker's horizontal motion by 0.6 and drops sprint after every hit;
+  `AttackEntityEvent` captures the motion going into the swing - the only moment the
+  un-punished motion exists - and a tail mixin on `Player.attack` puts it back scaled by the
+  slider, sprint re-raised. The default 40% restores exact vanilla motion, which makes the
+  module's real function the kept sprint; the one-way range is Raven's, and the original's
+  stop-sprint toggle is replaced by an explicit keep-sprint switch, since the knockback-module
+  plumbing it served has no counterpart here. Two new mixins (`LocalPlayerUseSlowMixin`,
+  `PlayerAttackMixin`) bring the config to nine entries and the per-class load guard covers
+  them. Both descriptions carry the same honesty as the desync family: on Grim these are
+  Simulation flags by design, on non-simulating servers they are free.
+
 ## [7.18.7] - 2026-10-23
 
 - New network module `fake-lag`: holds the connection's own packets for a configurable delay -
