@@ -4,6 +4,35 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+## [7.18.7] - 2026-10-23
+
+- New network module `fake-lag`: holds the connection's own packets for a configurable delay -
+  outbound (everything you send), inbound (everything the server sends), or both - releasing by
+  age with hard flushes on teleport, damage and disconnect. Ported from Raven B4's `FakeLag`,
+  whose delay engine is a shared request/handler/timeout subsystem; here each module owns its
+  queue outright, the convention the rest of the addon already runs on. Connection-keeping
+  packets (keep-alives, pings, chunk-batch traffic, bundles) always pass through untouched, so
+  the hold cannot starve the world or read as a dying connection. The cost is stated in the
+  description: released bursts read as timer anomalies on servers that count packets.
+- New network module `lag-range`: the same hold, but conditional - engaged only while closing
+  on a target inside the reach band, or right after a hit landed inside the three-block
+  minimum, and flushed the moment the exchange changes shape: a hit of your own, taking damage,
+  a sprint restart, raising your sword, throwing a splash, opening a screen, the target leaving
+  the band. Ported from Raven B4's `LagRange` with the engage shape intact; the 1.8
+  hurt-window hit-marking and the first-person indicator are not carried over, and the closest
+  target scan replaces the original's targeting helper.
+- New network module `backtrack`: holds one target's movement packets while the withheld
+  position is the better one to swing at - further along your aim ray than the position this
+  client still shows, inside the reach band, on the stale side of the exchange - and releases
+  them by age, damage, teleport or target change. The geometry lives in `BacktrackMath`
+  (ray/box entry distance, the hold decision table), unit tested in `BacktrackMathTest`
+  including the border-grown box edge cases. Ported from Raven B4's `Backtrack` with three
+  deliberate deviations: the hold is scoped to one entity's movement packets rather than
+  everything-but-a-whitelist (a held session cannot starve the world of chunks), the 1.8 ghost
+  rendering is dropped, and the release clock is wall-clock milliseconds rather than tick
+  counts. Against a lag-compensating server the effect is bounded by what it already grants;
+  the description says so.
+
 ## [7.18.6] - 2026-10-23
 
 - New combat module `rod-aimbot`: a right click with an uncast rod is intercepted, the closest

@@ -27,7 +27,7 @@ public class AddonMetadataTest {
     @Test
     void testAddonProperties() {
         VenomousAddon addon = new VenomousAddon();
-        assertEquals("7.18.6", VenomousAddon.VERSION);
+        assertEquals("7.18.7", VenomousAddon.VERSION);
         assertEquals("net.venomous.meteoraddon", addon.getPackage());
         assertEquals("Venomous", VenomousAddon.CATEGORY.name);
         assertEquals("Venomous OP", VenomousAddon.CATEGORY_OP.name);
