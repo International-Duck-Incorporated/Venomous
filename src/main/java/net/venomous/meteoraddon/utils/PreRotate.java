@@ -162,6 +162,16 @@ public final class PreRotate {
     }
 
     /**
+     * Drops only this module's queued action, leaving other modules' pending actions alone.
+     *
+     * <p>Use for in-flight clears - a module consuming its own staged shot must not take another
+     * module's still-pending action with it, because the queue is shared and the intent is not.</p>
+     */
+    public static void cancel(Module owner) {
+        PENDING.remove(owner);
+    }
+
+    /**
      * Whether {@code owner} has an action queued and still waiting to run.
      *
      * <p>It fires in the movement packet's PRE phase, which is after the player's own tick has

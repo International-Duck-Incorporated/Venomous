@@ -219,8 +219,8 @@ public class BowAimbot extends Module {
     }
 
     private void cast() {
-        if (this.mc.player == null) return;
-        if (!(this.mc.player.getMainHandItem().getItem() instanceof BowItem || this.mc.player.getMainHandItem().getItem() instanceof CrossbowItem)) return;
+        if (this.mc.player == null) { this.clearStaged(); return; }
+        if (!(this.mc.player.getMainHandItem().getItem() instanceof BowItem || this.mc.player.getMainHandItem().getItem() instanceof CrossbowItem)) { this.clearStaged(); return; }
         
         // The item use is already being held down, just ensure we're still aiming correctly
         // The rotation has been sent via PreRotate, the actual shot is handled by vanilla.
@@ -236,7 +236,7 @@ public class BowAimbot extends Module {
     private void clearStaged() {
         this.target = null;
         this.currentTick = 0;
-        PreRotate.cancelAll();
+        PreRotate.cancel(this);
     }
 
     private LivingEntity findTarget() {

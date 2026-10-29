@@ -206,4 +206,36 @@ public class DeferredActionsTest {
         assertEquals(1, queue.size(), "a look must not consume the entry");
         assertEquals(List.of("ours"), drain(queue, true), "and a looked-at entry still fires");
     }
+
+    @Test
+    void removeTakesOnlyTheNamedCallersEntry() {
+        DeferredActions<String> queue = new DeferredActions<>();
+        Object bow = new Object();
+        Object crossbow = new Object();
+
+        queue.add(bow, ALWAYS, 0.0F, 0.0F, "bow-shot", true);
+        queue.add(crossbow, ALWAYS, 0.0F, 0.0F, "crossbow-shot", true);
+        assertEquals(2, queue.size());
+
+        assertNotNull(queue.remove(bow));
+        assertFalse(queue.has(bow), "removing a caller must take only that caller's entry");
+        assertTrue(queue.has(crossbow), "removing one caller must leave another caller's pending "
+            + "action alone");
+
+        assertEquals(List.of("crossbow-shot"), drain(queue, true),
+            "the surviving caller must still be able to fire");
+    }
+
+    @Test
+    void removeOfAnOwnerWithNothingQueuedIsANoOp() {
+        DeferredActions<String> queue = new DeferredActions<>();
+        Object owner = new Object();
+        Object stranger = new Object();
+
+        queue.add(owner, ALWAYS, 0.0F, 0.0F, "ours", true);
+
+        assertNull(queue.remove(stranger),
+            "removing an owner with nothing queued must read as nothing");
+        assertEquals(1, queue.size(), "a no-op removal must not disturb the queue");
+    }
 }

@@ -160,6 +160,22 @@ public final class DeferredActions<A> {
     }
 
     /**
+     * Removes and returns the caller's queued action, or {@code null} if none is queued.
+     *
+     * <p>Owner-scoped removal: a module that has fired its deferred action must not take another
+     * caller's still-pending entry with it - the queue is shared, the intent is not.</p>
+     */
+    public synchronized Pending<A> remove(Object owner) {
+        Pending<A> found = this.find(owner);
+        if (found == null) {
+            return null;
+        }
+
+        this.pending.remove(found);
+        return found;
+    }
+
+    /**
      * Removes and returns every entry whose aim has been reached, in the order it was queued.
      * Entries that never became ready are aged, and discarded once older than {@code maxAge}.
      *
