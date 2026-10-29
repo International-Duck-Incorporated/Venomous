@@ -245,9 +245,22 @@ public class NoClip extends Module {
         AABB playerBox = this.mc.player.getBoundingBox().move(-playerPos.x, -playerPos.y, -playerPos.z);
         event.renderer.box(playerBox, this.color.get(), this.color.get(), meteordevelopment.meteorclient.renderer.ShapeMode.Lines, 1);
 
-        // Direction indicator disabled for version compatibility — module core (collision disable) functional
+        // Show movement direction
+        if (this.showDirection.get()) {
+            Vec3 movementDir = this.getMovementDirection();
+            if (movementDir.lengthSqr() > 0) {
+                Vec3 start = Vec3.ZERO;
+                Vec3 end = movementDir.scale(2.0);
+                double[] startArr = new double[]{start.x, start.y, start.z};
+                double[] endArr = new double[]{end.x, end.y, end.z};
+                meteordevelopment.meteorclient.utils.render.color.Color c = this.color.get();
+                event.renderer.line(startArr[0], startArr[1], startArr[2], endArr[0], endArr[1], endArr[2], c, c);
+            }
+        }
+
         // Show nearby blocks that will be clipped through
-        // Nearby block render disabled for version compatibility
+        AABB nearbyBox = this.mc.player.getBoundingBox().inflate(1.5).move(-playerPos.x, -playerPos.y, -playerPos.z);
+        event.renderer.box(nearbyBox, this.color.get(), this.color.get(), meteordevelopment.meteorclient.renderer.ShapeMode.Lines, 1);
     }
 
     private Vec3 getMovementDirection() {
