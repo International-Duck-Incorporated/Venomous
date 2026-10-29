@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Verify PacketGates coexists with BowAimbot's deferred-action (PreRotate) mechanism.
  */
-public class PacketGatesIntegrationTest {
+public class PacketGatesTest {
 
     @Test
     void packetGatesModuleExistsAndRegistered() throws Exception {
