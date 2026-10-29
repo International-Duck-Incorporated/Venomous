@@ -34,6 +34,7 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.combat.TimerRange",
             "net.venomous.meteoraddon.modules.combat.TpAura",
             "net.venomous.meteoraddon.modules.combat.AnchorMacro",
+            "net.venomous.meteoraddon.modules.combat.BedAura",
             "net.venomous.meteoraddon.modules.combat.AntiTrap",
             "net.venomous.meteoraddon.modules.combat.VAutoCity",
             "net.venomous.meteoraddon.modules.combat.AutoDoubleHand",

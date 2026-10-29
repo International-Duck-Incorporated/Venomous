@@ -21,6 +21,9 @@ import net.venomous.meteoraddon.modules.combat.TargetObsidian;
 import net.venomous.meteoraddon.modules.combat.TickBase;
 import net.venomous.meteoraddon.modules.combat.TimerRange;
 import net.venomous.meteoraddon.modules.combat.TpAura;
+
+import net.venomous.meteoraddon.modules.combat.AutoAnchor;
+import net.venomous.meteoraddon.modules.combat.BedAura;
 import net.venomous.meteoraddon.modules.combat.AnchorMacro;
 import net.venomous.meteoraddon.modules.combat.AntiTrap;
 import net.venomous.meteoraddon.modules.combat.VAutoCity;
@@ -138,6 +141,9 @@ public class ModuleRegistry {
         Modules.get().add(new TickBase());
         Modules.get().add(new TimerRange());
         Modules.get().add(new TpAura());
+        Modules.get().add(new AutoAnchor());
+        Modules.get().add(new BedAura());
+
         Modules.get().add(new AnchorMacro());
         Modules.get().add(new AntiTrap());
         Modules.get().add(new VAutoCity());
