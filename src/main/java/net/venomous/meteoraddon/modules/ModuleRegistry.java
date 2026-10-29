@@ -107,7 +107,7 @@ import net.venomous.meteoraddon.modules.movement.BoatPhase;
 import net.venomous.meteoraddon.modules.movement.HoleSnap;
 import net.venomous.meteoraddon.modules.movement.RoboWalk;
 import net.venomous.meteoraddon.modules.movement.SafeWalk;
-
+import net.venomous.meteoraddon.modules.movement.NoClip;
 import net.venomous.meteoraddon.modules.movement.NoSlow;
 import net.venomous.meteoraddon.modules.network.GlobalNetworkInterceptor;
 import net.venomous.meteoraddon.modules.network.FakeLag;
@@ -233,6 +233,7 @@ public class ModuleRegistry {
         Modules.get().add(new RoboWalk());
         Modules.get().add(new SafeWalk());
         Modules.get().add(new NoSlow());
+        Modules.get().add(new NoClip());
         Modules.get().add(new GlobalNetworkInterceptor());
         Modules.get().add(new FakeLag());
         Modules.get().add(new LagRange());
