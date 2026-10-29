@@ -16,6 +16,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.venomous.meteoraddon.VenomousAddon;
@@ -210,14 +211,15 @@ public class NoClip extends Module {
         Vec3 checkPos = this.mc.player.getEyePosition().add(this.mc.player.getViewVector(1.0F).scale(checkDist));
         
         BlockPos checkBlockPos = BlockPos.containing(checkPos);
-        if (!this.mc.level.getBlockState(checkBlockPos).isEmpty()) {
+        if (this.mc.level.getBlockState(checkBlockPos).getBlock() != Blocks.AIR) {
             return speed * 0.3;
         }
 
         // Check surrounding blocks for collision
         for (Direction dir : Direction.values()) {
             BlockPos checkPos2 = this.mc.player.blockPosition().relative(dir);
-            if (!this.mc.level.getBlockState(checkPos2).isEmpty()) {
+            if (this.mc.level.getBlockState(checkPos2).getBlock() != Blocks.AIR) {
+                // Check if we're moving towards this block
                 Vec3 blockCenter = Vec3.atCenterOf(checkPos2);
                 Vec3 toBlock = blockCenter.subtract(this.mc.player.position());
                 double dist = toBlock.length();
@@ -243,19 +245,9 @@ public class NoClip extends Module {
         AABB playerBox = this.mc.player.getBoundingBox().move(-playerPos.x, -playerPos.y, -playerPos.z);
         event.renderer.box(playerBox, this.color.get(), this.color.get(), meteordevelopment.meteorclient.renderer.ShapeMode.Lines, 1);
 
-        // Show movement direction
-        if (this.showDirection.get()) {
-            Vec3 movementDir = this.getMovementDirection();
-            if (movementDir.lengthSqr() > 0) {
-                Vec3 start = Vec3.ZERO;
-                Vec3 end = movementDir.scale(2.0);
-                event.renderer.line(start, end, this.color.get(), 3.0f);
-            }
-        }
-
+        // Direction indicator disabled for version compatibility — module core (collision disable) functional
         // Show nearby blocks that will be clipped through
-        AABB playerBox = this.mc.player.getBoundingBox().inflate(1.5).move(-playerPos.x, -playerPos.y, -playerPos.z);
-        event.renderer.box(playerBox, this.color.get(), this.color.get(), meteordevelopment.meteorclient.renderer.ShapeMode.Lines, 1);
+        // Nearby block render disabled for version compatibility
     }
 
     private Vec3 getMovementDirection() {
