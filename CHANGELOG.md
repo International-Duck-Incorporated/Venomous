@@ -4,7 +4,9 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
-## [7.18.8] - 2026-10-23
+## [7.19.0] - 2026-10-29
+### Added / Wave 1 (Partial)
+- BedAura module (combat). AutoAnchor, AutoEat, SafeWalk stubs registered. PacketGates integration updated. Build/test green (306/0). Independent critic unavailable — status INCOMPLETE.
 
 - New movement module `no-slow`: decides for itself how much the item in use slows you down.
   26.2 keeps the slowdown on the item itself - the `USE_EFFECTS` data component, read through

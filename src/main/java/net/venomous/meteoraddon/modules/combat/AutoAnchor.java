@@ -31,6 +31,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.AnchorDamageMath;
 import net.venomous.meteoraddon.utils.PreRotate;
 
 public class AutoAnchor extends Module {
@@ -441,23 +442,21 @@ public class AutoAnchor extends Module {
         return Optional.ofNullable(best);
     }
 
-    private double calculateDamage(net.minecraft.world.entity.LivingEntity target, BlockPos anchorPos) {
-        // Simplified damage calculation - respawn anchor explosion
+    private double calculateDamage(net.minecraft.world.entity.LivingEntity target, net.minecraft.core.BlockPos anchorPos) {
+        // Delegate to the shared, reference-matched curve instead of the old linear guess.
+        // A fully detonated respawn anchor has power 5 and a blast radius of 10, and the damage
+        // falls off quadratically with distance. Armor, resistance and protection are applied by
+        // the server after this and are not part of the placement score.
         Vec3 explosionPos = Vec3.atCenterOf(anchorPos);
         double distance = target.position().distanceTo(explosionPos);
-        
-        // Respawn anchor explosion power is 4 (like a bed in nether)
-        // Damage falls off with distance
-        if (distance > 6) return 0;
-        return Math.max(0, 4 * (1 - distance / 6.0));
+        return AnchorDamageMath.rawDamage(distance, AnchorDamageMath.RESPAWN_ANCHOR_POWER, 1.0D);
     }
 
-    private double calculateSelfDamage(BlockPos anchorPos) {
+    private double calculateSelfDamage(net.minecraft.core.BlockPos anchorPos) {
         if (this.mc.player == null) return 0;
         Vec3 explosionPos = Vec3.atCenterOf(anchorPos);
         double distance = this.mc.player.position().distanceTo(explosionPos);
-        if (distance > 6) return 0;
-        return Math.max(0, 4 * (1 - distance / 6.0));
+        return AnchorDamageMath.rawDamage(distance, AnchorDamageMath.RESPAWN_ANCHOR_POWER, 1.0D);
     }
 
     private boolean willDamageAnyTarget(BlockPos anchorPos, List<net.minecraft.world.entity.LivingEntity> targets) {
