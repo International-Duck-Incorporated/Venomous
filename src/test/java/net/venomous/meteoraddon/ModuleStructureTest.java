@@ -134,7 +134,8 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.world.AutoFarm",
             "net.venomous.meteoraddon.modules.misc.AutoEat",
             "net.venomous.meteoraddon.modules.world.BambooPlanter",
-            "net.venomous.meteoraddon.modules.movement.NoClip"
+            "net.venomous.meteoraddon.modules.movement.NoClip",
+            "net.venomous.meteoraddon.modules.combat.Trajectory"
     );
 
     /**
