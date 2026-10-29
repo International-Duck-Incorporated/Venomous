@@ -25,6 +25,7 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.combat.JumpReset",
             "net.venomous.meteoraddon.modules.combat.KeepSprint",
             "net.venomous.meteoraddon.modules.combat.MaceKill",
+            "net.venomous.meteoraddon.modules.combat.MaceAura",
             "net.venomous.meteoraddon.modules.combat.ProjectilePuncher",
             "net.venomous.meteoraddon.modules.combat.RodAimbot",
             "net.venomous.meteoraddon.modules.combat.BowAimbot",

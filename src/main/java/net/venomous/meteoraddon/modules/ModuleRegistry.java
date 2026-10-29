@@ -12,7 +12,9 @@ import net.venomous.meteoraddon.modules.combat.HitSelect;
 import net.venomous.meteoraddon.modules.combat.Hunt;
 import net.venomous.meteoraddon.modules.combat.JumpReset;
 import net.venomous.meteoraddon.modules.combat.KeepSprint;
+import net.venomous.meteoraddon.modules.combat.MaceAura;
 import net.venomous.meteoraddon.modules.combat.MaceKill;
+import net.venomous.meteoraddon.modules.combat.MaceAura;
 import net.venomous.meteoraddon.modules.combat.ProjectilePuncher;
 import net.venomous.meteoraddon.modules.combat.RodAimbot;
 import net.venomous.meteoraddon.modules.combat.SuperKnockback;
@@ -141,6 +143,7 @@ public class ModuleRegistry {
         Modules.get().add(new JumpReset());
         Modules.get().add(new KeepSprint());
         Modules.get().add(new MaceKill());
+        Modules.get().add(new MaceAura());
         Modules.get().add(new ProjectilePuncher());
         Modules.get().add(new RodAimbot());
         Modules.get().add(new TriggerBot());
