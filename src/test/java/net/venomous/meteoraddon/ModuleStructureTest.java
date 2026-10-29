@@ -27,6 +27,8 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.combat.MaceKill",
             "net.venomous.meteoraddon.modules.combat.ProjectilePuncher",
             "net.venomous.meteoraddon.modules.combat.RodAimbot",
+            "net.venomous.meteoraddon.modules.combat.BowAimbot",
+            "net.venomous.meteoraddon.modules.combat.TriggerBot",
             "net.venomous.meteoraddon.modules.combat.SuperKnockback",
             "net.venomous.meteoraddon.modules.combat.SwordBlock",
             "net.venomous.meteoraddon.modules.combat.TargetObsidian",
@@ -34,6 +36,7 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.combat.TimerRange",
             "net.venomous.meteoraddon.modules.combat.TpAura",
             "net.venomous.meteoraddon.modules.combat.AnchorMacro",
+            "net.venomous.meteoraddon.modules.combat.AutoAnchor",
             "net.venomous.meteoraddon.modules.combat.BedAura",
             "net.venomous.meteoraddon.modules.combat.AntiTrap",
             "net.venomous.meteoraddon.modules.combat.VAutoCity",
@@ -111,6 +114,7 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.movement.BoatPhase",
             "net.venomous.meteoraddon.modules.movement.HoleSnap",
             "net.venomous.meteoraddon.modules.movement.RoboWalk",
+            "net.venomous.meteoraddon.modules.movement.SafeWalk",
             "net.venomous.meteoraddon.modules.movement.NoSlow",
             "net.venomous.meteoraddon.modules.network.GlobalNetworkInterceptor",
             "net.venomous.meteoraddon.modules.network.FakeLag",
@@ -127,6 +131,7 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.world.TimerPlus",
             "net.venomous.meteoraddon.modules.world.VAirPlace",
             "net.venomous.meteoraddon.modules.world.AutoFarm",
+            "net.venomous.meteoraddon.modules.misc.AutoEat",
             "net.venomous.meteoraddon.modules.world.BambooPlanter"
     );
 

@@ -22,8 +22,11 @@ import net.venomous.meteoraddon.modules.combat.TickBase;
 import net.venomous.meteoraddon.modules.combat.TimerRange;
 import net.venomous.meteoraddon.modules.combat.TpAura;
 
-import net.venomous.meteoraddon.modules.combat.AutoAnchor;
+
+
 import net.venomous.meteoraddon.modules.combat.BedAura;
+import net.venomous.meteoraddon.modules.combat.BowAimbot;
+import net.venomous.meteoraddon.modules.combat.TriggerBot;
 import net.venomous.meteoraddon.modules.combat.AnchorMacro;
 import net.venomous.meteoraddon.modules.combat.AntiTrap;
 import net.venomous.meteoraddon.modules.combat.VAutoCity;
@@ -57,6 +60,7 @@ import net.venomous.meteoraddon.modules.fun.Twerk;
 import net.venomous.meteoraddon.modules.fun.Vomit;
 import net.venomous.meteoraddon.modules.misc.ArmorWarning;
 import net.venomous.meteoraddon.modules.misc.AutoChatGame;
+import net.venomous.meteoraddon.modules.misc.AutoEat;
 import net.venomous.meteoraddon.modules.misc.AutoPearl;
 import net.venomous.meteoraddon.modules.misc.Chat;
 import net.venomous.meteoraddon.modules.misc.ElytraSwap;
@@ -101,6 +105,7 @@ import net.venomous.meteoraddon.modules.movement.VBlink;
 import net.venomous.meteoraddon.modules.movement.BoatPhase;
 import net.venomous.meteoraddon.modules.movement.HoleSnap;
 import net.venomous.meteoraddon.modules.movement.RoboWalk;
+
 import net.venomous.meteoraddon.modules.movement.NoSlow;
 import net.venomous.meteoraddon.modules.network.GlobalNetworkInterceptor;
 import net.venomous.meteoraddon.modules.network.FakeLag;
@@ -135,13 +140,14 @@ public class ModuleRegistry {
         Modules.get().add(new MaceKill());
         Modules.get().add(new ProjectilePuncher());
         Modules.get().add(new RodAimbot());
+        Modules.get().add(new TriggerBot());
         Modules.get().add(new SuperKnockback());
+        Modules.get().add(new AutoAnchor());
         Modules.get().add(new SwordBlock());
         Modules.get().add(new TargetObsidian());
         Modules.get().add(new TickBase());
         Modules.get().add(new TimerRange());
         Modules.get().add(new TpAura());
-        Modules.get().add(new AutoAnchor());
         Modules.get().add(new BedAura());
 
         Modules.get().add(new AnchorMacro());
@@ -177,6 +183,7 @@ public class ModuleRegistry {
         Modules.get().add(new Vomit());
         Modules.get().add(new ArmorWarning());
         Modules.get().add(new AutoChatGame());
+        Modules.get().add(new AutoEat());
         Modules.get().add(new AutoPearl());
         Modules.get().add(new Chat());
         Modules.get().add(new ElytraSwap());
@@ -240,3 +247,4 @@ public class ModuleRegistry {
         Modules.get().add(new BambooPlanter());
     }
 }
+

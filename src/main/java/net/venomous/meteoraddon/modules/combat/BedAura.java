@@ -238,9 +238,4 @@ public class BedAura extends Module {
         }
     }
 
-    public enum Mode {
-        Off,
-        Silent,
-        Normal;
-    }
 }

@@ -37,3 +37,6 @@ logs/
 
 # Local scratch notes
 DEV_NOTES.md
+
+# Gauntlet workbench (local improvement tracking)
+.gauntlet/

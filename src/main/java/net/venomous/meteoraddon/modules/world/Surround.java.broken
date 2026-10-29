@@ -1,0 +1,594 @@
+package net.venomous.meteoraddon.modules.world;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
+import meteordevelopment.meteorclient.settings.BoolSetting;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
+import meteordevelopment.meteorclient.settings.EnumSetting;
+import meteordevelopment.meteorclient.settings.IntSetting;
+import meteordevelopment.meteorclient.settings.Setting;
+import meteordevelopment.meteorclient.settings.SettingGroup;
+import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.utils.player.FindItemResult;
+import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.player.Rotations;
+import meteordevelopment.orbit.EventHandler;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.PreRotate;
+
+public class Surround extends Module {
+    private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
+    private final SettingGroup sgBlocks = this.settings.createGroup("Blocks");
+    private final SettingGroup sgDisable = this.settings.createGroup("Disable On");
+    private final SettingGroup sgBehavior = this.settings.createGroup("Behavior");
+
+    private final Setting<EnumSetting.Mode> ringMode = this.sgGeneral
+        .add(new EnumSetting.Builder<RingMode>()
+            .name("ring-mode")
+            .description("Ring placement mode - Center places around player center, Hitbox places around player hitbox.")
+            .defaultValue(RingMode.Center)
+            .build());
+
+    private final Setting<BoolSetting.Builder> placeDown = this.sgGeneral
+        .add(new BoolSetting.Builder()
+            .name("place-down")
+            .description("Place blocks under the surround floor.")
+            .defaultValue(true)
+            .build());
+
+    private final Setting<BoolSetting.Builder> noWaste = this.sgGeneral
+        .add(new BoolSetting.Builder()
+            .name("no-waste")
+            .description("Skip extra cells inside holes (Hitbox mode only).")
+            .defaultValue(true)
+            .visible(() -> this.ringMode.get() == RingMode.Hitbox)
+            .build());
+
+    private final Setting<BoolSetting.Builder> disableOnYChange = this.sgDisable
+        .add(new BoolSetting.Builder()
+            .name("disable-on-y-change")
+            .description("Disable when your Y level changes.")
+            .defaultValue(true)
+            .build());
+
+    private final Setting<BoolSetting.Builder> disableOnXZMove = this.sgDisable
+        .add(new BoolSetting.Builder()
+            .name("disable-on-xz-move")
+            .description("Disable when you leave the starting block.")
+            .defaultValue(false)
+            .build());
+
+    private final Setting<BoolSetting.Builder> disableOnXZSpeed = this.sgDisable
+        .add(new BoolSetting.Builder()
+            .name("disable-on-xz-speed")
+            .description("Disable when moving too fast horizontally.")
+            .defaultValue(false)
+            .build());
+
+    private final Setting<DoubleSetting.Builder> maxXZSpeed = this.sgDisable
+        .add(new DoubleSetting.Builder()
+            .name("max-xz-speed")
+            .description("Maximum horizontal speed squared before disabling.")
+            .defaultValue(0.25)
+            .min(0.01)
+            .max(1.0)
+            .sliderMax(1.0)
+            .visible(this.disableOnXZSpeed::get)
+            .build());
+
+    private final Setting<EnumSetting.Mode> filterMode = this.sgBlocks
+        .add(new EnumSetting.Builder<FilterMode>()
+            .name("filter-mode")
+            .description("Whitelist = only place these blocks. Blacklist = never place these blocks.")
+            .defaultValue(FilterMode.Whitelist)
+            .build());
+
+    private final Setting<SettingGroup.BlockList> blocks = this.sgBlocks
+        .add(new meteordevelopment.meteorclient.settings.BlockListSetting.Builder()
+            .name("blocks")
+            .description("Blocks to use for surrounding (Whitelist mode) or avoid (Blacklist mode).")
+            .defaultValue(new HashSet<>(Arrays.asList(
+                Blocks.OBSIDIAN,
+                Blocks.CRYING_OBSIDIAN,
+                Blocks.ENDER_CHEST,
+                Blocks.ANVIL,
+                Blocks.CHIPPED_ANVIL,
+                Blocks.DAMAGED_ANVIL,
+                Blocks.NETHERITE_BLOCK,
+                Blocks.ANCIENT_DEBRIS,
+                Blocks.RESPAWN_ANCHOR
+            )))
+            .build());
+
+    private final Setting<BoolSetting.Builder> switchBack = this.sgBehavior
+        .add(new BoolSetting.Builder()
+            .name("switch-back")
+            .description("Return to your original slot after placing.")
+            .defaultValue(true)
+            .build());
+
+    private final Setting<BoolSetting.Builder> protect = this.sgBehavior
+        .add(new BoolSetting.Builder()
+            .name("protect")
+            .description("Re-place blocks that others are breaking.")
+            .defaultValue(true)
+            .build());
+
+    private final Setting<IntSetting.Builder> minDestroyProgress = this.sgBehavior
+        .add(new IntSetting.Builder()
+            .name("min-destroy-progress")
+            .description("Break progress stage to start reacting at (0-9).")
+            .defaultValue(4)
+            .min(0)
+            .max(9)
+            .visible(this.protect::get)
+            .build());
+
+    private final Setting<BoolSetting.Builder> extraLayer = this.sgBehavior
+        .add(new BoolSetting.Builder()
+            .name("extra-layer")
+            .description("Place a second layer around mined cells.")
+            .defaultValue(true)
+            .visible(this.protect::get)
+            .build());
+
+    private final Setting<BoolSetting.Builder> extraLayerCorners = this.sgBehavior
+        .add(new BoolSetting.Builder()
+            .name("extra-layer-corners")
+            .description("Also fill diagonal corners for extra layer.")
+            .defaultValue(false)
+            .visible(() -> this.protect.get() && this.extraLayer.get())
+            .build());
+
+    private final Setting<BoolSetting.Builder> forceExtraLayer = this.sgBehavior
+        .add(new BoolSetting.Builder()
+            .name("force-extra-layer")
+            .description("Always place extra layer on every cell.")
+            .defaultValue(false)
+            .build());
+
+    private final Setting<IntSetting.Builder> aimSpeed = this.sgBehavior
+        .add(new IntSetting.Builder()
+            .name("aim-speed")
+            .description("Rotation speed (1=slow, 5=fast). Higher allows more rotation per tick.")
+            .defaultValue(3)
+            .min(1)
+            .max(5)
+            .build());
+
+    private boolean armed = false;
+    private double startY = 0;
+    private double centerX = 0;
+    private double centerZ = 0;
+    private double lastX = 0;
+    private double lastZ = 0;
+    private boolean lastPositionValid = false;
+    private final List<BlockPos> targets = new ArrayList<>();
+    private final Set<BlockPos> placedByUs = new HashSet<>();
+    private final Set<BlockPos> broken = new HashSet<>();
+    private int originalSlot = -1;
+    private int switchedToSlot = -1;
+    private int idleTicks = 0;
+    private int lastPlaceTick = Integer.MIN_VALUE;
+
+    public Surround() {
+        super(VenomousAddon.CATEGORY, "surround", "Surrounds the player with blocks.");
+    }
+
+    @Override
+    public void onActivate() {
+        this.reset();
+    }
+
+    @Override
+    public void onDeactivate() {
+        this.reset();
+        PreRotate.cancelAll();
+    }
+
+    private void reset() {
+        this.armed = false;
+        this.lastPositionValid = false;
+        this.targets.clear();
+        this.placedByUs.clear();
+        this.broken.clear();
+        this.lastPlaceTick = Integer.MIN_VALUE;
+        this.originalSlot = -1;
+        this.switchedToSlot = -1;
+        this.idleTicks = 0;
+    }
+
+    @EventHandler
+    private void onTick(Pre event) {
+        if (this.mc.player == null || this.mc.level == null || this.mc.getConnection() == null) {
+            this.targets.clear();
+            return;
+        }
+
+        if (!this.armed) {
+            this.captureStartPose();
+        }
+
+        double x = this.mc.player.getX();
+        double y = this.mc.player.getY();
+        double z = this.mc.player.getZ();
+
+        String reason = this.disableReason(x, y, z);
+        this.lastX = x;
+        this.lastZ = z;
+        this.lastPositionValid = true;
+
+        if (reason != null) {
+            this.disableWithMessage("Surround disabled: " + reason + ".");
+            return;
+        }
+
+        this.collectBrokenCells();
+        this.buildTargets();
+        this.runPlacement();
+    }
+
+    private void captureStartPose() {
+        this.startY = this.mc.player.getY();
+        BlockPos block = this.mc.player.blockPosition();
+        this.centerX = block.getX() + 0.5;
+        this.centerZ = block.getZ() + 0.5;
+        this.lastPositionValid = false;
+        this.armed = true;
+    }
+
+    private String disableReason(double x, double y, double z) {
+        if (this.disableOnYChange.get() && y != this.startY) {
+            return "your Y changed";
+        }
+        if (this.disableOnXZMove.get() && (Math.abs(x - this.centerX) > 0.5 || Math.abs(z - this.centerZ) > 0.5)) {
+            return "you left the block";
+        }
+        if (this.disableOnXZSpeed.get() && this.lastPositionValid) {
+            double dx = x - this.lastX;
+            double dz = z - this.lastZ;
+            if (dx * dx + dz * dz >= this.maxXZSpeed.get()) {
+                return "you moved too fast";
+            }
+        }
+        return null;
+    }
+
+    private void disableWithMessage(String message) {
+        this.toggle();
+        if (this.mc.player != null) {
+            this.mc.player.sendSystemMessage(net.minecraft.network.chat.Component.literal(message));
+        }
+    }
+
+    private void collectBrokenCells() {
+        this.broken.clear();
+        if (!this.protect.get()) return;
+
+        // Note: In Meteor, we'd need to track block breaking packets.
+        // For now, this is a placeholder - full implementation would need
+        // a packet listener for ServerboundPlayerActionPacket (START_DESTROY_BLOCK).
+        // The Autism-Client version tracks ClientboundBlockDestructionPacket.
+    }
+
+    private void buildTargets() {
+        this.targets.clear();
+
+        AABB box = this.mc.player.getBoundingBox();
+        int feetY = (int) Math.floor(box.minY + 1e-3);
+
+        List<BlockPos> hole = this.holeColumns(box, feetY);
+
+        Set<BlockPos> seen = new HashSet<>(hole);
+        List<BlockPos> ring = new ArrayList<>();
+        List<BlockPos> down = new ArrayList<>();
+        List<BlockPos> extra = new ArrayList<>();
+
+        boolean addDown = this.placeDown.get();
+        boolean forceExtra = this.forceExtraLayer.get();
+        boolean extraLayer = this.protect.get() && this.extraLayer.get();
+        boolean corners = extraLayer && this.extraLayerCorners.get();
+
+        Direction[] order = this.walkOrder();
+
+        for (BlockPos holePos : hole) {
+            for (Direction direction : order) {
+                BlockPos pos = holePos.relative(direction);
+                if (!seen.add(pos)) continue;
+
+                if (direction == Direction.DOWN) {
+                    down.add(pos);
+                    if (addDown) {
+                        addUnique(down, seen, holePos.below(2));
+                    }
+                    continue;
+                }
+
+                ring.add(pos);
+
+                if (!forceExtra && !(extraLayer && this.broken.contains(pos))) continue;
+
+                addUnique(extra, seen, pos.relative(direction));
+                addUnique(extra, seen, pos.above());
+
+                if (corners) {
+                    addUnique(extra, seen, pos.relative(direction.getClockWise()));
+                }
+            }
+        }
+
+        this.appendGroup(ring);
+        this.appendGroup(down);
+        this.appendGroup(extra);
+    }
+
+    private Direction[] walkOrder() {
+        if (this.aimSpeed.get() <= 1) {
+            return new Direction[]{Direction.DOWN, Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH};
+        }
+
+        // Order by closest yaw direction first
+        float fromYaw = this.mc.player.getYRot();
+        Direction[] ringCycle = {Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH};
+        int start = 0;
+        float best = Float.MAX_VALUE;
+
+        for (int i = 0; i < ringCycle.length; i++) {
+            float turn = Math.abs(this.angleDifference(ringCycle[i].toYRot(), fromYaw));
+            if (turn < best) {
+                best = turn;
+                start = i;
+            }
+        }
+
+        Direction[] order = new Direction[ringCycle.length + 1];
+        order[0] = Direction.DOWN;
+        for (int i = 0; i < ringCycle.length; i++) {
+            order[i + 1] = ringCycle[(start + i) % ringCycle.length];
+        }
+        return order;
+    }
+
+    private float angleDifference(float a, float b) {
+        float diff = a - b;
+        diff = (diff + 180) % 360;
+        if (diff < 0) diff += 360;
+        return diff - 180;
+    }
+
+    private static void addUnique(List<BlockPos> target, Set<BlockPos> seen, BlockPos pos) {
+        if (seen.add(pos)) target.add(pos);
+    }
+
+    private void appendGroup(List<BlockPos> group) {
+        // Prioritize already-placed-by-us blocks that can be replaced (re-fill)
+        for (BlockPos pos : group) {
+            if (this.placedByUs.contains(pos) && this.mc.level.getBlockState(pos).canBeReplaced()) {
+                this.targets.add(pos);
+            }
+        }
+        // Then new placements
+        for (BlockPos pos : group) {
+            if (!this.placedByUs.contains(pos) && this.mc.level.getBlockState(pos).canBeReplaced()) {
+                this.targets.add(pos);
+            }
+        }
+    }
+
+    private List<BlockPos> holeColumns(AABB box, int feetY) {
+        if (this.ringMode.get() == RingMode.Center) {
+            BlockPos feet = new BlockPos(
+                (int) Math.floor((box.minX + box.maxX) * 0.5),
+                feetY,
+                (int) Math.floor((box.minZ + box.maxZ) * 0.5)
+            );
+            return List.of(feet);
+        }
+
+        // Hitbox mode
+        if (this.noWaste.get() && this.isInHole(feetY)) {
+            BlockPos feet = new BlockPos(
+                (int) Math.floor((box.minX + box.maxX) * 0.5),
+                feetY,
+                (int) Math.floor((box.minZ + box.maxZ) * 0.5)
+            );
+            return List.of(feet);
+        }
+
+        int minColX = (int) Math.floor(box.minX + 1e-3);
+        int maxColX = (int) Math.floor(box.maxX - 1e-3);
+        int minColZ = (int) Math.floor(box.minZ + 1e-3);
+        int maxColZ = (int) Math.floor(box.maxZ - 1e-3);
+
+        List<BlockPos> columns = new ArrayList<>(4);
+        for (int columnX = minColX; columnX <= maxColX; columnX++) {
+            for (int columnZ = minColZ; columnZ <= maxColZ; columnZ++) {
+                columns.add(new BlockPos(columnX, feetY, columnZ));
+            }
+        }
+
+        return columns.isEmpty() ? List.of(new BlockPos(
+            (int) Math.floor((box.minX + box.maxX) * 0.5),
+            feetY,
+            (int) Math.floor((box.minZ + box.maxZ) * 0.5)
+        )) : columns;
+    }
+
+    private boolean isInHole(int feetY) {
+        BlockPos feet = new BlockPos(
+            (int) Math.floor((this.mc.player.getBoundingBox().minX + this.mc.player.getBoundingBox().maxX) * 0.5),
+            feetY,
+            (int) Math.floor((this.mc.player.getBoundingBox().minZ + this.mc.player.getBoundingBox().maxZ) * 0.5)
+        );
+
+        for (Direction direction : new Direction[]{Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.DOWN}) {
+            float resistance = this.mc.level.getBlockState(feet.relative(direction)).getBlock().getExplosionResistance();
+            if (resistance < 600.0f) return false;
+        }
+        return true;
+    }
+
+    private void runPlacement() {
+        if (!this.canRun()) {
+            return;
+        }
+
+        int slot = this.resolveHotbarSlot();
+
+        if (this.targets.isEmpty() || slot < 0) {
+            this.maybeSwitchBack();
+            return;
+        }
+
+        // Switch to surround block
+        if (slot != this.mc.player.getInventory().getSelectedSlot()) {
+            this.selectSlot(slot);
+            // Wait for slot switch to propagate
+            return;
+        }
+
+        // Use first target
+        BlockPos target = this.targets.get(0);
+        this.placeBlock(target);
+    }
+
+    private boolean canRun() {
+        if (this.mc.player == null || this.mc.level == null || this.mc.getConnection() == null) return false;
+        if (this.mc.gui.getScreen() != null) return false;
+        if (this.mc.player.isUsingItem()) return false;
+        if (this.mc.player.isDeadOrDying()) return false;
+        if (this.mc.player.isSpectator()) return false;
+        return true;
+    }
+
+    private int resolveHotbarSlot() {
+        int selected = this.mc.player.getInventory().selected;
+        int best = -1;
+
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = this.mc.player.getInventory().getItem(i);
+            if (stack.isEmpty() || !(stack.getItem() instanceof BlockItem blockItem)) continue;
+            if (!this.isSurroundBlock(blockItem.getBlock())) continue;
+            if (i == selected) return i;
+            if (best < 0 || stack.getCount() > this.mc.player.getInventory().getItem(best).getCount()) {
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    private boolean isSurroundBlock(Block block) {
+        Set<Block> blockSet = this.blocks.get();
+        boolean listed = blockSet.contains(block);
+        return this.filterMode.get() == FilterMode.Whitelist ? listed : !listed;
+    }
+
+    private void selectSlot(int slot) {
+        if (this.originalSlot < 0 && this.switchBack.get()) {
+            this.originalSlot = this.mc.player.getInventory().selected;
+        }
+        this.mc.player.getInventory().selected = slot;
+        this.mc.getConnection().send(new ServerboundSetCarriedItemPacket(slot));
+        this.switchedToSlot = slot;
+    }
+
+    private void placeBlock(BlockPos pos) {
+        if (this.mc.player == null || this.mc.level == null || this.mc.getConnection() == null) return;
+
+        // Find placeable face
+        Direction face = null;
+        BlockPos placePos = null;
+        for (Direction d : Direction.values()) {
+            BlockPos neighbor = pos.relative(d);
+            BlockState state = this.mc.level.getBlockState(neighbor);
+            if (!state.isSolid()) continue;
+            if (d == Direction.DOWN) {
+                placePos = neighbor;
+                face = Direction.UP;
+                break;
+            }
+            if (placePos == null) {
+                placePos = neighbor;
+                face = d.getOpposite();
+            }
+        }
+        if (placePos == null || face == null) return;
+
+        Vec3 hitVec = Vec3.atCenterOf(placePos).add(face.getStepX() * 0.5, face.getStepY() * 0.5, face.getStepZ() * 0.5);
+
+        // Rotate and place using PreRotate
+        PreRotate.rotateThen(this,
+            Rotations.getYaw(hitVec),
+            Rotations.getPitch(hitVec),
+            () -> {
+                if (this.mc.player == null || this.mc.level == null) return;
+
+                BlockHitResult hit = new BlockHitResult(hitVec, face, placePos, false);
+                this.mc.gameMode.useItemOn(this.mc.player, InteractionHand.MAIN_HAND, hit);
+                this.mc.player.swing(InteractionHand.MAIN_HAND);
+
+                this.lastPlaceTick = this.mc.level.getGameTime();
+                this.targets.remove(pos);
+                this.placedByUs.add(pos.immutable());
+
+                this.maybeSwitchBack();
+            });
+    }
+
+    private void maybeSwitchBack() {
+        if (this.originalSlot < 0) return;
+        if (!this.switchBack.get()) {
+            this.originalSlot = -1;
+            this.switchedToSlot = -1;
+            return;
+        }
+
+        if (this.switchedToSlot >= 0 && this.mc.player.getInventory().selected != this.switchedToSlot) {
+            this.originalSlot = -1;
+            this.switchedToSlot = -1;
+            return;
+        }
+
+        if (++this.idleTicks < 6) return;
+
+        this.mc.player.getInventory().selected = this.originalSlot;
+        this.mc.getConnection().send(new ServerboundSetCarriedItemPacket(this.originalSlot));
+        this.originalSlot = -1;
+        this.switchedToSlot = -1;
+        this.idleTicks = 0;
+    }
+
+    @Override
+    public String getInfoString() {
+        int remaining = this.targets.size();
+        return remaining <= 0 ? "" : String.valueOf(remaining);
+    }
+
+    public enum RingMode {
+        Center,
+        Hitbox;
+    }
+
+    public enum FilterMode {
+        Whitelist,
+        Blacklist;
+    }
+}
