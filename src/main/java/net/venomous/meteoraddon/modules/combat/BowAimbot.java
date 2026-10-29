@@ -130,34 +130,39 @@ public class BowAimbot extends Module {
     public void onDeactivate() {
         this.target = null;
         this.currentTick = 0;
-        PreRotate.cancelAll();
+        PreRotate.cancel(this);
     }
 
     @EventHandler
     private void onTick(Pre event) {
+        if (!this.isActive()) {
+            this.clearStaged();
+            return;
+        }
+
         if (this.mc.player == null || this.mc.level == null || this.mc.gui.screen() != null) {
             this.target = null;
-            PreRotate.cancelAll();
+            PreRotate.cancel(this);
             return;
         }
 
         ItemStack stack = this.mc.player.getMainHandItem();
         if (!(stack.getItem() instanceof BowItem || stack.getItem() instanceof CrossbowItem)) {
             this.target = null;
-            PreRotate.cancelAll();
+            PreRotate.cancel(this);
             return;
         }
 
         if (stack.getItem() instanceof BowItem) {
             if (!this.mc.options.keyUse.isDown() && !this.mc.player.isUsingItem()) {
                 this.target = null;
-                PreRotate.cancelAll();
+                PreRotate.cancel(this);
                 return;
             }
         } else if (stack.getItem() instanceof CrossbowItem) {
             if (!CrossbowItem.isCharged(stack)) {
                 this.target = null;
-                PreRotate.cancelAll();
+                PreRotate.cancel(this);
                 return;
             }
         }
@@ -168,7 +173,7 @@ public class BowAimbot extends Module {
         LivingEntity picked = this.findTarget();
         if (picked == null) {
             this.target = null;
-            PreRotate.cancelAll();
+            PreRotate.cancel(this);
             return;
         }
 
