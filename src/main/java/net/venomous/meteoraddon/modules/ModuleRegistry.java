@@ -24,6 +24,7 @@ import net.venomous.meteoraddon.modules.combat.TpAura;
 
 
 
+import net.venomous.meteoraddon.modules.combat.AutoAnchor;
 import net.venomous.meteoraddon.modules.combat.BedAura;
 import net.venomous.meteoraddon.modules.combat.BowAimbot;
 import net.venomous.meteoraddon.modules.combat.TriggerBot;
@@ -105,6 +106,7 @@ import net.venomous.meteoraddon.modules.movement.VBlink;
 import net.venomous.meteoraddon.modules.movement.BoatPhase;
 import net.venomous.meteoraddon.modules.movement.HoleSnap;
 import net.venomous.meteoraddon.modules.movement.RoboWalk;
+import net.venomous.meteoraddon.modules.movement.SafeWalk;
 
 import net.venomous.meteoraddon.modules.movement.NoSlow;
 import net.venomous.meteoraddon.modules.network.GlobalNetworkInterceptor;
@@ -141,6 +143,7 @@ public class ModuleRegistry {
         Modules.get().add(new ProjectilePuncher());
         Modules.get().add(new RodAimbot());
         Modules.get().add(new TriggerBot());
+        Modules.get().add(new BowAimbot());
         Modules.get().add(new SuperKnockback());
         Modules.get().add(new AutoAnchor());
         Modules.get().add(new SwordBlock());
@@ -228,6 +231,7 @@ public class ModuleRegistry {
         Modules.get().add(new BoatPhase());
         Modules.get().add(new HoleSnap());
         Modules.get().add(new RoboWalk());
+        Modules.get().add(new SafeWalk());
         Modules.get().add(new NoSlow());
         Modules.get().add(new GlobalNetworkInterceptor());
         Modules.get().add(new FakeLag());

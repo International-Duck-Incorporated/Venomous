@@ -19,7 +19,7 @@ public class VenomousAddon extends MeteorAddon {
      * {@code AddonMetadataTest} now asserts it matches {@code libs.versions.toml}, which is the
      * single source of truth the build itself uses.</p>
      */
-    public static final String VERSION = "7.18.8";
+    public static final String VERSION = "7.19.0";
     public static final Logger LOG = LogUtils.getLogger();
 
     public static final Category CATEGORY = new Category("Venomous");

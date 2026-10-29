@@ -223,7 +223,20 @@ public class BowAimbot extends Module {
         if (!(this.mc.player.getMainHandItem().getItem() instanceof BowItem || this.mc.player.getMainHandItem().getItem() instanceof CrossbowItem)) return;
         
         // The item use is already being held down, just ensure we're still aiming correctly
-        // The rotation has been sent via PreRotate, the actual shot is handled by vanilla
+        // The rotation has been sent via PreRotate, the actual shot is handled by vanilla.
+
+        // This deferred action now runs in the movement packet's PRE phase, after the rotation was
+        // sent and once the server is about to process the held use - so the staged shot is in
+        // flight. Consume it and drop the staged aim; the module goes back to waiting for the
+        // player's next shot instead of holding a stale target against a shot that fired.
+        this.clearStaged();
+    }
+
+    /** Drops the staged aim and anything still queued behind it. */
+    private void clearStaged() {
+        this.target = null;
+        this.currentTick = 0;
+        PreRotate.cancelAll();
     }
 
     private LivingEntity findTarget() {
