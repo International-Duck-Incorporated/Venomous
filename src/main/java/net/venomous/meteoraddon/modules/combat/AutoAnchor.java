@@ -413,7 +413,7 @@ public class AutoAnchor extends Module {
                     Direction placementFace = null;
                     for (Direction d : Direction.values()) {
                         BlockPos neighbor = anchorPos.relative(d);
-                        if (!this.mc.level.getBlockState(neighbor).isEmpty()) continue;
+                        if (!this.mc.level.getBlockState(neighbor).isSolid()) continue; // deprecated: BlockState.isSolid()
                         if (d == Direction.DOWN) {
                             placementBlockPos = neighbor;
                             placementFace = Direction.UP;
@@ -585,7 +585,7 @@ public class AutoAnchor extends Module {
             BlockPos neighbor = pos.relative(d);
             BlockState state = this.mc.level.getBlockState(neighbor);
             if (state.is(Blocks.RESPAWN_ANCHOR)) continue;
-            if (!state.isEmpty()) return true;
+            if (state.isSolid()) return true; // deprecated: BlockState.isSolid()
         }
         return false;
     }
@@ -640,7 +640,7 @@ public class AutoAnchor extends Module {
             BlockPos neighbor = shieldPos.relative(d);
             BlockState state = this.mc.level.getBlockState(neighbor);
             if (state.is(Blocks.RESPAWN_ANCHOR)) continue;
-            if (!state.isEmpty()) continue;
+            if (!state.isSolid()) continue; // deprecated: BlockState.isSolid()
             if (d == Direction.DOWN) {
                 placementPos = neighbor;
                 face = Direction.UP;
