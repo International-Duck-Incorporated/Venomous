@@ -73,13 +73,6 @@ public class NoClip extends Module {
             .sliderMax(40)
             .build());
 
-    private final Setting<Boolean> yawOffset = this.sgAdvanced
-        .add(new BoolSetting.Builder()
-            .name("yaw-offset")
-            .description("Use 90-degree yaw offset for right direction (legacy).")
-            .defaultValue(false)
-            .build());
-
     public NoClip() {
         super(VenomousAddon.CATEGORY, "no-clip", "Allows the player to clip through blocks (clientside only).");
     }

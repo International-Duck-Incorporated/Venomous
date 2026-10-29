@@ -115,6 +115,7 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.movement.HoleSnap",
             "net.venomous.meteoraddon.modules.movement.RoboWalk",
             "net.venomous.meteoraddon.modules.movement.SafeWalk",
+            "net.venomous.meteoraddon.modules.movement.NoClip",
             "net.venomous.meteoraddon.modules.movement.NoSlow",
             "net.venomous.meteoraddon.modules.network.GlobalNetworkInterceptor",
             "net.venomous.meteoraddon.modules.network.FakeLag",

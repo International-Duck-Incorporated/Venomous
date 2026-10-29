@@ -28,6 +28,7 @@ import net.venomous.meteoraddon.modules.combat.AutoAnchor;
 import net.venomous.meteoraddon.modules.combat.BedAura;
 import net.venomous.meteoraddon.modules.combat.BowAimbot;
 import net.venomous.meteoraddon.modules.combat.TriggerBot;
+import net.venomous.meteoraddon.modules.combat.Trajectory;
 import net.venomous.meteoraddon.modules.combat.AnchorMacro;
 import net.venomous.meteoraddon.modules.combat.AntiTrap;
 import net.venomous.meteoraddon.modules.combat.VAutoCity;
@@ -143,6 +144,7 @@ public class ModuleRegistry {
         Modules.get().add(new ProjectilePuncher());
         Modules.get().add(new RodAimbot());
         Modules.get().add(new TriggerBot());
+        Modules.get().add(new Trajectory());
         Modules.get().add(new BowAimbot());
         Modules.get().add(new SuperKnockback());
         Modules.get().add(new AutoAnchor());
