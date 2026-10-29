@@ -144,6 +144,7 @@ public class ModuleRegistry {
         Modules.get().add(new KeepSprint());
         Modules.get().add(new MaceKill());
         Modules.get().add(new MaceAura());
+        Modules.get().add(new MaceAura());
         Modules.get().add(new ProjectilePuncher());
         Modules.get().add(new RodAimbot());
         Modules.get().add(new TriggerBot());
