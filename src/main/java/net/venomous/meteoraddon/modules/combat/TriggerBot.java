@@ -1,15 +1,9 @@
 package net.venomous.meteoraddon.modules.combat;
 
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
-import meteordevelopment.meteorclient.settings.BoolSetting;
-import meteordevelopment.meteorclient.settings.DoubleSetting;
-import meteordevelopment.meteorclient.settings.EnumSetting;
-import meteordevelopment.meteorclient.settings.IntSetting;
-import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
@@ -24,93 +18,23 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.venomous.meteoraddon.VenomousAddon;
+import net.venomous.meteoraddon.utils.combat.CombatContext;
+import net.venomous.meteoraddon.utils.combat.CrosshairScanner;
+import net.venomous.meteoraddon.utils.combat.config.TriggerBotConfig;
 
 import java.util.Set;
 import java.util.HashSet;
 
+/**
+ * TriggerBot using shared CombatContext config and CrosshairScanner for raycasting.
+ */
 public class TriggerBot extends Module {
+
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
     private final SettingGroup sgTarget = this.settings.createGroup("Targeting");
     private final SettingGroup sgBehavior = this.settings.createGroup("Behavior");
 
-    private final Setting<Double> radius = this.sgGeneral
-        .add(new DoubleSetting.Builder()
-            .name("radius")
-            .description("Radius that TriggerBot will trigger.")
-            .defaultValue(3.0)
-            .min(0.1)
-            .max(10.0)
-            .sliderMax(10.0)
-            .build());
-
-    private final Setting<Boolean> triggerOnClick = this.sgBehavior
-        .add(new BoolSetting.Builder()
-            .name("trigger-on-click")
-            .description("Only attack while the attack key is held down.")
-            .defaultValue(false)
-            .build());
-
-    private final Setting<Integer> attackDelayMin = this.sgBehavior
-        .add(new IntSetting.Builder()
-            .name("attack-delay-min")
-            .description("Minimum delay between attacks in milliseconds.")
-            .defaultValue(50)
-            .min(0)
-            .max(1000)
-            .sliderMax(1000)
-            .build());
-
-    private final Setting<Integer> attackDelayMax = this.sgBehavior
-        .add(new IntSetting.Builder()
-            .name("attack-delay-max")
-            .description("Maximum delay between attacks in milliseconds.")
-            .defaultValue(150)
-            .min(0)
-            .max(1000)
-            .sliderMax(1000)
-            .build());
-
-    private final Setting<TargetEntities> targetEntities = this.sgTarget
-        .add(new EnumSetting.Builder<TargetEntities>()
-            .name("target-entities")
-            .description("Entity types that TriggerBot will target.")
-            .defaultValue(TargetEntities.Players)
-            .build());
-
-    private final Setting<Boolean> targetFriends = this.sgTarget
-        .add(new BoolSetting.Builder()
-            .name("target-friends")
-            .description("Target friends.")
-            .defaultValue(false)
-            .build());
-
-    private final Setting<Boolean> ignoreDead = this.sgTarget
-        .add(new BoolSetting.Builder()
-            .name("ignore-dead")
-            .description("Skip entities that are dead or dying.")
-            .defaultValue(true)
-            .build());
-
-    private final Setting<Boolean> ignoreInvisible = this.sgTarget
-        .add(new BoolSetting.Builder()
-            .name("ignore-invisible")
-            .description("Skip entities that are invisible.")
-            .defaultValue(true)
-            .build());
-
-    private final Setting<Boolean> ignoreSleeping = this.sgTarget
-        .add(new BoolSetting.Builder()
-            .name("ignore-sleeping")
-            .description("Skip players that are sleeping.")
-            .defaultValue(true)
-            .build());
-
-    private final Setting<Boolean> ignoreNPCs = this.sgTarget
-        .add(new BoolSetting.Builder()
-            .name("ignore-npcs")
-            .description("Attempt to ignore NPCs based on entity UUID.")
-            .defaultValue(true)
-            .build());
+    private final TriggerBotConfig config = new TriggerBotConfig(sgGeneral, sgBehavior, sgTarget);
 
     private long timeSinceAttackMs = 0;
     private long nextAttackDelayMs = 0;
@@ -143,7 +67,7 @@ public class TriggerBot extends Module {
         this.timeSinceAttackMs += 50; // ~50ms per tick
 
         // Handle trigger on click
-        if (this.triggerOnClick.get() && !this.mc.options.keyAttack.isDown()) {
+        if (this.config.triggerOnClick.get() && !this.mc.options.keyAttack.isDown()) {
             this.pendingAttackTarget = null;
             return;
         }
@@ -158,58 +82,32 @@ public class TriggerBot extends Module {
             return;
         }
 
-        // Find target in crosshair
-        double reach = this.radius.get();
-        Vec3 eyePos = this.mc.player.getEyePosition();
-        Vec3 lookVector = this.mc.player.getViewVector(1.0F);
-        Vec3 lookEndPos = eyePos.add(lookVector.x * reach, lookVector.y * reach, lookVector.z * reach);
+        // Find target in crosshair using CrosshairScanner
+        Entity ent = CrosshairScanner.raycastEntities(this.mc.player, this.mc.level, this.config.radius.get());
 
-        // Check for block in the way
-        BlockHitResult blockHit = this.mc.level.clip(
-            new ClipContext(
-                eyePos, lookEndPos, 
-                ClipContext.Block.COLLIDER, 
-                ClipContext.Fluid.NONE, 
-                this.mc.player
-            )
-        );
-        if (blockHit.getType() != HitResult.Type.MISS) {
-            lookEndPos = blockHit.getLocation();
-        }
-
-        // Raycast for entities
-        double rayDistSqr = eyePos.distanceToSqr(lookEndPos);
-        AABB hitcastSearchBox = this.mc.player.getBoundingBox().expandTowards(lookVector.scale(reach)).inflate(1.0, 1.0, 1.0);
-        
-        EntityHitResult entityResult = ProjectileUtil.getEntityHitResult(
-            this.mc.player, eyePos, lookEndPos, hitcastSearchBox,
-            e -> !e.isSpectator() && e.isPickable() && e != this.mc.player, rayDistSqr
-        );
-
-        if (entityResult != null) {
-            Entity ent = entityResult.getEntity();
+        if (ent != null) {
             if (!(ent instanceof LivingEntity living)) return;
 
             // Filter entity types
             if (!this.isValidTargetType(ent)) return;
             if (ent instanceof Player player) {
-                if (!this.targetFriends.get() && Friends.get().isFriend(player)) return;
-                if (this.ignoreNPCs.get() && this.isNPC(player)) return;
+                if (!this.config.targetFriends.get() && Friends.get().isFriend(player)) return;
+                if (this.config.ignoreNPCs.get() && this.isNPC(player)) return;
             }
 
-            if (this.ignoreDead.get() && !living.isAlive()) return;
-            if (this.ignoreInvisible.get() && living.isInvisible()) return;
-            if (this.ignoreSleeping.get() && living.isSleeping()) return;
+            if (this.config.ignoreDead.get() && !living.isAlive()) return;
+            if (this.config.ignoreInvisible.get() && living.isInvisible()) return;
+            if (this.config.ignoreSleeping.get() && living.isSleeping()) return;
 
             // Check distance from hitbox
             AABB box = ent.getBoundingBox();
-            double cx = Math.max(box.minX, Math.min(eyePos.x, box.maxX));
-            double cy = Math.max(box.minY, Math.min(eyePos.y, box.maxY));
-            double cz = Math.max(box.minZ, Math.min(eyePos.z, box.maxZ));
-            double dx = cx - eyePos.x, dy = cy - eyePos.y, dz = cz - eyePos.z;
+            double cx = Math.max(box.minX, Math.min(this.mc.player.getEyePosition().x, box.maxX));
+            double cy = Math.max(box.minY, Math.min(this.mc.player.getEyePosition().y, box.maxY));
+            double cz = Math.max(box.minZ, Math.min(this.mc.player.getEyePosition().z, box.maxZ));
+            double dx = cx - this.mc.player.getEyePosition().x, dy = cy - this.mc.player.getEyePosition().y, dz = cz - this.mc.player.getEyePosition().z;
             double distSqr = dx * dx + dy * dy + dz * dz;
 
-            if (distSqr > this.radius.get() * this.radius.get()) return;
+            if (distSqr > this.config.radius.get() * this.config.radius.get()) return;
 
             this.pendingAttackTarget = ent;
         }
@@ -218,7 +116,7 @@ public class TriggerBot extends Module {
         if (this.pendingAttackTarget != null) {
             Entity target = this.pendingAttackTarget;
             this.pendingAttackTarget = null;
-            
+
             if (target == null || target.isRemoved() || !target.isAlive()) return;
 
             this.attack(target);
@@ -229,8 +127,8 @@ public class TriggerBot extends Module {
 
     private boolean isValidTargetType(Entity entity) {
         EntityType<?> type = entity.getType();
-        
-        switch (this.targetEntities.get()) {
+
+        switch (this.config.targetEntities.get()) {
             case Players:
                 return entity instanceof Player;
             case Living:
@@ -250,22 +148,22 @@ public class TriggerBot extends Module {
 
     private void attack(Entity target) {
         if (this.mc.player == null || this.mc.level == null) return;
-        
+
         // Use vanilla attack logic
         this.mc.gameMode.attack(this.mc.player, target);
         this.mc.player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
     }
 
     private long getRandomDelay() {
-        int min = this.attackDelayMin.get();
-        int max = this.attackDelayMax.get();
+        int min = this.config.attackDelayMin.get();
+        int max = this.config.attackDelayMax.get();
         return min + (long) (Math.random() * (max - min + 1));
     }
 
     public enum TargetEntities {
         Players,
         Living,
-        All;
+        All
     }
 
     @Override
