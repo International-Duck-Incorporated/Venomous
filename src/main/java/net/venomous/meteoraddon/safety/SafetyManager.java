@@ -14,7 +14,7 @@ import java.util.Set;
  * {@link SafetyLevel#SAFE}, so existing behaviour is unchanged.</p>
  */
 public final class SafetyManager {
-    private static final Set<SafetyLevel> ENABLED = EnumSet.of(
+    private static final EnumSet<SafetyLevel> ENABLED = EnumSet.of(
         SafetyLevel.SAFE,
         SafetyLevel.RISKY,
         SafetyLevel.BAN
@@ -69,7 +69,9 @@ public final class SafetyManager {
      */
     public static Set<SafetyLevel> enabledLevels() {
         synchronized (ENABLED) {
-            return Collections.unmodifiableSet(EnumSet.copyOf(ENABLED));
+            // clone() rather than EnumSet.copyOf(...): copyOf throws on an empty collection,
+            // which is exactly the state the kill switch can leave behind.
+            return Collections.unmodifiableSet(ENABLED.clone());
         }
     }
 }

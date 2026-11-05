@@ -2,7 +2,8 @@
 
 Recorded: **2026-11-05**
 Command: `./gradlew test --no-daemon`
-Code state: A1 registry migration (`399c305`) plus Track A A2–A8 changes in the working tree.
+Code state: Track A commits `399c305` (A1), `f9cefdc` (A2), `985de1b` (A3–A8) plus the
+`SafetyManager` empty-allow-list fix.
 
 ```
 360 tests completed, 10 failed, 1 skipped
@@ -61,8 +62,9 @@ testModuleListMatchesSourceTree:
 Modules on disk missing from ALL_MODULE_CLASSES: [Chams]
 ```
 
-`ALL_MODULE_CLASSES` in `ModuleStructureTest` lists 124 fully-qualified classes but omits
-`net.venomous.meteoraddon.modules.render.Chams`. Add it (Track B owns `src/test/`).
+`ALL_MODULE_CLASSES` in `ModuleStructureTest` lists 123 fully-qualified classes but omits
+`net.venomous.meteoraddon.modules.render.Chams` (124 module files exist on disk). Add it
+(Track B owns `src/test/`).
 
 ## PacketGatesTest
 

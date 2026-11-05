@@ -27,15 +27,18 @@ Fabric loads the mod, Meteor discovers the `meteor` entrypoint, and then calls t
 
 ## Startup sequence
 
-1. Meteor calls `onRegisterCategories()`, which registers both categories with
-   `Modules.registerCategory(...)`.
-2. Meteor calls `onInitialize()`:
-   - `ShutdownReaper.init()` installs the shutdown hook.
-   - `PreRotate.init()` subscribes the deferred-rotation dispatcher to Meteor's event bus.
-   - `ModuleRegistry.registerAll()` discovers and constructs every module (see below).
-   - `SafetyManager.setEnabled(SafetyLevel.RISKY, false)` records the default safety policy.
-3. Meteor owns the resulting `Module` instances: it persists enabled state and settings and
-   dispatches events to their `@EventHandler` methods.
+Meteor calls the addon hooks:
+
+- `onRegisterCategories()` registers both categories with `Modules.registerCategory(...)`.
+- `onInitialize()` runs the addon startup:
+  - `ShutdownReaper.init()` starts the daemon watcher that forces a clean JVM exit once
+    `main()` returns (see its class Javadoc for why).
+  - `PreRotate.init()` subscribes the deferred-rotation dispatcher to Meteor's event bus.
+  - `ModuleRegistry.registerAll()` discovers and constructs every module (see below).
+  - `SafetyManager.setEnabled(SafetyLevel.RISKY, false)` records the default safety policy.
+
+Meteor then owns the resulting `Module` instances: it persists enabled state and settings and
+dispatches events to their `@EventHandler` methods.
 
 ## Reflection-based module registry
 
@@ -94,7 +97,6 @@ Lifecycle hooks used by this addon:
 | constructor | once, at addon startup | `super(...)`, setting declarations only |
 | `onActivate()` | module toggled on | reset counters, subscribe helpers, send one-shot packets |
 | `onDeactivate()` | module toggled off | clear state, release keys, cancel queued actions |
-| `onTick()` | every client tick while active | per-tick logic |
 | `@EventHandler` methods | when the event is posted on Meteor's bus | tick/render/packet-adjacent logic |
 
 Because the registry constructs every module at startup, constructors must not perform world
