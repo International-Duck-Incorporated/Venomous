@@ -42,10 +42,27 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Reject broken module files
+        run: |
+          if find src -name "*.broken" | grep -q .; then
+            echo "::error::*.broken files detected in src/ - delete or finish them before building."
+            find src -name "*.broken"
+            exit 1
+          fi
+
       - name: Build JAR
         run: |
           chmod +x ./gradlew
           ./gradlew build --no-daemon
+
+      - name: Test and coverage
+        run: ./gradlew test jacocoTestReport --no-daemon
+
+      - name: Generate module documentation
+        run: ./gradlew generateModulesDoc --no-daemon
+
+      - name: Check module documentation is current
+        run: git diff --exit-code -- docs/MODULES.md
 
       - name: Upload JAR
         uses: actions/upload-artifact@v7
@@ -54,6 +71,11 @@ jobs:
           path: build/libs/*.jar
           if-no-files-found: error
           retention-days: 30
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: build/reports/jacoco/test/jacocoTestReport.xml
 
   publish-nightly:
     if: inputs.release == 'nightly'

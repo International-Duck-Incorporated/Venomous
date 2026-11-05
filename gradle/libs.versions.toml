@@ -16,7 +16,9 @@ meteor = "26.2-SNAPSHOT"
 reflections = "0.10.2"
 javassist = "3.28.0-GA"   # required by Reflections' class scanning; bundled via jar-in-jar
 jqwik = "1.8.5"
-jacoco = "0.8.12"
+# 0.8.14 is the first release that officially supports Java 25 class files; 0.8.12
+# throws "Unsupported class file major version 69" while instrumenting the test JVM.
+jacoco = "0.8.14"
 
 [libraries]
 minecraft = { module = "com.mojang:minecraft", version.ref = "minecraft" }

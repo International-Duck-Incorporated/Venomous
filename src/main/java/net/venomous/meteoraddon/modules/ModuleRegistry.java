@@ -43,12 +43,4 @@ public final class ModuleRegistry {
             throw new IllegalStateException("Cannot register " + moduleClass.getName(), e);
         }
     }
-
-    /**
-     * @deprecated kept so older callers keep working; use {@link #registerAll()}.
-     */
-    @Deprecated
-    public static void register() {
-        registerAll();
-    }
 }

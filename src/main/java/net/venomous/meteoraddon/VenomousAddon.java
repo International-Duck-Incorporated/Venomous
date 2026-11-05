@@ -6,6 +6,8 @@ import meteordevelopment.meteorclient.addons.MeteorAddon;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.venomous.meteoraddon.modules.ModuleRegistry;
+import net.venomous.meteoraddon.safety.SafetyLevel;
+import net.venomous.meteoraddon.safety.SafetyManager;
 import net.venomous.meteoraddon.utils.PreRotate;
 import net.venomous.meteoraddon.utils.ShutdownReaper;
 import org.slf4j.Logger;
@@ -31,6 +33,13 @@ public class VenomousAddon extends MeteorAddon {
         ShutdownReaper.init();
         PreRotate.init();
         ModuleRegistry.registerAll();
+
+        // Default safety policy: safe modules only until the user opts in.
+        // TODO(Track B integration): persist this choice in the addon config and consult
+        // SafetyManager.isAllowed(module.getSafetyLevel()) from Module#toggle. Until that
+        // enforcement lands this call only records the policy; it does not disable anything.
+        SafetyManager.setEnabled(SafetyLevel.RISKY, false);
+        LOG.info("Safety levels enabled: {}", SafetyManager.enabledLevels());
     }
 
     @Override
