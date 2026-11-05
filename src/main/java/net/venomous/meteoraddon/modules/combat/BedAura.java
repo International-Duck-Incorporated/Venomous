@@ -92,7 +92,7 @@ public class BedAura extends Module {
     public void onDeactivate() {
         this.currentBlockToBreak = null;
         this.breakStage = 0;
-        PreRotate.cancelAll();
+        PreRotate.cancel(this);
     }
 
     @EventHandler
@@ -129,7 +129,7 @@ public class BedAura extends Module {
             if (playerPos.distanceToSqr(targetPos) > rangeSqr) {
                 this.currentBlockToBreak = null;
                 this.breakStage = 0;
-                PreRotate.cancelAll();
+                PreRotate.cancel(this);
                 return;
             }
 
@@ -144,7 +144,7 @@ public class BedAura extends Module {
                 }
             });
         } else {
-            PreRotate.cancelAll();
+            PreRotate.cancel(this);
         }
     }
 

@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -207,6 +208,8 @@ public class CrystalPvP extends Module {
     private void handleEntityInteraction(EntityHitResult entityHitResult) {
         if (this.breakDelayCounter <= 0) {
             Entity entity = entityHitResult.getEntity();
+            if (!(entity instanceof EndCrystal)) return;
+
             this.mc.gameMode.attack(this.mc.player, entity);
             this.mc.player.swing(InteractionHand.MAIN_HAND);
             this.breakDelayCounter = ((Double)this.breakDelay.get()).intValue();

@@ -148,12 +148,16 @@ public class PlayerDetection extends Module {
             }
         }
 
-        if (!currentPlayers.isEmpty() && !currentPlayers.equals(this.detectedPlayers)) {
-            this.detectedPlayers.clear();
-            this.detectedPlayers.addAll(currentPlayers);
-            this.handlePlayerDetection(Set.copyOf(currentPlayers));
-        } else if (currentPlayers.isEmpty()) {
-            this.detectedPlayers.clear();
+        // React only to arrivals. Reusing the whole current set whenever somebody joins or
+        // leaves reports existing players again and can toggle their safety modules back on.
+        Set<String> newPlayers = new HashSet<>(currentPlayers);
+        newPlayers.removeAll(this.detectedPlayers);
+
+        this.detectedPlayers.clear();
+        this.detectedPlayers.addAll(currentPlayers);
+
+        if (!newPlayers.isEmpty()) {
+            this.handlePlayerDetection(Set.copyOf(newPlayers));
         }
     }
 

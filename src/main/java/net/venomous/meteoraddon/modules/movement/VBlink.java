@@ -2,7 +2,6 @@ package net.venomous.meteoraddon.modules.movement;
 
 import java.util.ArrayList;
 import java.util.List;
-import meteordevelopment.meteorclient.events.packets.PacketEvent.Receive;
 import meteordevelopment.meteorclient.events.packets.PacketEvent.Send;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
@@ -13,8 +12,6 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
-import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -75,13 +72,6 @@ public class VBlink extends Module {
                 event.cancel();
                 this.outgoingPackets.add(packet);
             }
-        }
-    }
-
-    @EventHandler
-    private void onPacketReceive(Receive event) {
-        if (this.mc.player != null && event.packet instanceof ClientboundPlayerPositionPacket posPacket) {
-            this.mc.player.connection.send(new ServerboundAcceptTeleportationPacket(posPacket.id()));
         }
     }
 

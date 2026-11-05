@@ -18,6 +18,7 @@ public class WindPearlMacro extends Module {
     private final Setting<Integer> delayTicks;
     private int tickCounter = 0;
     private boolean throwingPearl = false;
+    private boolean pearlThrown = false;
 
     public WindPearlMacro() {
         super(VenomousAddon.CATEGORY, "pearl-wind-macro", "Throws pearl first, then uses wind charge at 90 degrees up.");
@@ -38,6 +39,7 @@ public class WindPearlMacro extends Module {
                 this.selfDisable();
             } else {
                 this.throwingPearl = true;
+                this.pearlThrown = false;
                 this.tickCounter = 0;
                 PreRotate.rotateThenSequence(this, this.mc.player.getYRot(), -90.0, () -> {
                     // Deferred until the server rotation lands, so the hotbar may have changed in
@@ -46,6 +48,11 @@ public class WindPearlMacro extends Module {
                     this.mc.gameMode.useItem(this.mc.player, InteractionHand.MAIN_HAND);
                     this.mc.player.swing(InteractionHand.MAIN_HAND);
                     InvUtils.swapBack();
+
+                    // The configured delay is between the two actions, not between activation and
+                    // the wind charge. Start it only once the deferred pearl throw actually runs.
+                    this.pearlThrown = true;
+                    this.tickCounter = 0;
                 });
             }
         } else {
@@ -68,7 +75,7 @@ public class WindPearlMacro extends Module {
 
     @EventHandler
     private void onTick(Pre event) {
-        if (this.throwingPearl && this.mc.player != null) {
+        if (this.throwingPearl && this.pearlThrown && this.mc.player != null) {
             this.tickCounter++;
             if (this.tickCounter >= (Integer)this.delayTicks.get()) {
                 int windSlot = this.findWindChargeSlot();
@@ -86,14 +93,16 @@ public class WindPearlMacro extends Module {
                     this.toggle();
                 });
                 this.throwingPearl = false;
+                this.pearlThrown = false;
             }
         }
     }
 
     public void onDeactivate() {
-        // Without this, switching off mid-sequence leaves throwingPearl latched true and the
-        // queued rotation still fires against a disabled module.
+        // Reset both latches so a later activation starts a fresh sequence. PreRotate's own
+        // lifecycle guard drops anything already queued when this module is switched off.
         this.throwingPearl = false;
+        this.pearlThrown = false;
         this.tickCounter = 0;
     }
 

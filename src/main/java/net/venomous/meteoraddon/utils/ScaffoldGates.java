@@ -66,8 +66,8 @@ public final class ScaffoldGates {
     /**
      * Whether the head is pointed somewhere plausible for bridging.
      *
-     * <p>Minecraft's pitch runs -90 (straight down) to +90 (straight up), so "looking down by at
-     * least {@code threshold} degrees" is {@code pitch <= -threshold}. A threshold of 0 disables the
+     * <p>Minecraft's pitch runs -90 (straight up) to +90 (straight down), so "looking down by at
+     * least {@code threshold} degrees" is {@code pitch >= threshold}. A threshold of 0 disables the
      * gate, which is the default.</p>
      *
      * @param playerPitch   the player's current X rotation
@@ -75,6 +75,6 @@ public final class ScaffoldGates {
      */
     public static boolean pitchAllows(float playerPitch, int thresholdDeg) {
         if (thresholdDeg <= 0) return true;
-        return playerPitch <= -thresholdDeg;
+        return playerPitch >= thresholdDeg;
     }
 }

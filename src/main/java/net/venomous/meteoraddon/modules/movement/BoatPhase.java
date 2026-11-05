@@ -8,15 +8,27 @@ import net.minecraft.world.phys.Vec3;
 import net.venomous.meteoraddon.VenomousAddon;
 
 public class BoatPhase extends Module {
+    private Boat phasedBoat;
+
     public BoatPhase() {
         super(VenomousAddon.CATEGORY, "boat-phase", "Enables no-physics movement for your current boat.");
     }
 
     @EventHandler
     private void onTick(Pre event) {
-        if ((this.mc.player == null ? null : this.mc.player.getVehicle()) instanceof Boat boat) {
-            boat.noPhysics = true;
-            Vec3 velocity = boat.getDeltaMovement();
+        var vehicle = this.mc.player != null ? this.mc.player.getVehicle() : null;
+        Boat current = vehicle instanceof Boat boat ? boat : null;
+
+        if (this.phasedBoat != current) {
+            if (this.phasedBoat != null) {
+                this.phasedBoat.noPhysics = false;
+            }
+            this.phasedBoat = current;
+        }
+
+        if (current != null) {
+            current.noPhysics = true;
+            Vec3 velocity = current.getDeltaMovement();
             double dy = 0.0;
             if (this.mc.options.keyJump.isDown()) {
                 dy = 0.1;
@@ -26,14 +38,15 @@ public class BoatPhase extends Module {
                 dy = 0.005;
             }
 
-            boat.setDeltaMovement(velocity.x, dy, velocity.z);
+            current.setDeltaMovement(velocity.x, dy, velocity.z);
         }
     }
 
     @Override
     public void onDeactivate() {
-        if ((this.mc.player == null ? null : this.mc.player.getVehicle()) instanceof Boat boat) {
-            boat.noPhysics = false;
+        if (this.phasedBoat != null) {
+            this.phasedBoat.noPhysics = false;
+            this.phasedBoat = null;
         }
     }
 }

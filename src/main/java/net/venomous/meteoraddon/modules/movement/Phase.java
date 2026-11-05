@@ -46,6 +46,7 @@ public class Phase extends Module {
         );
     private final Queue<Packet<?>> blinkQueue = new ArrayDeque<>();
     private boolean flushing;
+    private boolean noPhysicsManaged;
 
     public Phase() {
         super(VenomousAddon.CATEGORY, "phase", "Phases through blocks using Normal, Blink, or Clip modes.");
@@ -55,13 +56,15 @@ public class Phase extends Module {
     public void onActivate() {
         this.blinkQueue.clear();
         this.flushing = false;
+        this.noPhysicsManaged = false;
     }
 
     @Override
     public void onDeactivate() {
-        if (this.mc.player != null) {
+        if (this.noPhysicsManaged && this.mc.player != null) {
             this.mc.player.noPhysics = false;
         }
+        this.noPhysicsManaged = false;
 
         this.flush();
     }
@@ -69,9 +72,21 @@ public class Phase extends Module {
     @EventHandler
     private void onTick(Pre event) {
         if (this.mc.player != null) {
-            if (this.mode.get() == Phase.Mode.Normal || this.mode.get() == Phase.Mode.Clip) {
+            Phase.Mode activeMode = this.mode.get();
+
+            // Changing out of Blink must not leave old movement queued behind newer packets.
+            if (activeMode != Phase.Mode.Blink && !this.blinkQueue.isEmpty()) {
+                this.flush();
+            }
+
+            if (activeMode == Phase.Mode.Normal || activeMode == Phase.Mode.Clip) {
                 this.mc.player.noPhysics = true;
+                this.noPhysicsManaged = true;
                 this.mc.player.fallDistance = 0.0;
+            } else if (this.noPhysicsManaged) {
+                // Only undo state this module enabled; another movement module may own the flag.
+                this.mc.player.noPhysics = false;
+                this.noPhysicsManaged = false;
             }
 
             double forward = (this.mc.options.keyUp.isDown() ? 1 : 0) - (this.mc.options.keyDown.isDown() ? 1 : 0);
@@ -80,7 +95,7 @@ public class Phase extends Module {
                 double yaw = Math.toRadians(this.mc.player.getYRot());
                 double x = (strafe * Math.cos(yaw) - forward * Math.sin(yaw)) * (Double)this.speed.get();
                 double z = (forward * Math.cos(yaw) + strafe * Math.sin(yaw)) * (Double)this.speed.get();
-                if (this.mode.get() == Phase.Mode.Clip) {
+                if (activeMode == Phase.Mode.Clip) {
                     this.mc.player.setPos(this.mc.player.getX() + x, this.mc.player.getY(), this.mc.player.getZ() + z);
                     if (this.mc.getConnection() != null) {
                         this.mc
@@ -91,7 +106,7 @@ public class Phase extends Module {
                                 )
                             );
                     }
-                } else if (this.mode.get() == Phase.Mode.Normal) {
+                } else if (activeMode == Phase.Mode.Normal) {
                     this.mc.player.setDeltaMovement(x, this.mc.player.getDeltaMovement().y, z);
                 }
             }

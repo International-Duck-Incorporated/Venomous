@@ -139,6 +139,7 @@ public class Clip extends Module {
     );
 
     private boolean canGlide;
+    private boolean noPhysicsManaged;
     private int ticks;
     private Timer timer;
 
@@ -148,6 +149,7 @@ public class Clip extends Module {
 
     @Override
     public void onActivate() {
+        this.noPhysicsManaged = false;
         if (this.mc.player == null) {
             this.mc.execute(() -> {
                 if (this.isActive()) this.toggle();
@@ -187,9 +189,10 @@ public class Clip extends Module {
         this.canGlide = false;
         this.ticks = 0;
 
-        if (this.mc.player != null) {
+        if (this.noPhysicsManaged && this.mc.player != null) {
             this.mc.player.noPhysics = false;
         }
+        this.noPhysicsManaged = false;
 
         if (this.timer != null) {
             this.timer.setOverride(1.0);
@@ -201,6 +204,7 @@ public class Clip extends Module {
     private void onTick(Pre event) {
         if (this.mc.player != null && this.mode.get() == Clip.Mode.NoClip) {
             this.mc.player.noPhysics = true;
+            this.noPhysicsManaged = true;
             this.mc.player.fallDistance = 0.0;
             double forward = (this.mc.options.keyUp.isDown() ? 1 : 0) - (this.mc.options.keyDown.isDown() ? 1 : 0);
             double strafe = (this.mc.options.keyLeft.isDown() ? 1 : 0) - (this.mc.options.keyRight.isDown() ? 1 : 0);
@@ -217,6 +221,11 @@ public class Clip extends Module {
             }
 
             this.mc.player.setDeltaMovement(x, y, z);
+        } else if (this.noPhysicsManaged) {
+            if (this.mc.player != null) {
+                this.mc.player.noPhysics = false;
+            }
+            this.noPhysicsManaged = false;
         }
     }
 

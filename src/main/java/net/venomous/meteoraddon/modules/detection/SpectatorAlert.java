@@ -1,7 +1,7 @@
 package net.venomous.meteoraddon.modules.detection;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import meteordevelopment.meteorclient.events.world.TickEvent.Pre;
 import meteordevelopment.meteorclient.settings.BoolSetting;
@@ -45,7 +45,7 @@ public class SpectatorAlert extends Module {
             .build()
     );
 
-    private final Set<UUID> alerted = new HashSet<>();
+    private final Map<UUID, Integer> alerted = new HashMap<>();
     private int timer;
 
     public SpectatorAlert() {
@@ -70,17 +70,16 @@ public class SpectatorAlert extends Module {
             return;
         }
 
-        if (this.timer++ >= this.cooldown.get()) {
-            this.alerted.clear();
-            this.timer = 0;
-        }
+        this.timer++;
+        int cooldownTicks = this.cooldown.get();
+        this.alerted.entrySet().removeIf(entry -> this.timer - entry.getValue() >= cooldownTicks);
 
         double maxDistSq = this.range.get() * this.range.get();
 
         for (AbstractClientPlayer player : this.mc.level.players()) {
             if (player != this.mc.player && player.isSpectator()) {
                 double distSq = this.mc.player.distanceToSqr(player);
-                if (distSq <= maxDistSq && this.alerted.add(player.getUUID())) {
+                if (distSq <= maxDistSq && this.alerted.putIfAbsent(player.getUUID(), this.timer) == null) {
                     double dist = Math.sqrt(distSq);
                     if (this.showDistance.get()) {
                         this.warning("Spectator observing nearby: %s (%.1fm)", player.getName().getString(), dist);

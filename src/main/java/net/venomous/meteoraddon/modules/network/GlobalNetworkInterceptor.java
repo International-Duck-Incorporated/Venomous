@@ -130,10 +130,16 @@ public class GlobalNetworkInterceptor extends Module {
     private void onTick(Pre pre) {
         if (this.mc.player != null && this.mc.getConnection() != null) {
             this.movementSentThisTick = false;
-            if (!this.tickQueue.isEmpty() && this.enforceTickOrder.get()) {
-                Packet<?> packet = this.tickQueue.poll();
-                this.movementSentThisTick = true;
-                this.sendBypassed(packet);
+            if (!this.tickQueue.isEmpty()) {
+                if (this.enforceTickOrder.get()) {
+                    Packet<?> packet = this.tickQueue.poll();
+                    this.movementSentThisTick = true;
+                    this.sendBypassed(packet);
+                } else {
+                    // Disabling the limiter also disables the only drain path. Flush instead of
+                    // stranding old packets to be sent after newer movement or on deactivation.
+                    this.flushQueue();
+                }
             }
         } else {
             // Do not smooth a new connection against coordinates from the old one.

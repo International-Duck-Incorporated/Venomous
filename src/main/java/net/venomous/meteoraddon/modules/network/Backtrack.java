@@ -113,7 +113,7 @@ public class Backtrack extends Module {
 
     /** Held movement packets for the target, in arrival order. Netty threads write, the tick reads. */
     private final Queue<Backtrack.Held> held = new ConcurrentLinkedQueue<>();
-    /** The position this client still shows the target at, while packets are held. */
+    /** Latest position described by the target's movement stream, including withheld packets. */
     private volatile double[] heldPos;
     private volatile Entity target;
     private boolean flushing = false;
@@ -182,8 +182,8 @@ public class Backtrack extends Module {
     }
 
     /**
-     * The hold decision for one movement packet: apply its delta to the position this client
-     * still shows, and keep it only when the result is the worse target of the two.
+     * The hold decision for one movement packet: apply its delta to the last position described
+     * by the movement stream, and keep it only when the result is the worse target of the two.
      *
      * @return true when the packet was held (and must not reach the world), false when it was
      *         passed through or the queue was flushed to make room for it
@@ -209,18 +209,21 @@ public class Backtrack extends Module {
             new double[] {look.x, look.y, look.z},
             this.distanceMin.get(), this.distanceMax.get(), HITBOX_BORDER);
 
-        if (worthHolding && !this.isHolding()) {
-            // First held packet starts the clock for the whole queue.
-            this.heldPos = current.clone();
-        }
+        // Track the stream position on every packet, not only while holding. If a passed-through
+        // move were skipped here, the next delta would be applied to a stale position and every
+        // later hold decision would use geometry for a place the target no longer occupies.
+        this.heldPos = next;
 
         if (worthHolding) {
-            this.heldPos = next;
             this.held.add(new Backtrack.Held(move, System.currentTimeMillis() + this.delayMs.get()));
             return true;
         }
 
-        if (this.isHolding()) this.flushAll();
+        if (this.isHolding()) {
+            this.flushAll();
+            // flushAll clears the tracking state; retain the position of the packet passing now.
+            this.heldPos = next;
+        }
         return false;
     }
 

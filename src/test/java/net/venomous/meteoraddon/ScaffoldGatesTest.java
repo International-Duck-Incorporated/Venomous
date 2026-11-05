@@ -63,22 +63,21 @@ public class ScaffoldGatesTest {
     }
 
     /**
-     * Vape gates scaffold on head pitch. Minecraft pitch is -90 (down) to +90 (up), so "looking
-     * down by N degrees" is {@code pitch <= -N}. A threshold of 0 must disable the gate outright
-     * rather than requiring the player to be looking exactly straight up.
+     * Vape gates scaffold on head pitch. Minecraft pitch is -90 (up) to +90 (down), so "looking
+     * down by N degrees" is {@code pitch >= N}. A threshold of 0 must disable the gate outright.
      */
     @Test
     void thePitchGateNeedsDownwardPitch() {
-        assertTrue(ScaffoldGates.pitchAllows(-60.0F, 30), "-60 is well below the -30 threshold");
-        assertTrue(ScaffoldGates.pitchAllows(-30.0F, 30), "exactly at the threshold passes");
-        assertFalse(ScaffoldGates.pitchAllows(-29.9F, 30), "just above it does not");
+        assertTrue(ScaffoldGates.pitchAllows(60.0F, 30), "60 is well past the 30-degree threshold");
+        assertTrue(ScaffoldGates.pitchAllows(30.0F, 30), "exactly at the threshold passes");
+        assertFalse(ScaffoldGates.pitchAllows(29.9F, 30), "just short of it does not");
         assertFalse(ScaffoldGates.pitchAllows(0.0F, 30), "looking at the horizon does not");
-        assertFalse(ScaffoldGates.pitchAllows(45.0F, 30), "looking up certainly does not");
+        assertFalse(ScaffoldGates.pitchAllows(-45.0F, 30), "looking up certainly does not");
     }
 
     @Test
     void aZeroThresholdDisablesThePitchGate() {
-        for (float pitch : new float[] {-90.0F, 0.0F, 90.0F}) {
+        for (float pitch : new float[] {90.0F, 0.0F, -90.0F}) {
             assertTrue(ScaffoldGates.pitchAllows(pitch, 0),
                 "threshold 0 must allow every pitch, got " + pitch);
             assertTrue(ScaffoldGates.pitchAllows(pitch, -1),
@@ -88,7 +87,7 @@ public class ScaffoldGatesTest {
 
     @Test
     void lookingStraightDownSatisfiesAnyThreshold() {
-        assertEquals(true, ScaffoldGates.pitchAllows(-90.0F, 90),
+        assertEquals(true, ScaffoldGates.pitchAllows(90.0F, 90),
             "the most extreme downward pitch should clear every threshold up to 90");
     }
 }

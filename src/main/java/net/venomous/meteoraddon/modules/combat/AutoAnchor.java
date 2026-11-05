@@ -207,7 +207,7 @@ public class AutoAnchor extends Module {
     public void onDeactivate() {
         this.currentPlacement = null;
         this.currentAnchor = null;
-        PreRotate.cancelAll();
+        PreRotate.cancel(this);
     }
 
     @EventHandler
@@ -223,7 +223,7 @@ public class AutoAnchor extends Module {
         // Find targets
         List<net.minecraft.world.entity.LivingEntity> targets = this.findTargets();
         if (targets.isEmpty()) {
-            PreRotate.cancelAll();
+            PreRotate.cancel(this);
             return;
         }
 
@@ -256,7 +256,7 @@ public class AutoAnchor extends Module {
 
         // Check if anchor will damage any target
         if (!this.willDamageAnyTarget(anchor, targets)) {
-            PreRotate.cancelAll();
+            PreRotate.cancel(this);
             return;
         }
 
@@ -274,14 +274,14 @@ public class AutoAnchor extends Module {
         if (willDetonate && this.antiSuicide.get()) {
             double selfDamage = this.calculateSelfDamage(anchor);
             if (selfDamage > this.maxSelfDamage.get()) {
-                PreRotate.cancelAll();
+                PreRotate.cancel(this);
                 return;
             }
         }
 
         // Wall check
         if (!this.ignoreWalls.get() && this.isBehindWall(anchor)) {
-            PreRotate.cancelAll();
+            PreRotate.cancel(this);
             return;
         }
 

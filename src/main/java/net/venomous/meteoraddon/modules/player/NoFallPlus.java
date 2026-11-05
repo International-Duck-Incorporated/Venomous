@@ -105,6 +105,11 @@ public class NoFallPlus extends Module {
             return;
         }
 
+        // A mode change must not strand old Blink packets behind movement from the new mode.
+        if (this.mode.get() != NoFallPlus.Mode.Blink && !this.blinkQueue.isEmpty()) {
+            this.flushBlink();
+        }
+
         if (this.mc.player.onGround()) {
             this.ticksFalling = 0;
         } else {
