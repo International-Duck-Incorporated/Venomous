@@ -35,6 +35,14 @@ logs/
 # Stray patch files
 *.patch
 
+# Broken/partial source files (must never be compiled or committed)
+*.broken
+output.txt
+txt.txt
+
+# jqwik property-test database
+.jqwik-database
+
 # Local scratch notes
 DEV_NOTES.md
 
