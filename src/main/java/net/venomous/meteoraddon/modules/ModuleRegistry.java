@@ -1,261 +1,54 @@
 package net.venomous.meteoraddon.modules;
 
+import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.venomous.meteoraddon.modules.combat.Aimbot;
-import net.venomous.meteoraddon.modules.combat.AntiProjectile;
-import net.venomous.meteoraddon.modules.combat.AutoClickerPlus;
-import net.venomous.meteoraddon.modules.combat.AutoPotion;
-import net.venomous.meteoraddon.modules.combat.AutoShield;
-import net.venomous.meteoraddon.modules.combat.CriticalsPlus;
-import net.venomous.meteoraddon.modules.combat.CrystalPvP;
-import net.venomous.meteoraddon.modules.combat.HitSelect;
-import net.venomous.meteoraddon.modules.combat.Hunt;
-import net.venomous.meteoraddon.modules.combat.JumpReset;
-import net.venomous.meteoraddon.modules.combat.KeepSprint;
-import net.venomous.meteoraddon.modules.combat.MaceAura;
-import net.venomous.meteoraddon.modules.combat.MaceKill;
-import net.venomous.meteoraddon.modules.combat.ProjectilePuncher;
-import net.venomous.meteoraddon.modules.combat.RodAimbot;
-import net.venomous.meteoraddon.modules.combat.SuperKnockback;
-import net.venomous.meteoraddon.modules.combat.SwordBlock;
-import net.venomous.meteoraddon.modules.combat.TargetObsidian;
-import net.venomous.meteoraddon.modules.combat.TickBase;
-import net.venomous.meteoraddon.modules.combat.TimerRange;
-import net.venomous.meteoraddon.modules.combat.TpAura;
+import org.reflections.Reflections;
 
+import java.lang.reflect.Modifier;
+import java.util.Comparator;
 
+/**
+ * Discovers every concrete {@link Module} subclass under the addon's module package and
+ * registers it with Meteor.
+ *
+ * <p>Adding a module no longer requires editing this file: create the class with a public
+ * no-argument constructor and it is picked up automatically. The scan is deliberately limited
+ * to {@code net.venomous.meteoraddon.modules}, so Meteor's own modules and helper classes
+ * elsewhere in the addon are never touched.</p>
+ */
+public final class ModuleRegistry {
+    private static final String BASE_PACKAGE = "net.venomous.meteoraddon.modules";
 
-import net.venomous.meteoraddon.modules.combat.AutoAnchor;
-import net.venomous.meteoraddon.modules.combat.BedAura;
-import net.venomous.meteoraddon.modules.combat.BowAimbot;
-import net.venomous.meteoraddon.modules.combat.TriggerBot;
-import net.venomous.meteoraddon.modules.combat.Trajectory;
-import net.venomous.meteoraddon.modules.combat.AnchorMacro;
-import net.venomous.meteoraddon.modules.combat.AntiTrap;
-import net.venomous.meteoraddon.modules.combat.VAutoCity;
-import net.venomous.meteoraddon.modules.combat.AutoDoubleHand;
-import net.venomous.meteoraddon.modules.combat.AutoInvTotem;
-import net.venomous.meteoraddon.modules.combat.BreachSwap;
-import net.venomous.meteoraddon.modules.combat.KillAura;
-import net.venomous.meteoraddon.modules.combat.PopCounter;
-import net.venomous.meteoraddon.modules.combat.ShieldBreaker;
-import net.venomous.meteoraddon.modules.combat.SwordPlaceObsidian;
-import net.venomous.meteoraddon.modules.combat.WindPearlMacro;
-import net.venomous.meteoraddon.modules.combat.VelocityPlus;
-import net.venomous.meteoraddon.modules.detection.AntiCheatDetect;
-import net.venomous.meteoraddon.modules.detection.AntiStaff;
-import net.venomous.meteoraddon.modules.detection.SpectatorAlert;
-import net.venomous.meteoraddon.modules.detection.AntiVanish;
-import net.venomous.meteoraddon.modules.detection.PlayerDetection;
-import net.venomous.meteoraddon.modules.esp.InvisESP;
-import net.venomous.meteoraddon.modules.esp.LightESP;
-import net.venomous.meteoraddon.modules.esp.SkeletonESP;
-import net.venomous.meteoraddon.modules.exploit.AbortBreaking;
-import net.venomous.meteoraddon.modules.exploit.AntiReducedDebugInfo;
-import net.venomous.meteoraddon.modules.exploit.Damage;
-import net.venomous.meteoraddon.modules.exploit.Disabler;
-import net.venomous.meteoraddon.modules.exploit.NameCollector;
-import net.venomous.meteoraddon.modules.exploit.NoPitchLimit;
-import net.venomous.meteoraddon.modules.exploit.PingSpoof;
-import net.venomous.meteoraddon.modules.fun.DankBobbing;
-import net.venomous.meteoraddon.modules.fun.Derp;
-import net.venomous.meteoraddon.modules.fun.Twerk;
-import net.venomous.meteoraddon.modules.fun.Vomit;
-import net.venomous.meteoraddon.modules.misc.ArmorWarning;
-import net.venomous.meteoraddon.modules.misc.AutoChatGame;
-import net.venomous.meteoraddon.modules.misc.AutoEat;
-import net.venomous.meteoraddon.modules.misc.AutoPearl;
-import net.venomous.meteoraddon.modules.misc.Chat;
-import net.venomous.meteoraddon.modules.misc.ElytraSwap;
-import net.venomous.meteoraddon.modules.misc.FarmlandTremble;
-import net.venomous.meteoraddon.modules.misc.FlagCheck;
-import net.venomous.meteoraddon.modules.misc.GUICloser;
-import net.venomous.meteoraddon.modules.misc.InventoryTracker;
-import net.venomous.meteoraddon.modules.misc.ItemOrganizer;
-import net.venomous.meteoraddon.modules.misc.LatencyAlerts;
-import net.venomous.meteoraddon.modules.misc.MiddleClickAction;
-import net.venomous.meteoraddon.modules.misc.Notifier;
-import net.venomous.meteoraddon.modules.misc.PearlTools;
-import net.venomous.meteoraddon.modules.misc.SafeLogout;
-import net.venomous.meteoraddon.modules.misc.SoundESP;
-import net.venomous.meteoraddon.modules.misc.Spammer;
-import net.venomous.meteoraddon.modules.misc.TNTTimer;
-import net.venomous.meteoraddon.modules.misc.TargetLock;
-import net.venomous.meteoraddon.modules.misc.Teams;
-import net.venomous.meteoraddon.modules.misc.TrueSight;
-import net.venomous.meteoraddon.modules.misc.AntiBot;
-import net.venomous.meteoraddon.modules.misc.AutoEZ;
-import net.venomous.meteoraddon.modules.misc.AutoRequeue;
-import net.venomous.meteoraddon.modules.misc.BookBot;
-import net.venomous.meteoraddon.modules.misc.Choir;
-import net.venomous.meteoraddon.modules.misc.CoordSnapper;
-import net.venomous.meteoraddon.modules.misc.FreecamMining;
-import net.venomous.meteoraddon.modules.misc.HideScoreboard;
-import net.venomous.meteoraddon.modules.misc.NameProtect;
-import net.venomous.meteoraddon.modules.misc.NoBlockInteract;
-import net.venomous.meteoraddon.modules.misc.MovementDebug;
-import net.venomous.meteoraddon.modules.misc.PacketLogger;
-import net.venomous.meteoraddon.modules.movement.AntiBounce;
-import net.venomous.meteoraddon.modules.movement.AssertDominance;
-import net.venomous.meteoraddon.modules.movement.Clip;
-import net.venomous.meteoraddon.modules.movement.Fly;
-import net.venomous.meteoraddon.modules.movement.NoJumpDelay;
-import net.venomous.meteoraddon.modules.movement.NoPush;
-import net.venomous.meteoraddon.modules.movement.Phase;
-import net.venomous.meteoraddon.modules.movement.SnapTap;
-import net.venomous.meteoraddon.modules.movement.Speed;
-import net.venomous.meteoraddon.modules.movement.VBlink;
-import net.venomous.meteoraddon.modules.movement.BoatPhase;
-import net.venomous.meteoraddon.modules.movement.HoleSnap;
-import net.venomous.meteoraddon.modules.movement.RoboWalk;
-import net.venomous.meteoraddon.modules.movement.SafeWalk;
-import net.venomous.meteoraddon.modules.movement.NoClip;
-import net.venomous.meteoraddon.modules.movement.NoSlow;
-import net.venomous.meteoraddon.modules.network.GlobalNetworkInterceptor;
-import net.venomous.meteoraddon.modules.network.FakeLag;
-import net.venomous.meteoraddon.modules.network.LagRange;
-import net.venomous.meteoraddon.modules.network.Backtrack;
-import net.venomous.meteoraddon.modules.player.NoFallPlus;
-import net.venomous.meteoraddon.modules.render.Chams;
-import net.venomous.meteoraddon.modules.render.AntiBlind;
-import net.venomous.meteoraddon.modules.render.NewChunks;
-import net.venomous.meteoraddon.modules.utility.AntiVoid;
-import net.venomous.meteoraddon.modules.utility.AutoBreakSelected;
-import net.venomous.meteoraddon.modules.utility.AutoToolPlus;
-import net.venomous.meteoraddon.modules.world.NoSignScreen;
-import net.venomous.meteoraddon.modules.world.Scaffold;
-import net.venomous.meteoraddon.modules.world.TimerPlus;
-import net.venomous.meteoraddon.modules.world.VAirPlace;
-import net.venomous.meteoraddon.modules.world.AutoFarm;
-import net.venomous.meteoraddon.modules.world.BambooPlanter;
+    private ModuleRegistry() {}
 
-public class ModuleRegistry {
+    /**
+     * Registers every concrete, non-anonymous module class found on the classpath.
+     *
+     * @throws IllegalStateException if a discovered module cannot be constructed
+     */
+    public static void registerAll() {
+        new Reflections(BASE_PACKAGE)
+            .getSubTypesOf(Module.class)
+            .stream()
+            .filter(cls -> !Modifier.isAbstract(cls.getModifiers()))
+            .filter(cls -> !cls.isAnonymousClass())
+            .sorted(Comparator.comparing(Class::getName))
+            .forEach(ModuleRegistry::register);
+    }
+
+    private static void register(Class<? extends Module> moduleClass) {
+        try {
+            Modules.get().add(moduleClass.getDeclaredConstructor().newInstance());
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Cannot register " + moduleClass.getName(), e);
+        }
+    }
+
+    /**
+     * @deprecated kept so older callers keep working; use {@link #registerAll()}.
+     */
+    @Deprecated
     public static void register() {
-        Modules.get().add(new Aimbot());
-        Modules.get().add(new AntiProjectile());
-        Modules.get().add(new AutoClickerPlus());
-        Modules.get().add(new AutoPotion());
-        Modules.get().add(new AutoShield());
-        Modules.get().add(new CriticalsPlus());
-        Modules.get().add(new CrystalPvP());
-        Modules.get().add(new HitSelect());
-        Modules.get().add(new Hunt());
-        Modules.get().add(new JumpReset());
-        Modules.get().add(new KeepSprint());
-        Modules.get().add(new MaceKill());
-        Modules.get().add(new MaceAura());
-        Modules.get().add(new ProjectilePuncher());
-        Modules.get().add(new RodAimbot());
-        Modules.get().add(new TriggerBot());
-        Modules.get().add(new Trajectory());
-        Modules.get().add(new BowAimbot());
-        Modules.get().add(new SuperKnockback());
-        Modules.get().add(new AutoAnchor());
-        Modules.get().add(new SwordBlock());
-        Modules.get().add(new TargetObsidian());
-        Modules.get().add(new TickBase());
-        Modules.get().add(new TimerRange());
-        Modules.get().add(new TpAura());
-        Modules.get().add(new BedAura());
-
-        Modules.get().add(new AnchorMacro());
-        Modules.get().add(new AntiTrap());
-        Modules.get().add(new VAutoCity());
-        Modules.get().add(new AutoDoubleHand());
-        Modules.get().add(new AutoInvTotem());
-        Modules.get().add(new BreachSwap());
-        Modules.get().add(new KillAura());
-        Modules.get().add(new PopCounter());
-        Modules.get().add(new ShieldBreaker());
-        Modules.get().add(new SwordPlaceObsidian());
-        Modules.get().add(new WindPearlMacro());
-        Modules.get().add(new VelocityPlus());
-        Modules.get().add(new AntiCheatDetect());
-        Modules.get().add(new AntiStaff());
-        Modules.get().add(new SpectatorAlert());
-        Modules.get().add(new AntiVanish());
-        Modules.get().add(new PlayerDetection());
-        Modules.get().add(new InvisESP());
-        Modules.get().add(new LightESP());
-        Modules.get().add(new SkeletonESP());
-        Modules.get().add(new AbortBreaking());
-        Modules.get().add(new AntiReducedDebugInfo());
-        Modules.get().add(new Damage());
-        Modules.get().add(new Disabler());
-        Modules.get().add(new NameCollector());
-        Modules.get().add(new NoPitchLimit());
-        Modules.get().add(new PingSpoof());
-        Modules.get().add(new DankBobbing());
-        Modules.get().add(new Derp());
-        Modules.get().add(new Twerk());
-        Modules.get().add(new Vomit());
-        Modules.get().add(new ArmorWarning());
-        Modules.get().add(new AutoChatGame());
-        Modules.get().add(new AutoEat());
-        Modules.get().add(new AutoPearl());
-        Modules.get().add(new Chat());
-        Modules.get().add(new ElytraSwap());
-        Modules.get().add(new FarmlandTremble());
-        Modules.get().add(new FlagCheck());
-        Modules.get().add(new GUICloser());
-        Modules.get().add(new InventoryTracker());
-        Modules.get().add(new ItemOrganizer());
-        Modules.get().add(new LatencyAlerts());
-        Modules.get().add(new MiddleClickAction());
-        Modules.get().add(new Notifier());
-        Modules.get().add(new PearlTools());
-        Modules.get().add(new SafeLogout());
-        Modules.get().add(new SoundESP());
-        Modules.get().add(new Spammer());
-        Modules.get().add(new TNTTimer());
-        Modules.get().add(new TargetLock());
-        Modules.get().add(new Teams());
-        Modules.get().add(new TrueSight());
-        Modules.get().add(new AntiBot());
-        Modules.get().add(new AutoEZ());
-        Modules.get().add(new AutoRequeue());
-        Modules.get().add(new BookBot());
-        Modules.get().add(new Choir());
-        Modules.get().add(new CoordSnapper());
-        Modules.get().add(new FreecamMining());
-        Modules.get().add(new HideScoreboard());
-        Modules.get().add(new NameProtect());
-        Modules.get().add(new NoBlockInteract());
-        Modules.get().add(new MovementDebug());
-        Modules.get().add(new PacketLogger());
-        Modules.get().add(new AntiBounce());
-        Modules.get().add(new AssertDominance());
-        Modules.get().add(new Clip());
-        Modules.get().add(new Fly());
-        Modules.get().add(new NoJumpDelay());
-        Modules.get().add(new NoPush());
-        Modules.get().add(new Phase());
-        Modules.get().add(new SnapTap());
-        Modules.get().add(new Speed());
-        Modules.get().add(new VBlink());
-        Modules.get().add(new BoatPhase());
-        Modules.get().add(new HoleSnap());
-        Modules.get().add(new RoboWalk());
-        Modules.get().add(new SafeWalk());
-        Modules.get().add(new NoSlow());
-        Modules.get().add(new NoClip());
-        Modules.get().add(new GlobalNetworkInterceptor());
-        Modules.get().add(new FakeLag());
-        Modules.get().add(new LagRange());
-        Modules.get().add(new Backtrack());
-        Modules.get().add(new NoFallPlus());
-        Modules.get().add(new AntiBlind());
-        Modules.get().add(new Chams());
-        Modules.get().add(new NewChunks());
-        Modules.get().add(new AntiVoid());
-        Modules.get().add(new AutoBreakSelected());
-        Modules.get().add(new AutoToolPlus());
-        Modules.get().add(new NoSignScreen());
-        Modules.get().add(new Scaffold());
-        Modules.get().add(new TimerPlus());
-        Modules.get().add(new VAirPlace());
-        Modules.get().add(new AutoFarm());
-        Modules.get().add(new BambooPlanter());
+        registerAll();
     }
 }
-

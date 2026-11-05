@@ -28,6 +28,14 @@ dependencies {
     minecraft(libs.minecraft)
     implementation(libs.fabric.loader)
     implementation(libs.meteor.client)
+
+    // Runtime classpath scanning for module auto-registration. `include` bundles the library
+    // (and its transitive dependencies) into the mod jar so users do not need to install it.
+    implementation(libs.reflections)
+    include(libs.reflections)
+    // Reflections needs Javassist to read class files; Loom's include is not transitive.
+    include(libs.javassist)
+
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

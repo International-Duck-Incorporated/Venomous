@@ -30,7 +30,7 @@ public class VenomousAddon extends MeteorAddon {
         LOG.info("Initializing Venomous V" + VERSION + " - Optimized & Refined.");
         ShutdownReaper.init();
         PreRotate.init();
-        ModuleRegistry.register();
+        ModuleRegistry.registerAll();
     }
 
     @Override

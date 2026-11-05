@@ -12,10 +12,19 @@ loom = "1.17-SNAPSHOT"
 # Meteor Client
 meteor = "26.2-SNAPSHOT"
 
+# Tooling / test libraries
+reflections = "0.10.2"
+javassist = "3.28.0-GA"   # required by Reflections' class scanning; bundled via jar-in-jar
+jqwik = "1.8.5"
+jacoco = "0.8.12"
+
 [libraries]
 minecraft = { module = "com.mojang:minecraft", version.ref = "minecraft" }
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }
 meteor-client = { module = "meteordevelopment:meteor-client", version.ref = "meteor" }
+reflections = { module = "org.reflections:reflections", version.ref = "reflections" }
+javassist = { module = "org.javassist:javassist", version.ref = "javassist" }
+jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
 
 [plugins]
 fabric-loom = { id = "net.fabricmc.fabric-loom", version.ref = "loom" }
