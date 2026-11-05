@@ -58,6 +58,7 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.esp.InvisESP",
             "net.venomous.meteoraddon.modules.esp.LightESP",
             "net.venomous.meteoraddon.modules.esp.SkeletonESP",
+            "net.venomous.meteoraddon.modules.render.Chams",
             "net.venomous.meteoraddon.modules.exploit.AbortBreaking",
             "net.venomous.meteoraddon.modules.exploit.AntiReducedDebugInfo",
             "net.venomous.meteoraddon.modules.exploit.Damage",

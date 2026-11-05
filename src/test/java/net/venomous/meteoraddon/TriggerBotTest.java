@@ -2,24 +2,27 @@ package net.venomous.meteoraddon;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.lang.reflect.Modifier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for TriggerBot module.
+ * Unit tests for TriggerBot module. Asserts the reflection auto-registrar's contract for the
+ * class (public, concrete, extends Module, public no-arg constructor) - the registry itself no
+ * longer contains per-module lines to grep for.
  */
 public class TriggerBotTest {
 
     @Test
-    void moduleIsRegisteredAndLoadable() throws Exception {
+    void moduleIsRegistrableByAutoRegistration() throws Exception {
         Class<?> triggerBotClass = Class.forName("net.venomous.meteoraddon.modules.combat.TriggerBot");
         assertNotNull(triggerBotClass);
 
-        Path registry = Path.of("src/main/java/net/venomous/meteoraddon/modules/ModuleRegistry.java");
-        String content = Files.readString(registry);
-        assertTrue(content.contains("Modules.get().add(new TriggerBot());"),
-            "TriggerBot must be registered in ModuleRegistry");
+        assertTrue(Modifier.isPublic(triggerBotClass.getModifiers()), "TriggerBot must be public");
+        assertFalse(Modifier.isAbstract(triggerBotClass.getModifiers()), "TriggerBot must be concrete");
+        assertTrue(meteordevelopment.meteorclient.systems.modules.Module.class.isAssignableFrom(triggerBotClass),
+            "TriggerBot must extend Module");
+        assertTrue(Modifier.isPublic(triggerBotClass.getDeclaredConstructor().getModifiers()),
+            "TriggerBot needs a public no-arg constructor for auto-registration");
     }
 }
