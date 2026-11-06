@@ -4,6 +4,11 @@ All notable changes to Venomous are documented in this file.
 
 ## [Unreleased]
 
+- Removed dead code left behind by earlier prunes: the unregistered `GameRendererMixin`, the inert
+  `dank-bobbing` module it was the only hook for, and the unused `InventoryUtils` and `TickTimer`
+  utilities. No behaviour change: the mixin was never loaded, so the module could not run, and
+  both utilities had no production callers. Their tests were removed with them.
+
 ## [7.19.0] - 2026-10-29
 ### Added / Wave 1 (Partial)
 - BedAura module (combat). AutoAnchor, AutoEat, SafeWalk stubs registered. PacketGates integration updated. Build/test green (306/0). Independent critic unavailable — status INCOMPLETE.

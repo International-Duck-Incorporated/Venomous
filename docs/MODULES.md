@@ -2,7 +2,7 @@
 
 # Modules
 
-Venomous currently ships **124** modules across **12** packages. This file is generated from the source tree; adding a module only requires creating the class, and the next `generateModulesDoc` run updates this page.
+Venomous currently ships **123** modules across **12** packages. This file is generated from the source tree; adding a module only requires creating the class, and the next `generateModulesDoc` run updates this page.
 
 | Package | Modules |
 | --- | ---: |
@@ -10,7 +10,7 @@ Venomous currently ships **124** modules across **12** packages. This file is ge
 | [`detection`](#detection) | 5 |
 | [`esp`](#esp) | 3 |
 | [`exploit`](#exploit) | 7 |
-| [`fun`](#fun) | 4 |
+| [`fun`](#fun) | 3 |
 | [`misc`](#misc) | 34 |
 | [`movement`](#movement) | 16 |
 | [`network`](#network) | 4 |
@@ -96,7 +96,6 @@ Venomous currently ships **124** modules across **12** packages. This file is ge
 
 | Module | ID | Description |
 | --- | --- | --- |
-| DankBobbing | `dank-bobbing` | Adds more view bobbing effect. |
 | Derp | `derp` | Makes it look like you're derping around. |
 | Twerk | `twerk` | Automatically sneaks and unsneaks. |
 | Vomit | `vomit` | Drops everything from your inventory, hotbar, armor, and offhand. |

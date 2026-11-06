@@ -66,7 +66,6 @@ public class ModuleStructureTest {
             "net.venomous.meteoraddon.modules.exploit.NameCollector",
             "net.venomous.meteoraddon.modules.exploit.NoPitchLimit",
             "net.venomous.meteoraddon.modules.exploit.PingSpoof",
-            "net.venomous.meteoraddon.modules.fun.DankBobbing",
             "net.venomous.meteoraddon.modules.fun.Derp",
             "net.venomous.meteoraddon.modules.fun.Twerk",
             "net.venomous.meteoraddon.modules.fun.Vomit",
