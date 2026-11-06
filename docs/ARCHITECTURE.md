@@ -75,7 +75,8 @@ Fabric jar-in-jar entries (`META-INF/jars/reflections-0.10.2.jar` and
 `META-INF/jars/javassist-3.28.0-GA.jar`), so users do not install them separately.
 
 Verification at the time of the registry migration: **124** manual registrations before,
-**124** discovered/registrable classes after.
+**124** discovered/registrable classes after. The tree now holds **123** modules following the
+dead-code prune.
 
 ## Module lifecycle
 

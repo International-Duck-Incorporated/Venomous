@@ -35,8 +35,8 @@ Tests live in `src/test/java/net/venomous/meteoraddon/` and are named `*Test`. T
 normal JVM without starting Minecraft, so they cover pure logic: math helpers, rotation/aim
 decisions, packet gates, rule tables, source/layout guards, and metadata checks.
 
-The current baseline is recorded in [BASELINE_FAILURES.md](BASELINE_FAILURES.md). Always compare a
-new run against it before assuming a failure is new.
+There is no recorded-failure baseline any more: the suite is expected to be green. Treat any new
+failure as a regression introduced by the change under test.
 
 ## Writing a JUnit test
 
