@@ -8,6 +8,9 @@ All notable changes to Venomous are documented in this file.
   `dank-bobbing` module it was the only hook for, and the unused `InventoryUtils` and `TickTimer`
   utilities. No behaviour change: the mixin was never loaded, so the module could not run, and
   both utilities had no production callers. Their tests were removed with them.
+- Removed the obsolete `BASELINE_FAILURES.md` snapshot, corrected the architecture note to the
+  current 123 modules, and deleted four "tests" whose only assertions were `assertTrue(true, ...)`
+  placeholders. A new `TestQualityTest` fails if a tautological assertion is reintroduced.
 
 ## [7.19.0] - 2026-10-29
 ### Added / Wave 1 (Partial)
